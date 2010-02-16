@@ -1,0 +1,164 @@
+#!/usr/bin/perl -w
+#
+# Author:       Paul Gear
+# Copyright:	(c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
+# License:	GPLv3 <http://www.gnu.org/licenses/gpl.html>
+# Description:  Query ntp server using ntpq, summarise output, create RRD if
+#		necessary, and maintain statistics in RRD
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.  
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+use strict;
+use RRDs;
+
+my $host = shift;
+$host = "localhost" if ! defined $host;
+my $cmd = "ntpq -pn $host";
+my $res = 60;
+
+my @output = `$cmd 2>/dev/null`;
+
+my $debug = 0;
+$debug = 1 if -t 0;
+
+my $lastsync = 99999999;
+my $numdiscards = 0;
+my $numpeers = 0;
+my $numunknown = 0;
+my $numsurvivors = 0;
+my $offsetdiscards = 0;
+my $offsetsurvivors = 0;
+my $reachability = 0;
+
+for (@output) {
+	chomp;
+
+	# skip headers
+	next if /remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+delay\s+offset\s+jitter/;
+	next if /^=+$/;
+
+	# get the tally code in the first column
+	my ($tally, $rest) = ($_ =~ /(.)(.*)/);
+
+	# split fields & validate
+	my @F = split /\s+/, $rest;
+	if ($#F != 9) {
+	    print STDERR "Invalid line: $_\n";
+	}
+
+	# give the fields sensible names
+	my ($peer, $refid, $stratum, $type, $lastpoll, $interval, $reach, $delay, $offset, $jitter) = @F;
+
+	# skip local clock
+	next if $refid eq ".LOCL.";
+
+	# see the explanation of tally codes in the ntpq documentation for how these work:
+	# - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP
+	# - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
+	if ($tally =~ /[*o]/) {
+	    # synced peer
+	    $lastpoll = 1 if ($lastpoll eq "-");
+	    if ($lastpoll < $lastsync) {
+		$lastsync = $lastpoll;
+	    }
+	    ++$numsurvivors;
+	    ++$numpeers;
+	    $offsetsurvivors += abs($offset);
+	} elsif ($tally =~ /[+#]/) {
+	    # valid peer
+	    ++$numsurvivors;
+	    ++$numpeers;
+	    $offsetsurvivors += abs($offset);
+	} elsif ($tally =~ /[ x.-]/) {
+	    # discarded peer
+	    ++$numdiscards;
+	    ++$numpeers;
+	    $offsetdiscards += abs($offset);
+	} else {
+	    # unknown
+	    ++$numunknown;
+	    next;
+	}
+
+	# determine how many of the last 8 polls succeeded
+	my $reachdec = oct($reach);	# convert reach to decimal
+	my $bits = $reachdec & 1;	# set lowest bit
+	#print "bits = $bits, reach = $reachdec\n";
+	my $i = 1;
+	while ($i < 8) {		# loop through remaining bits
+	    $reachdec >>= 1;
+	    $bits += $reachdec & 1;
+	    #print "bits = $bits, reach = $reachdec\n";
+	    ++$i;
+	}
+	# reachability = sum of all reachability bit counts (average calculated at end)
+	$reachability += $bits;
+
+	# debugging
+	print "|$tally|$peer|$lastpoll|$bits($reach)|$offset|\n" if $debug;
+}
+
+# calculate averages, ensuring we do not divide by zero
+my $avgoffsetsurvivors = $numsurvivors > 0 ? $offsetsurvivors / $numsurvivors : 0;
+my $avgoffsetdiscards = $numdiscards > 0 ? $offsetdiscards / $numdiscards : 0;
+my $avgreachability = $numpeers > 0 ? $reachability / $numpeers : 0;
+
+# create file if necessary
+if (! -e "$host.rrd") {
+    my $heartbeat = 120;
+    my $xff = "0.5";
+    RRDs::create( "$host.rrd", "--step", "$res",
+	"DS:lastsync:GAUGE:$heartbeat:0:16777215",
+	"DS:numdiscards:GAUGE:$heartbeat:0:U",
+	"DS:numpeers:GAUGE:$heartbeat:0:U",
+	"DS:numsurvivors:GAUGE:$heartbeat:0:U",
+	"DS:numunknown:GAUGE:$heartbeat:0:U",
+	"DS:offsetdiscards:GAUGE:$heartbeat:0:U",
+	"DS:offsetsurvivors:GAUGE:$heartbeat:0:U",
+	"DS:reachability:GAUGE:$heartbeat:0:8",
+	"RRA:LAST:$xff:1:1440",
+	"RRA:MIN:$xff:1:1440",
+	"RRA:MAX:$xff:1:1440",
+	"RRA:AVERAGE:$xff:1:1440",
+	"RRA:LAST:$xff:5:288",
+	"RRA:MIN:$xff:5:288",
+	"RRA:MAX:$xff:5:288",
+	"RRA:AVERAGE:$xff:5:288",
+	"RRA:LAST:$xff:60:168",
+	"RRA:MIN:$xff:60:168",
+	"RRA:MAX:$xff:60:168",
+	"RRA:AVERAGE:$xff:60:168",
+	"RRA:LAST:$xff:1440:365",
+	"RRA:MIN:$xff:1440:365",
+	"RRA:MAX:$xff:1440:365",
+	"RRA:AVERAGE:$xff:1440:365",
+    );
+}
+
+# add stats
+RRDs::update( "$host.rrd", "--template=lastsync:numdiscards:numpeers:numsurvivors:numunknown:offsetdiscards:offsetsurvivors:reachability", "N:$lastsync:$numdiscards:$numpeers:$numsurvivors:$numunknown:$avgoffsetdiscards:$avgoffsetsurvivors:$avgreachability" );
+
+#my $time = time;		# current time
+#numpeers=$numpeers
+#numunknown=$numunknown
+#numsurvivors=$numsurvivors
+#numdiscards=$numdiscards
+#offsetsurvivors=$offsetsurvivors
+#offsetdiscards=$offsetdiscards
+#time=$time
+#lastsync=$lastsync
+#reachability=$reachability
+#EOF
+

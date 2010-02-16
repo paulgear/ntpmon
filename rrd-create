@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+set -u
+
+hostname="$1"
+
+STEP=60
+HEARTBEAT=120
+XFF=0.5
+
+rrdtool create $hostname.rrd \
+	--step $STEP \
+		DS:lastsync:GAUGE:$HEARTBEAT:0:16777215 \
+		DS:numdiscards:GAUGE:$HEARTBEAT:0:U \
+		DS:numpeers:GAUGE:$HEARTBEAT:0:U \
+		DS:numsurvivors:GAUGE:$HEARTBEAT:0:U \
+		DS:numunknown:GAUGE:$HEARTBEAT:0:U \
+		DS:offsetdiscards:GAUGE:$HEARTBEAT:0:U \
+		DS:offsetsurvivors:GAUGE:$HEARTBEAT:0:U \
+		DS:reachability:GAUGE:$HEARTBEAT:0:8 \
+		RRA:LAST:$XFF:1:1440 \
+		RRA:MIN:$XFF:1:1440 \
+		RRA:MAX:$XFF:1:1440 \
+		RRA:AVERAGE:$XFF:1:1440 \
+		RRA:LAST:$XFF:5:288 \
+		RRA:MIN:$XFF:5:288 \
+		RRA:MAX:$XFF:5:288 \
+		RRA:AVERAGE:$XFF:5:288 \
+		RRA:LAST:$XFF:60:168 \
+		RRA:MIN:$XFF:60:168 \
+		RRA:MAX:$XFF:60:168 \
+		RRA:AVERAGE:$XFF:60:168 \
+		RRA:LAST:$XFF:1440:365 \
+		RRA:MIN:$XFF:1440:365 \
+		RRA:MAX:$XFF:1440:365 \
+		RRA:AVERAGE:$XFF:1440:365 \
+
