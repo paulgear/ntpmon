@@ -28,6 +28,14 @@ $host = "localhost" if ! defined $host;
 my $cmd = "ntpq -pn $host";
 my $res = 60;
 
+# directory setup
+my $basedir = ".";
+my $libdir = "$basedir/lib";
+if (! -d $libdir) {
+    mkdir "$libdir" or die "Cannot make directory $libdir: $!";
+}
+chdir "$libdir" or die "Cannot change directory to $libdir: $!";
+
 my @output = `$cmd 2>/dev/null`;
 
 my $debug = 0;
