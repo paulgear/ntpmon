@@ -84,3 +84,4 @@ sub fetch_rrd (@)
 #fetch_rrd( "$host.rrd", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
 #fetch_rrd( "$host.rrd", "AVERAGE", "-s", "$end-${res}sec", "-e", "$end" );
 fetch_rrd( "$host.rrd", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min", "-e", "$end" );
+

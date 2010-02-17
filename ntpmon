@@ -1,0 +1,276 @@
+#!/usr/bin/perl -w
+#
+# Author:       Paul Gear
+# Copyright:	(c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
+# License:	GPLv3 <http://www.gnu.org/licenses/gpl.html>
+# Description:  Script to collect, dump, and display NTP health metrics using
+#		RRDtool.
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.  
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+use strict;
+use RRDs;
+use Getopt::Long;
+
+# globals
+my $debug;
+my $res;
+my $basedir;
+my $libdir;
+
+my $xff = "0.5";
+
+# process arguments
+my $result = GetOptions(
+	"debug"		=> \$debug,
+	"basedir"	=> \$basedir,
+	"libdir"	=> \$libdir,
+	"resolution"	=> \$res,
+);
+
+# set defaults for globals
+$res = 60			unless defined $res;
+$debug = (-t 0 ? 1 : 0)		unless defined $debug;
+$basedir = "."			unless defined $basedir;
+$libdir = "$basedir/lib"	unless defined $libdir;
+
+my $heartbeat = $res * 2;
+my @rrd_definition = (
+    "DS:lastsync:GAUGE:$heartbeat:0:16777215",
+    "DS:numdiscards:GAUGE:$heartbeat:0:U",
+    "DS:numpeers:GAUGE:$heartbeat:0:U",
+    "DS:numsurvivors:GAUGE:$heartbeat:0:U",
+    "DS:numunknown:GAUGE:$heartbeat:0:U",
+    "DS:offsetdiscards:GAUGE:$heartbeat:0:U",
+    "DS:offsetsurvivors:GAUGE:$heartbeat:0:U",
+    "DS:reachability:GAUGE:$heartbeat:0:8",
+    "RRA:LAST:$xff:1:1440",
+    "RRA:MIN:$xff:1:1440",
+    "RRA:MAX:$xff:1:1440",
+    "RRA:AVERAGE:$xff:1:1440",
+    "RRA:LAST:$xff:5:288",
+    "RRA:MIN:$xff:5:288",
+    "RRA:MAX:$xff:5:288",
+    "RRA:AVERAGE:$xff:5:288",
+    "RRA:LAST:$xff:60:168",
+    "RRA:MIN:$xff:60:168",
+    "RRA:MAX:$xff:60:168",
+    "RRA:AVERAGE:$xff:60:168",
+    "RRA:LAST:$xff:1440:365",
+    "RRA:MIN:$xff:1440:365",
+    "RRA:MAX:$xff:1440:365",
+    "RRA:AVERAGE:$xff:1440:365",
+);
+my @graph_definition = (
+);
+
+# create directories if needed
+if (! -d $libdir) {
+    mkdir "$libdir" or die "Cannot make directory $libdir: $!";
+}
+chdir "$libdir" or die "Cannot change directory to $libdir: $!";
+
+sub usage ()
+{
+    print STDERR "Usage: $0 [global options] [command] [argument ...]
+Commands:
+	collect HOSTNAME	Collect and store data for HOSTNAME
+	dump HOSTNAME		Display recent data for HOSTNAME
+	summary			Display summary page in HTML
+	detail HOSTNAME		Display detail page for HOSTNAME in HTML
+	help			Display HTML help page
+Global options:
+	--debug			Display debugging information
+	--libdir		Set directory for RRD storage
+	--resolution		Set resolution of RRD data (default 1 minute)
+";
+    exit 1;
+}
+
+
+sub ntpmon_collect ($)
+{
+    my $host = shift;
+    my $cmd = "ntpq -pn $host";
+    my @output = `$cmd 2>/dev/null`;
+
+    my $lastsync = 99999999;
+    my $numdiscards = 0;
+    my $numpeers = 0;
+    my $numunknown = 0;
+    my $numsurvivors = 0;
+    my $offsetdiscards = 0;
+    my $offsetsurvivors = 0;
+    my $reachability = 0;
+
+    for (@output) {
+	chomp;
+
+	# skip headers
+	next if /remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+delay\s+offset\s+jitter/;
+	next if /^=+$/;
+
+	# get the tally code in the first column
+	my ($tally, $rest) = ($_ =~ /(.)(.*)/);
+
+	# split fields & validate
+	my @F = split /\s+/, $rest;
+	if ($#F != 9) {
+	    print STDERR "Invalid line: $_\n";
+	}
+
+	# give the fields sensible names
+	my ($peer, $refid, $stratum, $type, $lastpoll, $interval, $reach, $delay, $offset, $jitter) = @F;
+
+	# skip local clock
+	next if $refid eq ".LOCL.";
+
+	# see the explanation of tally codes in the ntpq documentation for how these work:
+	# - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP
+	# - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
+	# - http://www.eecis.udel.edu/~mills/ntp/html/ntpq.html
+	if ($tally =~ /[*o]/) {
+	    # synced peer
+	    $lastpoll = 1 if ($lastpoll eq "-");
+	    if ($lastpoll < $lastsync) {
+		$lastsync = $lastpoll;
+	    }
+	    ++$numsurvivors;
+	    ++$numpeers;
+	    $offsetsurvivors += abs($offset);
+	} elsif ($tally =~ /[+#]/) {
+	    # valid peer
+	    ++$numsurvivors;
+	    ++$numpeers;
+	    $offsetsurvivors += abs($offset);
+	} elsif ($tally =~ /[ x.-]/) {
+	    # discarded peer
+	    ++$numdiscards;
+	    ++$numpeers;
+	    $offsetdiscards += abs($offset);
+	} else {
+	    # unknown
+	    ++$numunknown;
+	    next;
+	}
+
+	# determine how many of the last 8 polls succeeded
+	my $reachdec = oct($reach);	# convert reach to decimal
+	my $bits = $reachdec & 1;	# set lowest bit
+	#print "bits = $bits, reach = $reachdec\n";
+	my $i = 1;
+	while ($i < 8) {		# loop through remaining bits
+	    $reachdec >>= 1;
+	    $bits += $reachdec & 1;
+	    #print "bits = $bits, reach = $reachdec\n";
+	    ++$i;
+	}
+	# reachability = sum of all reachability bit counts (average calculated at end)
+	$reachability += $bits;
+
+	# debugging
+	print "|$tally|$peer|$lastpoll|$bits($reach)|$offset|\n" if $debug;
+    }
+
+    # calculate averages, ensuring we do not divide by zero
+    my $avgoffsetsurvivors = $numsurvivors > 0 ? $offsetsurvivors / $numsurvivors : 0;
+    my $avgoffsetdiscards = $numdiscards > 0 ? $offsetdiscards / $numdiscards : 0;
+    my $avgreachability = $numpeers > 0 ? $reachability / $numpeers : 0;
+
+    # create file if necessary
+    if (! -e "$host.rrd") {
+	RRDs::create( "$host.rrd", "--step", "$res", @rrd_definition );
+    }
+
+    # add stats
+    RRDs::update( "$host.rrd", "--template=lastsync:numdiscards:numpeers:numsurvivors:numunknown:offsetdiscards:offsetsurvivors:reachability", "N:$lastsync:$numdiscards:$numpeers:$numsurvivors:$numunknown:$avgoffsetdiscards:$avgoffsetsurvivors:$avgreachability" );
+
+}
+
+sub fetch_rrd (@)
+{
+    my ($start, $step, $names, $data) = RRDs::fetch(@_);
+    my $err = RRDs::error();
+    die "ERROR: $err" if $err;
+
+    # cut & paste from the RRDs perldoc page
+    print "Start:       ", scalar localtime($start), " ($start)\n";
+    print "Resolution:  $step seconds\n";
+    print "DS names:    ", join (", ", @$names)."\n";
+    print "Data points: ", $#$data + 1, "\n";
+    print "Data:\n";
+
+    for my $line (@$data) {
+	# skip blank rows
+    #    my $count = 0;
+    #    for my $val (@$line) {
+    #	++$count if defined $val;
+    #    }
+    #    next unless $count > 0;
+
+	print "  ", scalar localtime($start), " ($start) ";
+	$start += $step;
+	for my $val (@$line) {
+	    if (defined $val) {
+		printf "%6.2f ", $val;
+	    }
+	    else {
+		printf "   n/a ";
+	    }
+	}
+	print "\n";
+    }
+
+}
+
+sub ntpmon_dump (@)
+{
+    my $host = shift;
+    my $minutes = 5;
+    my $interval = 60;
+    my $time = time();
+    my $end = int($time / $interval) * $interval;
+    #my $strt = $end - $interval;
+    #print "time = $time, strt = $strt, end = $end\n";
+    print "time = $time, end = $end\n";
+
+    #fetch_rrd( "$host.rrd", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
+    #fetch_rrd( "$host.rrd", "AVERAGE", "-s", "$end-${res}sec", "-e", "$end" );
+    fetch_rrd( "$host.rrd", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min", "-e", "$end" );
+}
+
+# get parameters
+my $command = shift;
+
+# call appropriate function for argument
+if (! defined $command) {
+    usage;
+}
+elsif ($command eq "collect") {
+    if ($#ARGV != 0) {
+	usage;
+    }
+    ntpmon_collect @ARGV;
+}
+elsif ($command eq "dump") {
+    if ($#ARGV != 0) {
+	usage;
+    }
+    ntpmon_dump @ARGV;
+}
+else {
+    usage;
+}
+
