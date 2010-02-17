@@ -100,9 +100,10 @@ Global options:
 }
 
 
-sub ntpmon_collect ($)
+sub ntpmon_collect_host ($)
 {
-    my $host = shift;
+    my $host = $_[0];
+    print "host = $host\n" if $debug;
     my $cmd = "ntpq -pn $host";
     my @output = `$cmd 2>/dev/null`;
 
@@ -199,6 +200,13 @@ sub ntpmon_collect ($)
 
 }
 
+sub ntpmon_collect (@)
+{
+    for my $host (@_) {
+	ntpmon_collect_host $host;
+    }
+}
+
 sub fetch_rrd (@)
 {
     my ($start, $step, $names, $data) = RRDs::fetch(@_);
@@ -237,18 +245,19 @@ sub fetch_rrd (@)
 
 sub ntpmon_dump (@)
 {
-    my $host = shift;
-    my $minutes = 5;
-    my $interval = 60;
-    my $time = time();
-    my $end = int($time / $interval) * $interval;
-    #my $strt = $end - $interval;
-    #print "time = $time, strt = $strt, end = $end\n";
-    print "time = $time, end = $end\n";
+    for my $host (@_) {
+	my $minutes = 5;
+	my $interval = 60;
+	my $time = time();
+	my $end = int($time / $interval) * $interval;
+	#my $strt = $end - $interval;
+	#print "time = $time, strt = $strt, end = $end\n";
+	print "time = $time, end = $end\n";
 
-    #fetch_rrd( "$host.rrd", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
-    #fetch_rrd( "$host.rrd", "AVERAGE", "-s", "$end-${res}sec", "-e", "$end" );
-    fetch_rrd( "$host.rrd", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min", "-e", "$end" );
+	#fetch_rrd( "$host.rrd", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
+	fetch_rrd( "$host.rrd", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
+	    "-e", "$end" );
+    }
 }
 
 # get parameters
@@ -259,13 +268,13 @@ if (! defined $command) {
     usage;
 }
 elsif ($command eq "collect") {
-    if ($#ARGV != 0) {
+    if ($#ARGV < 0) {
 	usage;
     }
-    ntpmon_collect @ARGV;
+    ntpmon_collect( @ARGV );
 }
 elsif ($command eq "dump") {
-    if ($#ARGV != 0) {
+    if ($#ARGV < 0) {
 	usage;
     }
     ntpmon_dump @ARGV;
