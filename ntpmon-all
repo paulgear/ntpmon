@@ -19,7 +19,8 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+CMD="${1:-dump}"
 for i in lib/*.rrd; do
     host=`basename $i .rrd`
-    ./ntpmon dump $host
+    ./ntpmon $CMD $host "$@"
 done
