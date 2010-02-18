@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -w -T
 #
 # Author:       Paul Gear
 # Copyright:	(c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
@@ -21,8 +21,11 @@
 #
 
 use strict;
-use RRDs;
+use CGI qw/:standard start_ul/;
+use File::Basename;
 use Getopt::Long;
+use RRDs;
+use Scalar::Util qw(tainted);
 
 # globals
 my $debug;
@@ -30,7 +33,9 @@ my $res;
 my $basedir;
 my $libdir;
 
+# constants
 my $xff = "0.5";
+my $ext = ".rrd";
 
 # process arguments
 my $result = GetOptions(
@@ -48,7 +53,7 @@ $libdir = "$basedir/lib"	unless defined $libdir;
 
 my $heartbeat = $res * 2;
 my @rrd_definition = (
-    "DS:lastsync:GAUGE:$heartbeat:0:16777215",
+    "DS:insync:GAUGE:$heartbeat:0:1",
     "DS:numdiscards:GAUGE:$heartbeat:0:U",
     "DS:numpeers:GAUGE:$heartbeat:0:U",
     "DS:numsurvivors:GAUGE:$heartbeat:0:U",
@@ -82,6 +87,11 @@ if (! -d $libdir) {
 }
 chdir "$libdir" or die "Cannot change directory to $libdir: $!";
 
+
+##############################################################################
+# utilities
+##############################################################################
+
 sub usage ()
 {
     print STDERR "Usage: $0 [global options] [command] [argument ...]
@@ -99,15 +109,51 @@ Global options:
     exit 1;
 }
 
+sub all_hosts ()
+{
+    my @list;
+    for my $f (glob "*$ext") {
+	my $host = basename($f, $ext);
+	#print STDERR "Found $host\n" if $debug;
+	unshift @list, $host;
+    }
+    return sort @list;
+}
+
+sub untaint ($)
+{
+    return $_[0] unless tainted($_[0]);
+    $_[0] =~ /([\w\s-]+)/;
+    return $1;
+}
+
+sub fetch_rrd (@)
+{
+    my @ret = RRDs::fetch(@_);
+    my $err = RRDs::error();
+    die "ERROR: $err" if $err;
+    return @ret;
+}
+
+##############################################################################
+# collect data and create/update rrd
+##############################################################################
 
 sub ntpmon_collect_host ($)
 {
-    my $host = $_[0];
+    my $host = untaint($_[0]);
     print "host = $host\n" if $debug;
-    my $cmd = "ntpq -pn $host";
-    my @output = `$cmd 2>/dev/null`;
 
-    my $lastsync = 99999999;
+    # untaint
+    $ENV{"PATH"} = "/usr/sbin:/usr/bin:/sbin:/bin";
+    die "Invalid hostname $host" if tainted( $host );
+
+    # get output from ntpq
+    open NTPQ, "ntpq -pn $host|" or die "Cannot open pipe for reading ntpq results: $!";
+    my @output = <NTPQ>;
+    close NTPQ;
+
+    my $insync = 0;
     my $numdiscards = 0;
     my $numpeers = 0;
     my $numunknown = 0;
@@ -145,9 +191,7 @@ sub ntpmon_collect_host ($)
 	if ($tally =~ /[*o]/) {
 	    # synced peer
 	    $lastpoll = 1 if ($lastpoll eq "-");
-	    if ($lastpoll < $lastsync) {
-		$lastsync = $lastpoll;
-	    }
+	    $insync = 1;
 	    ++$numsurvivors;
 	    ++$numpeers;
 	    $offsetsurvivors += abs($offset);
@@ -191,12 +235,12 @@ sub ntpmon_collect_host ($)
     my $avgreachability = $numpeers > 0 ? $reachability / $numpeers : 0;
 
     # create file if necessary
-    if (! -e "$host.rrd") {
-	RRDs::create( "$host.rrd", "--step", "$res", @rrd_definition );
+    if (! -e "$host$ext") {
+	RRDs::create( "$host$ext", "--step", "$res", @rrd_definition );
     }
 
     # add stats
-    RRDs::update( "$host.rrd", "--template=lastsync:numdiscards:numpeers:numsurvivors:numunknown:offsetdiscards:offsetsurvivors:reachability", "N:$lastsync:$numdiscards:$numpeers:$numsurvivors:$numunknown:$avgoffsetdiscards:$avgoffsetsurvivors:$avgreachability" );
+    RRDs::update( "$host$ext", "--template=insync:numdiscards:numpeers:numsurvivors:numunknown:offsetdiscards:offsetsurvivors:reachability", "N:$insync:$numdiscards:$numpeers:$numsurvivors:$numunknown:$avgoffsetdiscards:$avgoffsetsurvivors:$avgreachability" );
 
 }
 
@@ -207,13 +251,16 @@ sub ntpmon_collect (@)
     }
 }
 
-sub fetch_rrd (@)
+##############################################################################
+# dump data from rrd
+##############################################################################
+
+sub dump_rrd (@)
 {
-    my ($start, $step, $names, $data) = RRDs::fetch(@_);
-    my $err = RRDs::error();
-    die "ERROR: $err" if $err;
+    my ($start, $step, $names, $data) = fetch_rrd(@_);
 
     # cut & paste from the RRDs perldoc page
+    print "File:	$_[0]\n";
     print "Start:       ", scalar localtime($start), " ($start)\n";
     print "Resolution:  $step seconds\n";
     print "DS names:    ", join (", ", @$names)."\n";
@@ -252,13 +299,130 @@ sub ntpmon_dump (@)
 	my $end = int($time / $interval) * $interval;
 	#my $strt = $end - $interval;
 	#print "time = $time, strt = $strt, end = $end\n";
-	print "time = $time, end = $end\n";
+	print "time = $time, end = $end\n" if $debug;
 
-	#fetch_rrd( "$host.rrd", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
-	fetch_rrd( "$host.rrd", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
+	#dump_rrd( "$host$ext", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
+	dump_rrd( "$host$ext", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
 	    "-e", "$end" );
     }
 }
+
+##############################################################################
+# HTML summary page
+##############################################################################
+
+sub headings (@)
+{
+    my @headings = (
+	"Host",
+	"Last sync",
+	"Configured peers",
+	"Working peers",
+	"Average working peer offset",
+	"Average peer reachability",
+    );
+    my @helprefs = (
+	"",
+	"insync",
+	"numpeers",
+	"numsurvivors",
+	"offsetsurvivors",
+	"reachability",
+    );
+    my $ret = "";
+    for my $i (0 .. $#headings) {
+	if ($helprefs[$i] eq "") {
+	    $ret .= th( { -class => "header" }, $headings[$i] );
+	}
+	else {
+	    $ret .= th( { -class => "header" },
+		a( {href => "help.html\#$helprefs[$i]"}, $headings[$i] ) );
+	}
+	$ret .= "\n";
+    }
+    return $ret;
+}
+
+#<tr><th class="good"><a name="adam" href="hostdetail?host=adam">adam</a></th><td><a href="hostdetail?host=adam&metric=insync">26.12</a></td><td>6</td><td>6</td><td>48.49</td><td>8.00</td></tr>
+#<tr><th class="good"><a name="kenan" href="summary.html">kenan</a></th><td>960.66</td><td>11</td><td class="warning"><a href="hostdetail?host=kenan&metric=numsurvivors">4</a></td><td>0.51</td><td>7.55</td></tr>
+#<tr><th class="bad"><a name="lamech" href="hostdetail?host=lamech">lamech</a></th><td>n/a</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+#<tr><th class="good"><a name="shelah" href="hostdetail?host=shelah">shelah</a></th><td>55.36</td><td>5</td><td>5</td><td>0.08</td><td>7.40</td></tr>
+
+sub get_host_rrd ($)
+{
+    dump_rrd( "$_[0]$ext", "AVERAGE" );
+}
+
+# TODO: get the host's stats from the database and return them in a hash
+# TODO: analyse the host stats and include a good/marginal/bad status
+sub get_host_stats ($)
+{
+    my $worst = "";
+    my $sev = 0;	# 0 = good, 1 = marginal, 2 = bad
+
+    my %vals = get_host_rrd $_[0];
+
+    return (
+	overall		=> "good",
+	worststat	=> "$worst",
+	insync		=> "",
+	numpeers	=> "",
+	numsurvivors	=> "",
+	offsetsurvivors	=> "",
+	reachability	=> "",
+    );
+}
+
+# TODO: return all the stats for the given host in HTML td elements with appropriate links
+sub host_stats ($%)
+{
+    return "";
+}
+
+# return an appropriate link to the host
+sub host_link ($%)
+{
+    my $host = $_[0];
+    # TODO: if host is not good, add the statistic in question to the parameters
+    return a({href => "hostdetail?host=$host"}, $host);
+}
+
+# return an HTML Tr containing all the data for a given host
+sub host_tr ($)
+{
+    my $host = $_[0];
+    my %stats = get_host_stats($host);
+    return Tr(
+	td({ -class => $stats{"overall"} }, host_link($host, %stats)),
+	host_stats($host, %stats)
+    );
+}
+
+sub host_rows (@)
+{
+    return map( host_tr($_), @_ );
+}
+
+sub ntpmon_summary ()
+{
+    my $title = "NTP status summary";
+
+    print
+	header(),
+	start_html(
+	    -title	=> $title,
+	    -style	=> { src => "style.css" },
+	    -meta	=> { Refresh => "300" },
+	),
+	h3( $title );
+    print "Parameters:", param(), "\n";
+    print table( Tr( headings() ), host_rows( all_hosts() ) );
+    print end_html();
+}
+
+##############################################################################
+# main
+##############################################################################
 
 # get parameters
 my $command = shift;
@@ -269,15 +433,18 @@ if (! defined $command) {
 }
 elsif ($command eq "collect") {
     if ($#ARGV < 0) {
-	usage;
+	@ARGV = all_hosts();
     }
-    ntpmon_collect( @ARGV );
+    ntpmon_collect @ARGV;
 }
 elsif ($command eq "dump") {
     if ($#ARGV < 0) {
-	usage;
+	@ARGV = all_hosts();
     }
     ntpmon_dump @ARGV;
+}
+elsif ($command eq "summary") {
+    ntpmon_summary;
 }
 else {
     usage;

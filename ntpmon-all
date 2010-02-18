@@ -19,7 +19,12 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-CMD="${1:-dump}"
+if [ "$#" -gt 0 ]; then
+    CMD="$1"
+    shift
+else
+    CMD="dump"
+fi
 for i in lib/*.rrd; do
     host=`basename $i .rrd`
     ./ntpmon $CMD $host "$@"
