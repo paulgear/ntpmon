@@ -114,6 +114,8 @@ A:visited {
 
 TH.good {
     background-color:	#0C0;
+    text-align:		left;
+    font-weight:	normal;
 }
 
 TD {

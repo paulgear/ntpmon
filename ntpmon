@@ -328,34 +328,43 @@ sub ntpmon_dump (@)
 # HTML summary page
 ##############################################################################
 
+my @headings = (
+    "Host",
+    "Last poll",
+    "Last sync",
+    "Configured peers",
+    "Working peers",
+    "Average working peer offset",
+    "Average peer reachability",
+);
+my @statnames = (
+    "",
+    "lastpoll",
+    "lastsync",
+    "numpeers",
+    "numsurvivors",
+    "offsetsurvivors",
+    "reachability",
+);
+my %statformats = (
+    lastpoll		=> "TIME",
+    lastsync		=> "TIME",
+    numpeers		=> "%d",
+    numsurvivors	=> "%d",
+    offsetsurvivors	=> "%5.3f",
+    reachability	=> "%5.3f",
+);
+
 sub headings (@)
 {
-    my @headings = (
-	"Host",
-	"Last poll",
-	"Last sync",
-	"Configured peers",
-	"Working peers",
-	"Average working peer offset",
-	"Average peer reachability",
-    );
-    my @helprefs = (
-	"",
-	"lastpoll",
-	"insync",
-	"numpeers",
-	"numsurvivors",
-	"offsetsurvivors",
-	"reachability",
-    );
     my $ret = "";
     for my $i (0 .. $#headings) {
-	if ($helprefs[$i] eq "") {
+	if ($statnames[$i] eq "") {
 	    $ret .= th( { -class => "header" }, $headings[$i] );
 	}
 	else {
 	    $ret .= th( { -class => "header" },
-		a( {href => "help.html\#$helprefs[$i]"}, $headings[$i] ) );
+		a( {href => "help.html\#$statnames[$i]"}, $headings[$i] ) );
 	}
 	$ret .= "\n";
     }
@@ -382,7 +391,9 @@ sub get_last_insync ($$)
 	if ($#$data > -1) {
 	    $insync = $data->[$#$data]->[0];
 	    #print "insync (" . localtime($time) . ") = $insync\n" if $debug;
-	    return $time if ($insync);
+	    if ($insync) {
+		return $time;
+	    }
 	}
 	$time -= $res;
     }
@@ -397,14 +408,13 @@ sub get_host_rrd ($)
     my $file = "$_[0]$ext";
     my $lastpoll = RRDs::last($file);
     my $lastsync = get_last_insync($file, $lastpoll);
-    my ($start, $step, $names, $data) = fetch_rrd($file, "LAST", "-s", $lastpoll-$res,
+    my ($start, $step, $names, $data) = fetch_rrd($file, "LAST", "-s", $lastpoll-$res*3,
 	"-e", $lastpoll);
 #    print "start = $start, step = $step, lastpoll = $lastpoll, lastsync = $lastsync\n"
 #	if $debug;
-    my $ret = {
-	lastsync	=> $lastsync,
-	lastpoll	=> $lastpoll,
-    };
+    my $ret;
+    $ret->{"lastsync"} = $lastsync;
+    $ret->{"lastpoll"} = $lastpoll;
     for my $i (0 .. $#$names) {
 	#print "$names->[$i] = $data->[$#$data]->[$i]\n";
 	$ret->{$names->[$i]} = $data->[$#$data]->[$i];
@@ -474,17 +484,39 @@ sub get_host_stats ($)
 }
 
 # TODO: return all the stats for the given host in HTML td elements with appropriate links
-sub host_stats ($$)
+sub host_stats ($$$)
 {
-    return "";
+    my ($host, $stats, $results) = @_;
+    my $ret = "";
+    for my $statname (@statnames) {
+	next if $statname eq "";
+	#print "$statname = $stats->{$statname} -> ";
+	my $statstr;
+	if ($statformats{$statname} eq "TIME") {
+	    $statstr = localtime($stats->{$statname});
+	}
+	else {
+	    $statstr = sprintf( $statformats{$statname}, $stats->{$statname} );
+	}
+	#print "$statstr\n";
+	my %html_attrs;
+	if (exists $results->{$statname}) {
+	    $html_attrs{"-class"} = $results->{$statname};
+	}
+	$ret .= td( \%html_attrs, $statstr ) . "\n";
+    }
+    return $ret;
 }
 
 # return an appropriate link to the host
 sub host_link ($$)
 {
-    my $host = $_[0];
-    # TODO: if host is not good, add the statistic in question to the parameters
-    return a({href => "hostdetail?host=$host"}, $host);
+    my ($host, $results) = @_;
+    my $extra = "";
+    if (exists $results->{"worst"}) {
+	$extra = "&metric=$results->{'worst'}";
+    }
+    return a({href => "hostdetail?host=$host$extra"}, $host);
 }
 
 # return an HTML Tr containing all the data for a given host
@@ -494,8 +526,8 @@ sub host_tr ($)
     #print "host: $host\n";
     my ($stats, $results) = get_host_stats($host);
     return Tr(
-	td({ -class => $results->{"overall"} }, host_link($host, $results)),
-	host_stats($host, $stats)
+	th({ -class => $results->{"overall"} }, host_link($host, $results)) . "\n",
+	host_stats($host, $stats, $results)
     );
 }
 
@@ -509,7 +541,7 @@ sub ntpmon_summary ()
     my $title = "NTP status summary";
 
     print
-	header(),
+#	header(),
 	start_html(
 	    -title	=> $title,
 	    -style	=> { src => "style.css" },
