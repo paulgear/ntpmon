@@ -27,5 +27,5 @@ else
 fi
 for i in lib/*.rrd; do
     host=`basename $i .rrd`
-    ./ntpmon $CMD $host "$@"
+    ./ntpmon $CMD $host "$@" &
 done

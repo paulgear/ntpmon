@@ -408,7 +408,7 @@ sub get_host_rrd ($)
     my $file = "$_[0]$ext";
     my $lastpoll = RRDs::last($file);
     my $lastsync = get_last_insync($file, $lastpoll);
-    my ($start, $step, $names, $data) = fetch_rrd(1, $file, "LAST", "-s", $lastpoll-$res*3,
+    my ($start, $step, $names, $data) = fetch_rrd(1, $file, "LAST", "-s", $lastpoll-$res*5,
 	"-e", $lastpoll);
 #    print "start = $start, step = $step, lastpoll = $lastpoll, lastsync = $lastsync\n"
 #	if $debug;
@@ -545,7 +545,7 @@ sub ntpmon_summary ()
 	start_html(
 	    -title	=> $title,
 	    -style	=> { src => "style.css" },
-	    -meta	=> { Refresh => "300" },
+	    -meta	=> { Refresh => "30" },
 	),
 	h3( $title ), "\n",
 	p( "Current time: " . localtime($now) ), "\n",
