@@ -541,7 +541,7 @@ sub ntpmon_summary ()
     my $title = "NTP status summary";
 
     print
-#	header(),
+	header(),
 	start_html(
 	    -title	=> $title,
 	    -style	=> { src => "style.css" },
@@ -576,10 +576,10 @@ elsif ($command eq "dump") {
     }
     ntpmon_dump @ARGV;
 }
-elsif ($command eq "summary") {
-    ntpmon_summary;
-}
+#elsif ($command eq "summary") {
+#    ntpmon_summary;
+#}
 else {
-    usage;
+    ntpmon_summary;
 }
 
