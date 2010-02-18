@@ -22,6 +22,7 @@
 
 use strict;
 use CGI qw/:standard start_ul/;
+use Data::Dumper;
 use File::Basename;
 use Getopt::Long;
 use RRDs;
@@ -37,13 +38,17 @@ my $libdir;
 my $xff = "0.5";
 my $ext = ".rrd";
 my $now = time();
+my $seconds_in_year = 366 * 24 * 60 * 60;	# includes leap year just to be sure
+my $good = 0;
+my $marginal = 1;
+my $bad = 2;
 
 # process arguments
 my $result = GetOptions(
-	"debug"		=> \$debug,
-	"basedir"	=> \$basedir,
-	"libdir"	=> \$libdir,
-	"resolution"	=> \$res,
+    "debug"		=> \$debug,
+    "basedir"		=> \$basedir,
+    "libdir"		=> \$libdir,
+    "resolution"	=> \$res,
 );
 
 # set defaults for globals
@@ -159,7 +164,6 @@ sub ntpmon_collect_host ($)
 
     # untaint
     $ENV{"PATH"} = "/usr/sbin:/usr/bin:/sbin:/bin";
-    die "Invalid hostname $host" if tainted( $host );
 
     # get output from ntpq
     open NTPQ, "ntpq -pn $host|" or die "Cannot open pipe for reading ntpq results: $!";
@@ -270,7 +274,7 @@ sub ntpmon_collect (@)
 
 sub dump_rrd (@)
 {
-    my ($start, $step, $names, $data) = fetch_rrd(@_);
+    my ($start, $step, $names, $data) = @_;
 
     # cut & paste from the RRDs perldoc page
     print "File:	$_[0]\n";
@@ -315,8 +319,8 @@ sub ntpmon_dump (@)
 	print "time = $time, end = $end\n" if $debug;
 
 	#dump_rrd( "$host$ext", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
-	dump_rrd( "$host$ext", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
-	    "-e", "$end" );
+	dump_rrd( fetch_rrd( "$host$ext", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
+	    "-e", "$end" ) );
     }
 }
 
@@ -356,45 +360,123 @@ sub headings (@)
     return $ret;
 }
 
-#<tr><th class="good"><a name="adam" href="hostdetail?host=adam">adam</a></th><td><a href="hostdetail?host=adam&metric=insync">26.12</a></td><td>6</td><td>6</td><td>48.49</td><td>8.00</td></tr>
-#<tr><th class="good"><a name="kenan" href="summary.html">kenan</a></th><td>960.66</td><td>11</td><td class="warning"><a href="hostdetail?host=kenan&metric=numsurvivors">4</a></td><td>0.51</td><td>7.55</td></tr>
-#<tr><th class="bad"><a name="lamech" href="hostdetail?host=lamech">lamech</a></th><td>n/a</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
-#<tr><th class="good"><a name="shelah" href="hostdetail?host=shelah">shelah</a></th><td>55.36</td><td>5</td><td>5</td><td>0.08</td><td>7.40</td></tr>
-
-sub get_host_rrd ($)
+# get the timestamp when insync was last true
+sub get_last_insync ($$)
 {
-    my ($start, $step, $names, $data) = fetch_rrd("$_[0]$ext", "AVERAGE", "-s", "e-${res}sec");
+    my $file = $_[0];
+    my $time = $_[1];
+    my $insync = 0;
 
+    # maximum time to go back = 1 year
+    while ($now - $time < $seconds_in_year) {
+	my @result = fetch_rrd($file, "LAST", "-s", $time, "-e", $time);
+	#dump_rrd(@result);
+	my ($start, $step, $names, $data) = @result;
+	if ($names->[0] ne "insync") {
+	    warn "Expected insync as first DS, but got $names->[0]";
+	    next;
+	}
+	#print "data has $#$data elements\n" if $debug;
+	if ($#$data > -1) {
+	    $insync = $data->[$#$data]->[0];
+	    #print "insync (" . localtime($time) . ") = $insync\n" if $debug;
+	    return $time if ($insync);
+	}
+	$time -= $res;
+    }
+
+    # if we get here, time was never in sync
+    return 0;
 }
 
-# TODO: get the host's stats from the database and return them in a hash
-# TODO: analyse the host stats and include a good/marginal/bad status
+# return the last recorded values in a hash
+sub get_host_rrd ($)
+{
+    my $file = "$_[0]$ext";
+    my $lastcollect = RRDs::last($file);
+    my $lastsync = get_last_insync($file, $lastcollect);
+    my ($start, $step, $names, $data) = fetch_rrd($file, "LAST", "-s", $lastcollect-$res,
+	"-e", $lastcollect);
+#    print "start = $start, step = $step, lastcollect = $lastcollect, lastsync = $lastsync\n"
+#	if $debug;
+    my $ret = {
+	lastsync	=> $lastsync,
+	lastcollect	=> $lastcollect,
+    };
+    for my $i (0 .. $#$names) {
+	#print "$names->[$i] = $data->[$#$data]->[$i]\n";
+	$ret->{$names->[$i]} = $data->[$#$data]->[$i];
+    }
+    return $ret;
+}
+
+sub analyse_stats ($)
+{
+    my $stats = $_[0];
+
+    my $worst = $good;	# severity of the worst stat
+    my $results;
+
+    my %rules = (
+	lastsync	=> [ $now-2048, $now-1025, [ $bad, $good, $marginal ] ],
+	numpeers	=> [  2,   2, [ $bad, $good, $marginal ] ],
+	numsurvivors	=> [  2,   2, [ $bad, $good, $marginal ] ],
+	offsetsurvivors	=> [ 25, 500, [ $good, $bad, $marginal ] ],
+	reachability	=> [  5,   7, [ $bad, $good, $marginal ] ],
+    );
+
+    my %sevcodes = ( 0 => "good", 1 => "marginal", 2 => "bad" );
+
+    # loop through selected stats and decide which is the worst
+    for my $stat (keys %rules) {
+	my $val = $stats->{$stat};
+	my $low = $rules{$stat}->[0];
+	my $high = $rules{$stat}->[1];
+	my $status = $rules{$stat}->[2];
+
+	my $newsev = 0;
+	if ($val < $low) {
+	    $newsev = $status->[0];
+	}
+	elsif ($val > $high) {
+	    $newsev = $status->[1];
+	}
+	else {
+	    $newsev = $status->[2];
+	}
+	$results->{$stat} = $sevcodes{$newsev};
+	if ($newsev > $worst) {
+	    $worst = $newsev;
+	    $results->{"worst"} = $stat;
+	}
+
+	#print "stat = $stat, val = $val, low = $low, high = $high, sev = $worst ($sevcodes{$worst})\n";
+    }
+    $results->{"overall"} = $sevcodes{$worst};
+
+    #print "overall = $sevcodes{$worst}, worst = $results{'worst'}\n";
+    return $results;
+}
+
+# get the host's stats from the database
+# analyse the host stats and include a good/marginal/bad status
+# return the results in a hash
 sub get_host_stats ($)
 {
-    my $worst = "";
-    my $sev = 0;	# 0 = good, 1 = marginal, 2 = bad
-
-    my %vals = get_host_rrd $_[0];
-
-    return (
-	overall		=> "good",
-	worststat	=> "$worst",
-	insync		=> "",
-	numpeers	=> "",
-	numsurvivors	=> "",
-	offsetsurvivors	=> "",
-	reachability	=> "",
-    );
+    my $stats = get_host_rrd $_[0];
+    my $results = analyse_stats( $stats );
+    print Dumper($stats, $results);
+    return ($stats, $results);
 }
 
 # TODO: return all the stats for the given host in HTML td elements with appropriate links
-sub host_stats ($%)
+sub host_stats ($$)
 {
     return "";
 }
 
 # return an appropriate link to the host
-sub host_link ($%)
+sub host_link ($$)
 {
     my $host = $_[0];
     # TODO: if host is not good, add the statistic in question to the parameters
@@ -405,10 +487,11 @@ sub host_link ($%)
 sub host_tr ($)
 {
     my $host = $_[0];
-    my %stats = get_host_stats($host);
+    #print "host: $host\n";
+    my ($stats, $results) = get_host_stats($host);
     return Tr(
-	td({ -class => $stats{"overall"} }, host_link($host, %stats)),
-	host_stats($host, %stats)
+	td({ -class => $results->{"overall"} }, host_link($host, $results)),
+	host_stats($host, $stats)
     );
 }
 
@@ -428,10 +511,10 @@ sub ntpmon_summary ()
 	    -style	=> { src => "style.css" },
 	    -meta	=> { Refresh => "300" },
 	),
-	h3( $title );
-    print "Parameters:", param(), "\n";
-    print table( Tr( headings() ), host_rows( all_hosts() ) );
-    print end_html();
+	h3( $title ), "\n",
+	p( "Current time: " . localtime($now) ), "\n",
+	table( Tr( headings() ), host_rows( all_hosts() ) ),
+	end_html();
 }
 
 ##############################################################################
