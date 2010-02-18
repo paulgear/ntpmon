@@ -129,7 +129,7 @@ sub all_hosts ()
 sub untaint ($)
 {
     return $_[0] unless tainted($_[0]);
-    $_[0] =~ /([\w\s-.]+)/;
+    $_[0] =~ /([-.\w\s]+)/;
     return $1;
 }
 
@@ -562,7 +562,7 @@ my $command = shift;
 
 # call appropriate function for argument
 if (! defined $command) {
-    usage;
+    ntpmon_summary;
 }
 elsif ($command eq "collect") {
     if ($#ARGV < 0) {
@@ -576,10 +576,10 @@ elsif ($command eq "dump") {
     }
     ntpmon_dump @ARGV;
 }
-#elsif ($command eq "summary") {
-#    ntpmon_summary;
-#}
-else {
+elsif ($command eq "summary") {
     ntpmon_summary;
+}
+else {
+    usage;
 }
 
