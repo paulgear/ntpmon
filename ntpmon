@@ -36,6 +36,7 @@ my $libdir;
 # constants
 my $xff = "0.5";
 my $ext = ".rrd";
+my $now = time();
 
 # process arguments
 my $result = GetOptions(
@@ -112,12 +113,12 @@ Global options:
 sub all_hosts ()
 {
     my @list;
-    for my $f (glob "*$ext") {
+    for my $f (sort glob "*$ext") {
 	my $host = basename($f, $ext);
 	#print STDERR "Found $host\n" if $debug;
-	unshift @list, $host;
+	push @list, $host;
     }
-    return sort @list;
+    return @list;
 }
 
 sub untaint ($)
@@ -129,10 +130,22 @@ sub untaint ($)
 
 sub fetch_rrd (@)
 {
-    my @ret = RRDs::fetch(@_);
+    my ($start, $step, $names, $data) = RRDs::fetch(@_);
     my $err = RRDs::error();
     die "ERROR: $err" if $err;
-    return @ret;
+
+    # remove empty rows from the returned data set
+    my @newdata = ();
+    for my $line (@$data) {
+        my $count = 0;
+        for my $val (@$line) {
+	    ++$count if defined $val;
+        }
+        push @newdata, $line if $count > 0;
+    }
+    $data = \@newdata;
+
+    return ($start, $step, $names, $data);
 }
 
 ##############################################################################
@@ -350,7 +363,8 @@ sub headings (@)
 
 sub get_host_rrd ($)
 {
-    dump_rrd( "$_[0]$ext", "AVERAGE" );
+    my ($start, $step, $names, $data) = fetch_rrd("$_[0]$ext", "AVERAGE", "-s", "e-${res}sec");
+
 }
 
 # TODO: get the host's stats from the database and return them in a hash
