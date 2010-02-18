@@ -332,6 +332,7 @@ sub headings (@)
 {
     my @headings = (
 	"Host",
+	"Last poll",
 	"Last sync",
 	"Configured peers",
 	"Working peers",
@@ -340,6 +341,7 @@ sub headings (@)
     );
     my @helprefs = (
 	"",
+	"lastpoll",
 	"insync",
 	"numpeers",
 	"numsurvivors",
@@ -393,15 +395,15 @@ sub get_last_insync ($$)
 sub get_host_rrd ($)
 {
     my $file = "$_[0]$ext";
-    my $lastcollect = RRDs::last($file);
-    my $lastsync = get_last_insync($file, $lastcollect);
-    my ($start, $step, $names, $data) = fetch_rrd($file, "LAST", "-s", $lastcollect-$res,
-	"-e", $lastcollect);
-#    print "start = $start, step = $step, lastcollect = $lastcollect, lastsync = $lastsync\n"
+    my $lastpoll = RRDs::last($file);
+    my $lastsync = get_last_insync($file, $lastpoll);
+    my ($start, $step, $names, $data) = fetch_rrd($file, "LAST", "-s", $lastpoll-$res,
+	"-e", $lastpoll);
+#    print "start = $start, step = $step, lastpoll = $lastpoll, lastsync = $lastsync\n"
 #	if $debug;
     my $ret = {
 	lastsync	=> $lastsync,
-	lastcollect	=> $lastcollect,
+	lastpoll	=> $lastpoll,
     };
     for my $i (0 .. $#$names) {
 	#print "$names->[$i] = $data->[$#$data]->[$i]\n";
@@ -410,6 +412,8 @@ sub get_host_rrd ($)
     return $ret;
 }
 
+# work out which of the stats are good, bad, or marginal
+# return the result for each stat, an overall result, and the name of the worst stat
 sub analyse_stats ($)
 {
     my $stats = $_[0];
@@ -465,7 +469,7 @@ sub get_host_stats ($)
 {
     my $stats = get_host_rrd $_[0];
     my $results = analyse_stats( $stats );
-    print Dumper($stats, $results);
+    #print Dumper($stats, $results);
     return ($stats, $results);
 }
 
