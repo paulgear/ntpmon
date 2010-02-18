@@ -135,20 +135,23 @@ sub untaint ($)
 
 sub fetch_rrd (@)
 {
+    my $remove_empty_rows = shift;
     my ($start, $step, $names, $data) = RRDs::fetch(@_);
     my $err = RRDs::error();
     die "ERROR: $err" if $err;
-
-    # remove empty rows from the returned data set
-    my @newdata = ();
-    for my $line (@$data) {
-        my $count = 0;
-        for my $val (@$line) {
-	    ++$count if defined $val;
-        }
-        push @newdata, $line if $count > 0;
+    
+    if ($remove_empty_rows) {
+	# remove empty rows from the returned data set
+	my @newdata = ();
+	for my $line (@$data) {
+	    my $count = 0;
+	    for my $val (@$line) {
+		++$count if defined $val;
+	    }
+	    push @newdata, $line if $count > 0;
+	}
+	$data = \@newdata;
     }
-    $data = \@newdata;
 
     return ($start, $step, $names, $data);
 }
@@ -319,7 +322,7 @@ sub ntpmon_dump (@)
 	print "time = $time, end = $end\n" if $debug;
 
 	#dump_rrd( "$host$ext", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
-	dump_rrd( fetch_rrd( "$host$ext", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
+	dump_rrd( fetch_rrd( 1, "$host$ext", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
 	    "-e", "$end" ) );
     }
 }
@@ -374,32 +377,29 @@ sub headings (@)
 # get the timestamp when insync was last true
 sub get_last_insync ($$)
 {
-    my $file = $_[0];
-    my $time = $_[1];
+    my ($file, $time) = @_;
     my $insync = 0;
 
-    # maximum time to go back = 1 year
-    while ($now - $time < $seconds_in_year) {
-	my @result = fetch_rrd($file, "LAST", "-s", $time, "-e", $time);
-	#dump_rrd(@result);
-	my ($start, $step, $names, $data) = @result;
-	if ($names->[0] ne "insync") {
-	    warn "Expected insync as first DS, but got $names->[0]";
-	    next;
+    my @result = fetch_rrd(0, $file, "LAST", "-s", $time - 2048, "-e", $time);
+
+    #dump_rrd(@result);
+    my ($start, $step, $names, $data) = @result;
+    if ($names->[0] ne "insync") {
+	warn "Expected insync as first DS, but got $names->[0]";
+	next;
+    }
+    #print "data has $#$data elements\n" if $debug;
+    for my $i ($#$data .. 0) {
+	$insync = $data->[$i]->[0];
+	#print "insync (" . localtime($time) . ") = $insync\n" if $debug;
+	if ($insync) {
+	    return $time;
 	}
-	#print "data has $#$data elements\n" if $debug;
-	if ($#$data > -1) {
-	    $insync = $data->[$#$data]->[0];
-	    #print "insync (" . localtime($time) . ") = $insync\n" if $debug;
-	    if ($insync) {
-		return $time;
-	    }
-	}
-	$time -= $res;
+	$time -= $step;
     }
 
     # if we get here, time was never in sync
-    return 0;
+    return $time;
 }
 
 # return the last recorded values in a hash
@@ -408,7 +408,7 @@ sub get_host_rrd ($)
     my $file = "$_[0]$ext";
     my $lastpoll = RRDs::last($file);
     my $lastsync = get_last_insync($file, $lastpoll);
-    my ($start, $step, $names, $data) = fetch_rrd($file, "LAST", "-s", $lastpoll-$res*3,
+    my ($start, $step, $names, $data) = fetch_rrd(1, $file, "LAST", "-s", $lastpoll-$res*3,
 	"-e", $lastpoll);
 #    print "start = $start, step = $step, lastpoll = $lastpoll, lastsync = $lastsync\n"
 #	if $debug;
@@ -432,9 +432,9 @@ sub analyse_stats ($)
     my $results;
 
     my %rules = (
-	lastsync	=> [ $now-2048, $now-1025, [ $bad, $good, $marginal ] ],
-	numpeers	=> [  2,   2, [ $bad, $good, $marginal ] ],
-	numsurvivors	=> [  2,   2, [ $bad, $good, $marginal ] ],
+	lastsync	=> [ $now-2048, $now-1024, [ $bad, $good, $marginal ] ],
+	numpeers	=> [  2,   3, [ $bad, $good, $marginal ] ],
+	numsurvivors	=> [  2,   3, [ $bad, $good, $marginal ] ],
 	offsetsurvivors	=> [ 25, 500, [ $good, $bad, $marginal ] ],
 	reachability	=> [  5,   7, [ $bad, $good, $marginal ] ],
     );
@@ -452,7 +452,7 @@ sub analyse_stats ($)
 	if ($val < $low) {
 	    $newsev = $status->[0];
 	}
-	elsif ($val > $high) {
+	elsif ($val >= $high) {
 	    $newsev = $status->[1];
 	}
 	else {
@@ -477,8 +477,8 @@ sub analyse_stats ($)
 # return the results in a hash
 sub get_host_stats ($)
 {
-    my $stats = get_host_rrd $_[0];
-    my $results = analyse_stats( $stats );
+    my $stats = get_host_rrd($_[0]);
+    my $results = analyse_stats($stats);
     #print Dumper($stats, $results);
     return ($stats, $results);
 }
@@ -580,6 +580,6 @@ elsif ($command eq "summary") {
     ntpmon_summary;
 }
 else {
-    usage;
+    ntpmon_summary;
 }
 
