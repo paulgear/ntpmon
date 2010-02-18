@@ -544,7 +544,7 @@ sub ntpmon_summary ()
 	header(),
 	start_html(
 	    -title	=> $title,
-	    -style	=> { src => "style.css" },
+	    -style	=> { src => "style/style.css" },
 	    -meta	=> { Refresh => "300" },
 	),
 	h3( $title ), "\n",
