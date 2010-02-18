@@ -129,7 +129,7 @@ sub all_hosts ()
 sub untaint ($)
 {
     return $_[0] unless tainted($_[0]);
-    $_[0] =~ /([\w\s-]+)/;
+    $_[0] =~ /([\w\s-.]+)/;
     return $1;
 }
 
