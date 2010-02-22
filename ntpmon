@@ -380,7 +380,7 @@ sub get_last_insync ($$)
     my ($file, $time) = @_;
     my $insync = 0;
 
-    my @result = fetch_rrd(0, $file, "LAST", "-s", $time - 2048, "-e", $time);
+    my @result = fetch_rrd(0, $file, "AVERAGE", "-s", $time - 2048, "-e", $time);
 
     #dump_rrd(@result);
     my ($start, $step, $names, $data) = @result;
@@ -402,7 +402,7 @@ sub get_last_insync ($$)
     return $time;
 }
 
-# return the last recorded values in a hash
+# return recent recorded values in a hash
 sub get_host_rrd ($)
 {
     my $file = "$_[0]$ext";
@@ -415,9 +415,13 @@ sub get_host_rrd ($)
     my $ret;
     $ret->{"lastsync"} = $lastsync;
     $ret->{"lastpoll"} = $lastpoll;
-    for my $i (0 .. $#$names) {
-	#print "$names->[$i] = $data->[$#$data]->[$i]\n";
-	$ret->{$names->[$i]} = $data->[$#$data]->[$i];
+    if ($#$data < 0) {
+    }
+    else {
+	for my $i (0 .. $#$names) {
+	    #print "$names->[$i] = $data->[$#$data]->[$i]\n";
+	    $ret->{$names->[$i]} = $data->[$#$data]->[$i];
+	}
     }
     return $ret;
 }
@@ -435,7 +439,7 @@ sub analyse_stats ($)
 	lastsync	=> [ $now-2048, $now-1024, [ $bad, $good, $marginal ] ],
 	numpeers	=> [  2,   3, [ $bad, $good, $marginal ] ],
 	numsurvivors	=> [  2,   3, [ $bad, $good, $marginal ] ],
-	offsetsurvivors	=> [ 25, 500, [ $good, $bad, $marginal ] ],
+	offsetsurvivors	=> [ 75, 500, [ $good, $bad, $marginal ] ],
 	reachability	=> [  5,   7, [ $bad, $good, $marginal ] ],
     );
 
@@ -545,7 +549,7 @@ sub ntpmon_summary ()
 	start_html(
 	    -title	=> $title,
 	    -style	=> { src => "style.css" },
-	    -meta	=> { Refresh => "30" },
+	    -head	=> meta({ -http_equiv => "refresh", content => "60" }),
 	),
 	h3( $title ), "\n",
 	p( "Current time: " . localtime($now) ), "\n",
