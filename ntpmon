@@ -36,6 +36,7 @@ my $libdir;
 
 # constants
 my $xff = "0.5";
+my $maxinterval = 2048;
 my $ext = ".rrd";
 my $now = time();
 my $seconds_in_year = 366 * 24 * 60 * 60;	# includes leap year just to be sure
@@ -338,6 +339,7 @@ my @headings = (
     "Configured peers",
     "Working peers",
     "Average working peer offset",
+    "Average non-working peer offset",
     "Average peer reachability",
 );
 my @statnames = (
@@ -347,6 +349,7 @@ my @statnames = (
     "numpeers",
     "numsurvivors",
     "offsetsurvivors",
+    "offsetdiscards",
     "reachability",
 );
 my %statformats = (
@@ -355,6 +358,7 @@ my %statformats = (
     numpeers		=> "%d",
     numsurvivors	=> "%d",
     offsetsurvivors	=> "%5.3f",
+    offsetdiscards	=> "%5.3f",
     reachability	=> "%5.3f",
 );
 
@@ -380,7 +384,7 @@ sub get_last_insync ($$)
     my ($file, $time) = @_;
     my $insync = 0;
 
-    my @result = fetch_rrd(0, $file, "AVERAGE", "-s", $time - 2048, "-e", $time);
+    my @result = fetch_rrd(0, $file, "LAST", "-s", $time - $maxinterval, "-e", $time);
 
     #dump_rrd(@result);
     my ($start, $step, $names, $data) = @result;
@@ -388,18 +392,20 @@ sub get_last_insync ($$)
 	warn "Expected insync as first DS, but got $names->[0]";
 	next;
     }
-    #print "data has $#$data elements\n" if $debug;
-    for my $i ($#$data .. 0) {
-	$insync = $data->[$i]->[0];
-	#print "insync (" . localtime($time) . ") = $insync\n" if $debug;
+    #print STDERR "data has $#$data elements\n" if $debug;
+    my $i = $#$data;
+    while ($i > 0) {
+	$insync = $data->[$i]->[0] if exists $data->[$i]->[0];
 	if ($insync) {
+	    print "$file insync at " . localtime($time) . "\n" if $debug;
 	    return $time;
 	}
 	$time -= $step;
+	--$i;
     }
 
-    # if we get here, time was never in sync
-    return $time;
+    # if we get here, time was not in sync in a reasonable period of time
+    return 0;
 }
 
 # return recent recorded values in a hash
@@ -436,11 +442,12 @@ sub analyse_stats ($)
     my $results;
 
     my %rules = (
-	lastsync	=> [ $now-2048, $now-1024, [ $bad, $good, $marginal ] ],
-	numpeers	=> [  2,   3, [ $bad, $good, $marginal ] ],
-	numsurvivors	=> [  2,   3, [ $bad, $good, $marginal ] ],
-	offsetsurvivors	=> [ 75, 500, [ $good, $bad, $marginal ] ],
-	reachability	=> [  5,   7, [ $bad, $good, $marginal ] ],
+	lastsync	=> [ $now-$maxinterval, $now-$maxinterval/2, [ $bad, $good, $marginal ] ],
+	numpeers	=> [   2,    3, [ $bad, $good, $marginal ] ],
+	numsurvivors	=> [   2,    3, [ $bad, $good, $marginal ] ],
+	offsetdiscards	=> [ 500, 5000, [ $good, $good, $good ] ],
+	offsetsurvivors	=> [  75,  500, [ $good, $bad, $marginal ] ],
+	reachability	=> [   5,    7, [ $bad, $good, $marginal ] ],
     );
 
     my %sevcodes = ( 0 => "good", 1 => "marginal", 2 => "bad" );
