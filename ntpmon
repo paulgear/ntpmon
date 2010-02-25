@@ -31,7 +31,6 @@ use Scalar::Util qw(tainted);
 # globals
 my $debug;
 my $res;
-my $basedir;
 my $libdir;
 
 # constants
@@ -47,7 +46,6 @@ my $bad = 2;
 # process arguments
 my $result = GetOptions(
     "debug"		=> \$debug,
-    "basedir"		=> \$basedir,
     "libdir"		=> \$libdir,
     "resolution"	=> \$res,
 );
@@ -55,8 +53,7 @@ my $result = GetOptions(
 # set defaults for globals
 $res = 60			unless defined $res;
 $debug = (-t 0 ? 1 : 0)		unless defined $debug;
-$basedir = "."			unless defined $basedir;
-$libdir = "$basedir/lib"	unless defined $libdir;
+$libdir = "/var/lib/ntpmon"	unless defined $libdir;
 
 my $heartbeat = $res * 2;
 my @rrd_definition = (
