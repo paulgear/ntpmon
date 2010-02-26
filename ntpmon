@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w -T
+#!/usr/bin/perl -Tw
 #
 # Author:       Paul Gear
 # Copyright:	(c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
@@ -32,9 +32,11 @@ use Scalar::Util qw(tainted);
 my $debug;
 my $res;
 my $libdir;
+my $baseurl = "/ntpmon";
 
 # constants
 my $xff = "0.5";
+my $baseinterval = 60;
 my $maxinterval = 2048;
 my $ext = ".rrd";
 my $now = time();
@@ -42,6 +44,55 @@ my $seconds_in_year = 366 * 24 * 60 * 60;	# includes leap year just to be sure
 my $good = 0;
 my $marginal = 1;
 my $bad = 2;
+my $ntpq_command = "ntpq -pn";
+
+my @statnames = (
+    "HOST",
+    "lastpoll",
+    "lastsync",
+    "numpeers",
+    "numsurvivors",
+    "offsetsurvivors",
+    "offsetdiscards",
+    "reachability",
+);
+my %statformats = (
+    lastpoll		=> "TIME",
+    lastsync		=> "TIME",
+    numpeers		=> "%d",
+    numsurvivors	=> "%d",
+    offsetsurvivors	=> "%5.3f",
+    offsetdiscards	=> "%5.3f",
+    reachability	=> "%5.3f",
+    insync		=> "%d",
+);
+my %statheadings = (
+    lastpoll		=> "Last poll",
+    lastsync		=> "Last sync",
+    numpeers		=> "Configured peers",
+    numdiscards		=> "Non-working peers",
+    numsurvivors	=> "Working peers",
+    numunknown		=> "Unknown peers<br/><small>(if non-zero, please <a href=\"mailto:ntpmon\@libertsys.com.au?subject=ntpmon unknown peer bug report&body=Please supply ntpq output from the host in question\">report a bug</a>)</small>",
+    offsetsurvivors	=> "Average working peer offset",
+    offsetdiscards	=> "Average non-working peer offset",
+    reachability	=> "Average peer reachability",
+    insync		=> "In sync?",
+    HOST		=> "Host",
+    TIME		=> "Time",
+);
+my %rules = (
+    lastsync		=> [ $now-$maxinterval, $now-$maxinterval/2, [ $bad, $good, $marginal ] ],
+    numpeers		=> [   2,    3, [ $bad, $good, $marginal ] ],
+    numsurvivors	=> [   2,    3, [ $bad, $good, $marginal ] ],
+    offsetdiscards	=> [ 500, 5000, [ $good, $good, $good ] ],
+    offsetsurvivors	=> [  75,  500, [ $good, $bad, $marginal ] ],
+    reachability	=> [   5,    7, [ $bad, $good, $marginal ] ],
+);
+my %sevcodes = (
+    0			=> "good",
+    1			=> "marginal",
+    2			=> "bad"
+);
 
 # process arguments
 my $result = GetOptions(
@@ -103,7 +154,7 @@ Commands:
 	collect HOSTNAME	Collect and store data for HOSTNAME
 	dump HOSTNAME		Display recent data for HOSTNAME
 	summary			Display summary page in HTML
-	detail HOSTNAME		Display detail page for HOSTNAME in HTML
+	host HOSTNAME		Display detail page for HOSTNAME in HTML
 	help			Display HTML help page
 Global options:
 	--debug			Display debugging information
@@ -137,7 +188,7 @@ sub fetch_rrd (@)
     my ($start, $step, $names, $data) = RRDs::fetch(@_);
     my $err = RRDs::error();
     die "ERROR: $err" if $err;
-    
+
     if ($remove_empty_rows) {
 	# remove empty rows from the returned data set
 	my @newdata = ();
@@ -154,6 +205,37 @@ sub fetch_rrd (@)
     return ($start, $step, $names, $data);
 }
 
+sub get_ntpq ($)
+{
+    # untaint environment
+    $ENV{"PATH"} = "/usr/sbin:/usr/bin:/sbin:/bin";
+
+    my $host = shift;
+    open NTPQ, "$ntpq_command $host|" or die "Cannot open pipe for reading ntpq results: $!";
+    my @output = <NTPQ>;
+    close NTPQ;
+    chomp @output;
+    return @output;
+}
+
+sub format_stat ($$)
+{
+    my ($name, $value) = @_;
+    my $str;
+
+    # if there's no format for it, just return it
+    return $value unless exists $statformats{$name};
+
+    if ($statformats{$name} eq "TIME") {
+	$str = localtime($value);
+    }
+    else {
+	$str = sprintf($statformats{$name}, $value);
+    }
+
+    return $str;
+}
+
 ##############################################################################
 # collect data and create/update rrd
 ##############################################################################
@@ -163,13 +245,8 @@ sub ntpmon_collect_host ($)
     my $host = untaint($_[0]);
     print "host = $host\n" if $debug;
 
-    # untaint
-    $ENV{"PATH"} = "/usr/sbin:/usr/bin:/sbin:/bin";
-
     # get output from ntpq
-    open NTPQ, "ntpq -pn $host|" or die "Cannot open pipe for reading ntpq results: $!";
-    my @output = <NTPQ>;
-    close NTPQ;
+    my @output = get_ntpq($host);
 
     my $insync = 0;
     my $numdiscards = 0;
@@ -181,8 +258,6 @@ sub ntpmon_collect_host ($)
     my $reachability = 0;
 
     for (@output) {
-	chomp;
-
 	# skip headers
 	next if /remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+delay\s+offset\s+jitter/;
 	next if /^=+$/;
@@ -275,10 +350,10 @@ sub ntpmon_collect (@)
 
 sub dump_rrd (@)
 {
-    my ($start, $step, $names, $data) = @_;
+    my ($file, $start, $step, $names, $data) = @_;
 
     # cut & paste from the RRDs perldoc page
-    print "File:	$_[0]\n";
+    print "Host:	$file\n";
     print "Start:       ", scalar localtime($start), " ($start)\n";
     print "Resolution:  $step seconds\n";
     print "DS names:    ", join (", ", @$names)."\n";
@@ -312,16 +387,15 @@ sub ntpmon_dump (@)
 {
     for my $host (@_) {
 	my $minutes = 5;
-	my $interval = 60;
 	my $time = time();
-	my $end = int($time / $interval) * $interval;
-	#my $strt = $end - $interval;
+	my $end = int($time / $baseinterval) * $baseinterval;
+	#my $strt = $end - $baseinterval;
 	#print "time = $time, strt = $strt, end = $end\n";
-	print "time = $time, end = $end\n" if $debug;
+	#print "time = $time, end = $end\n" if $debug;
 
 	#dump_rrd( "$host$ext", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
-	dump_rrd( fetch_rrd( 1, "$host$ext", "AVERAGE", "-r", $interval, "-s", "$end-${minutes}min",
-	    "-e", "$end" ) );
+	dump_rrd( $host, fetch_rrd( 1, "$host$ext", "AVERAGE", "-r", $baseinterval,
+	    "-s", "$end-${minutes}min", "-e", "$end" ) );
     }
 }
 
@@ -329,48 +403,12 @@ sub ntpmon_dump (@)
 # HTML summary page
 ##############################################################################
 
-my @headings = (
-    "Host",
-    "Last poll",
-    "Last sync",
-    "Configured peers",
-    "Working peers",
-    "Average working peer offset",
-    "Average non-working peer offset",
-    "Average peer reachability",
-);
-my @statnames = (
-    "",
-    "lastpoll",
-    "lastsync",
-    "numpeers",
-    "numsurvivors",
-    "offsetsurvivors",
-    "offsetdiscards",
-    "reachability",
-);
-my %statformats = (
-    lastpoll		=> "TIME",
-    lastsync		=> "TIME",
-    numpeers		=> "%d",
-    numsurvivors	=> "%d",
-    offsetsurvivors	=> "%5.3f",
-    offsetdiscards	=> "%5.3f",
-    reachability	=> "%5.3f",
-);
-
-sub headings (@)
+sub host_headings (@)
 {
     my $ret = "";
-    for my $i (0 .. $#headings) {
-	if ($statnames[$i] eq "") {
-	    $ret .= th( { -class => "header" }, $headings[$i] );
-	}
-	else {
-	    $ret .= th( { -class => "header" },
-		a( {href => "help.html\#$statnames[$i]"}, $headings[$i] ) );
-	}
-	$ret .= "\n";
+    for my $stat (@statnames) {
+	$ret .= th( { -class => "header" },
+		 a( {href => "help.html\#$stat"}, $statheadings{$stat} ) ) . "\n";
     }
     return $ret;
 }
@@ -394,7 +432,7 @@ sub get_last_insync ($$)
     while ($i > 0) {
 	$insync = $data->[$i]->[0] if exists $data->[$i]->[0];
 	if ($insync) {
-	    print "$file insync at " . localtime($time) . "\n" if $debug;
+	    #print "$file insync at " . localtime($time) . "\n" if $debug;
 	    return $time;
 	}
 	$time -= $step;
@@ -438,17 +476,6 @@ sub analyse_stats ($)
     my $worst = $good;	# severity of the worst stat
     my $results;
 
-    my %rules = (
-	lastsync	=> [ $now-$maxinterval, $now-$maxinterval/2, [ $bad, $good, $marginal ] ],
-	numpeers	=> [   2,    3, [ $bad, $good, $marginal ] ],
-	numsurvivors	=> [   2,    3, [ $bad, $good, $marginal ] ],
-	offsetdiscards	=> [ 500, 5000, [ $good, $good, $good ] ],
-	offsetsurvivors	=> [  75,  500, [ $good, $bad, $marginal ] ],
-	reachability	=> [   5,    7, [ $bad, $good, $marginal ] ],
-    );
-
-    my %sevcodes = ( 0 => "good", 1 => "marginal", 2 => "bad" );
-
     # loop through selected stats and decide which is the worst
     for my $stat (keys %rules) {
 	my $val = $stats->{$stat};
@@ -491,21 +518,15 @@ sub get_host_stats ($)
     return ($stats, $results);
 }
 
-# TODO: return all the stats for the given host in HTML td elements with appropriate links
+# return all the stats for the given host in HTML td elements with appropriate links
 sub host_stats ($$$)
 {
     my ($host, $stats, $results) = @_;
     my $ret = "";
     for my $statname (@statnames) {
-	next if $statname eq "";
+	next if $statname eq "HOST";
 	#print "$statname = $stats->{$statname} -> ";
-	my $statstr;
-	if ($statformats{$statname} eq "TIME") {
-	    $statstr = localtime($stats->{$statname});
-	}
-	else {
-	    $statstr = sprintf( $statformats{$statname}, $stats->{$statname} );
-	}
+	my $statstr = format_stat($statname, $stats->{$statname});
 	#print "$statstr\n";
 	my %html_attrs;
 	if (exists $results->{$statname}) {
@@ -520,11 +541,14 @@ sub host_stats ($$$)
 sub host_link ($$)
 {
     my ($host, $results) = @_;
-    my $extra = "";
+    my $params = "host=$host";
     if (exists $results->{"worst"}) {
-	$extra = "&metric=$results->{'worst'}";
+	$params .= "#" . $results->{'worst'};
     }
-    return a({href => "hostdetail?host=$host$extra"}, $host);
+    #my $self = url(-relative => 1);
+    my $self = self_url();
+    #print "params = $params\n";
+    return a({href => "$self?$params"}, $host);
 }
 
 # return an HTML Tr containing all the data for a given host
@@ -544,21 +568,118 @@ sub host_rows (@)
     return map( host_tr($_), @_ );
 }
 
-sub ntpmon_summary ()
+sub cgi_env_dump ($)
 {
-    my $title = "NTP status summary";
+    my $ret = "command = $_[0]";
+    for my $arg (@ARGV) {
+	$ret .= "$arg<br/>\n";
+    }
+    for (sort keys %ENV) {
+	$ret .= "$_ => $ENV{$_}" . "<br/>\n";
+    }
+    return $ret;
+}
 
+sub html_body ($@)
+{
+    my $title = shift;
     print
 	header(),
 	start_html(
 	    -title	=> $title,
-	    -style	=> { src => "style.css" },
+	    -style	=> { src => "$baseurl/style.css" },
 	    -head	=> meta({ -http_equiv => "refresh", content => "60" }),
 	),
-	h3( $title ), "\n",
-	p( "Current time: " . localtime($now) ), "\n",
-	table( Tr( headings() ), host_rows( all_hosts() ) ),
-	end_html();
+	h3( $title ), "\n", @_;
+    print end_html();
+}
+
+sub current_time ()
+{
+    return p( "Current time: " . localtime($now) . "\n" );
+}
+
+sub ntpmon_summary ()
+{
+    html_body( "NTP status summary", current_time(),
+	table( Tr( host_headings() ), host_rows( all_hosts() ) ) );
+}
+
+sub ntpq_output ($)
+{
+    my $host = shift;
+    my @output = get_ntpq($host);
+    return h3("Current '$ntpq_command' output"),
+	textarea( -name => "ntpq_output", -default => join("\n", @output),
+	-rows => $#output + 1, -columns => 80 );
+}
+
+sub metric_headings ($)
+{
+    my $names = shift;
+    my $ret = "";
+    for my $metric (@$names) {
+	$ret .= th( { -class => "header" },
+	    exists $statheadings{$metric} ? $statheadings{$metric} : $metric ) . "\n";
+    }
+    return $ret;
+}
+
+sub metric_row (@)
+{
+    return Tr();
+}
+
+sub metric_rows ($$$)
+{
+    my ($end, $max, $data) = @_;
+
+    my $num = 0;
+    my $ret = "";
+
+    my $i = $#$data;
+    while ($i > -1) {
+	$ret .= metric_row( $data->[$i] );
+	last if ++$num > $max;
+	--$i;
+    }
+
+    return $ret;
+}
+
+sub last_polls ($$)
+{
+    my $host = shift;
+    my $num = shift;
+    # we use the default interval and time here just in case there's some zero data
+    my ($start, $step, $names, $data) = fetch_rrd( 1, "$host$ext", "LAST", "-r", $baseinterval);
+    my $end = $start + $step * $#$names;
+    return h3( "Last $num polls" ),
+	table( Tr( metric_headings($names) ), metric_rows($end, $num, $data) );
+}
+
+sub graphs_rrd ($@)
+{
+}
+
+sub ntpmon_host ($)
+{
+    my $host = untaint(shift);
+    html_body( "NTP status summary for $host", current_time(),
+	ntpq_output($host),
+	last_polls($host, 5),
+	graphs_rrd($host, @statnames) );
+}
+
+sub ntpmon_cgi ()
+{
+    my $host = param("host");
+    if (defined $host) {
+	ntpmon_host($host);
+    }
+    else {
+	ntpmon_summary();
+    }
 }
 
 ##############################################################################
@@ -569,25 +690,33 @@ sub ntpmon_summary ()
 my $command = shift;
 
 # call appropriate function for argument
-if (! defined $command) {
-    ntpmon_summary;
+if (! defined $command  or $command eq "") {
+    if (-t 0) {
+	usage();
+    }
+    else {
+	ntpmon_cgi();
+    }
 }
 elsif ($command eq "collect") {
     if ($#ARGV < 0) {
 	@ARGV = all_hosts();
     }
-    ntpmon_collect @ARGV;
+    ntpmon_collect(@ARGV);
 }
 elsif ($command eq "dump") {
     if ($#ARGV < 0) {
 	@ARGV = all_hosts();
     }
-    ntpmon_dump @ARGV;
+    ntpmon_dump(@ARGV);
+}
+elsif ($command eq "host") {
+    ntpmon_host($ARGV[0]);
 }
 elsif ($command eq "summary") {
-    ntpmon_summary;
+    ntpmon_cgi();
 }
 else {
-    ntpmon_summary;
+    usage();
 }
 
