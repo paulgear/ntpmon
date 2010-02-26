@@ -684,7 +684,7 @@ sub create_graphs ($$)
 {
     my ($host, $metric) = @_;
     my @list;
-    for my $scope ("day", "week", "month", "year") {
+    for my $scope ("day", "week", "month") {	# TODO: add year
 	my $basename = "$host-$metric-$scope.png";
 	RRDs::graph("$libdir/$basename",
 	    "--start=e-1$scope",
