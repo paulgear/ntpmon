@@ -22,7 +22,7 @@
 
 use strict;
 use CGI qw/:standard start_ul/;
-use Data::Dumper;
+#use Data::Dumper;
 use File::Basename;
 use Getopt::Long;
 use RRDs;
@@ -57,10 +57,13 @@ my @statnames = (
     "reachability",
 );
 my %statformats = (
+    TIME		=> "TIME",
     lastpoll		=> "TIME",
     lastsync		=> "TIME",
-    numpeers		=> "%d",
-    numsurvivors	=> "%d",
+    numpeers		=> "%3.1f",
+    numsurvivors	=> "%3.1f",
+    numdiscards		=> "%3.1f",
+    numunknown		=> "%3.1f",
     offsetsurvivors	=> "%5.3f",
     offsetdiscards	=> "%5.3f",
     reachability	=> "%5.3f",
@@ -78,14 +81,13 @@ my %statheadings = (
     reachability	=> "Average peer reachability",
     insync		=> "In sync?",
     HOST		=> "Host",
-    TIME		=> "Time",
 );
 my %rules = (
     lastsync		=> [ $now-$maxinterval, $now-$maxinterval/2, [ $bad, $good, $marginal ] ],
     numpeers		=> [   2,    3, [ $bad, $good, $marginal ] ],
     numsurvivors	=> [   2,    3, [ $bad, $good, $marginal ] ],
     offsetdiscards	=> [ 500, 5000, [ $good, $good, $good ] ],
-    offsetsurvivors	=> [  75,  500, [ $good, $bad, $marginal ] ],
+    offsetsurvivors	=> [  50,  250, [ $good, $bad, $marginal ] ],
     reachability	=> [   5,    7, [ $bad, $good, $marginal ] ],
 );
 my %sevcodes = (
@@ -120,10 +122,6 @@ my @rrd_definition = (
     "RRA:MIN:$xff:1:1440",
     "RRA:MAX:$xff:1:1440",
     "RRA:AVERAGE:$xff:1:1440",
-    "RRA:LAST:$xff:5:288",
-    "RRA:MIN:$xff:5:288",
-    "RRA:MAX:$xff:5:288",
-    "RRA:AVERAGE:$xff:5:288",
     "RRA:LAST:$xff:60:168",
     "RRA:MIN:$xff:60:168",
     "RRA:MAX:$xff:60:168",
@@ -132,8 +130,6 @@ my @rrd_definition = (
     "RRA:MIN:$xff:1440:365",
     "RRA:MAX:$xff:1440:365",
     "RRA:AVERAGE:$xff:1440:365",
-);
-my @graph_definition = (
 );
 
 # create directories if needed
@@ -233,6 +229,13 @@ sub format_stat ($$)
 	$str = sprintf($statformats{$name}, $value);
     }
 
+    return $str;
+}
+
+sub nbsp ($)
+{
+    my $str = $_[0];
+    $str =~ s/ +/&nbsp;/g;
     return $str;
 }
 
@@ -625,50 +628,92 @@ sub metric_headings ($)
     return $ret;
 }
 
-sub metric_row (@)
+sub metric_row ($$)
 {
-    return Tr();
+    my ($names, $data) = @_;
+    my $ret = "";
+    for my $i (0 .. $#$names) {
+	$ret .= td(format_stat($names->[$i], exists $data->[$i] ? $data->[$i] : 0));
+    }
+    return $ret;
 }
 
-sub metric_rows ($$$)
+sub metric_rows ($$$@)
 {
-    my ($end, $max, $data) = @_;
+    my ($host, $num, $lastpoll, $start, $step, $names, $data) = @_;
 
-    my $num = 0;
     my $ret = "";
 
     my $i = $#$data;
-    while ($i > -1) {
-	$ret .= metric_row( $data->[$i] );
-	last if ++$num > $max;
+    while ($i > 0) {
+	my $time = $start + $step * $i;
+	#printf STDERR "i=$i time=$time\n";
+	if ($time > $now) {
+	    --$i;
+	    next;
+	}
+	my $row = td( nbsp( format_stat("TIME", $time) ) );
+	$row .= metric_row( $names, $data->[$i] );
+	last if $num <= 0;
+	--$num;
 	--$i;
+	$ret .= Tr($row, "\n");
     }
 
     return $ret;
 }
 
+my @graph_metrics = ();
+
 sub last_polls ($$)
 {
     my $host = shift;
     my $num = shift;
-    # we use the default interval and time here just in case there's some zero data
-    my ($start, $step, $names, $data) = fetch_rrd( 1, "$host$ext", "LAST", "-r", $baseinterval);
-    my $end = $start + $step * $#$names;
+
+    my $file = "$host$ext";
+    my $lastpoll = RRDs::last($file);
+    my @data = fetch_rrd(0, $file, "LAST", "-s", $lastpoll - $maxinterval, "-e", $lastpoll);
+    @graph_metrics = @{$data[2]};
+
     return h3( "Last $num polls" ),
-	table( Tr( metric_headings($names) ), metric_rows($end, $num, $data) );
+	table( Tr( th( { -class => "header" }, "Time" ), metric_headings($data[2]) ),
+	    metric_rows($host, $num, $lastpoll, @data) );
 }
 
-sub graphs_rrd ($@)
+sub create_graphs ($$)
 {
+    my ($host, $metric) = @_;
+    my @list;
+    for my $scope ("day", "week", "month", "year") {
+	my $basename = "$host-$metric-$scope.png";
+	RRDs::graph("$libdir/$basename",
+	    "--start=e-1$scope",
+	    "DEF:$metric=$host$ext:$metric:LAST",
+	    "LINE2:$metric#000000",
+	    );
+	push @list, $basename;
+    }
+    return @list;
+}
+
+sub graphs_rrd ($)
+{
+    my $host = shift;
+    my $ret = "";
+    for my $metric (sort @graph_metrics) {
+	$ret .= h4("$statheadings{$metric}") . "\n";
+	for my $graph (create_graphs($host, $metric)) {
+	    $ret .= img({src=>"/ntpmon/lib/$graph"}) . "\n";
+	}
+    }
+    return $ret;
 }
 
 sub ntpmon_host ($)
 {
     my $host = untaint(shift);
     html_body( "NTP status summary for $host", current_time(),
-	ntpq_output($host),
-	last_polls($host, 5),
-	graphs_rrd($host, @statnames) );
+	ntpq_output($host), last_polls($host, 5), graphs_rrd($host) );
 }
 
 sub ntpmon_cgi ()
@@ -690,7 +735,7 @@ sub ntpmon_cgi ()
 my $command = shift;
 
 # call appropriate function for argument
-if (! defined $command  or $command eq "") {
+if (! defined $command  or  $command eq "") {
     if (-t 0) {
 	usage();
     }
