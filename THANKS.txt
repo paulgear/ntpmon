@@ -1,0 +1,9 @@
+Special thanks to:
+
+- Tobias Oetiker, for his great RRDtool <http://oss.oetiker.ch/rrdtool/>.
+
+And as usual:
+- Neal Morse <http://www.nealmorse.com/>, for producing amazing progressive
+  rock which inspires and soothes while i code!
+- The Linux community for producing an operating system that works so well for
+  me, especially the Debian and Ubuntu teams.

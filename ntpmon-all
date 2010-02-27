@@ -3,7 +3,7 @@
 # Author:       Paul Gear
 # Copyright:	(c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
 # License:	GPLv3 <http://www.gnu.org/licenses/gpl.html>
-# Description:  Run get-ntp for every host RRD
+# Description:  Run ntpmon in parallel for every host RRD
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -25,7 +25,9 @@ if [ "$#" -gt 0 ]; then
 else
     CMD="dump"
 fi
-for i in lib/*.rrd; do
+RRD_DIR=/var/lib/ntpmon
+for i in $RRD_DIR/*.rrd; do
     host=`basename $i .rrd`
     ./ntpmon $CMD $host "$@" &
+    sleep 0.1
 done

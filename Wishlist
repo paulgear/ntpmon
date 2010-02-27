@@ -1,0 +1,45 @@
+Here's my current wishlist for those interested in the development side:
+
+- Add GUI ASAP:
+    - Status display
+    - Controls: pause, cancel, change speed
+    - First run assistant
+
+- Remove dependency on hal-device command line utility.  I assume there is some
+  Gnome2::VFS call that will allow this, but i can't find it in the
+  documentation.
+
+- Remove dependency on sqlite3 and use only DBD::SQLite functions.  This will
+  require selecting the commands from the sqlite_master table, and selecting
+  all data from the table in SQL insert format.
+
+- Add support for gphoto2 so that PTP cameras and the like can be supported.
+  The main blocker for this is that there are no libgphoto2 perl bindings, and
+  the output that the gphoto2 command line tool produces is rather obtuse.
+
+- Allow selected EXIF info to be used in the file path within the library, so
+  that things like a separate folder for each camera can be implemented.
+
+- Add features:
+    - Rescan library: remove database entries for missing files, re-check
+      md5sums.  This needs a warning that it could result in recopying of
+      files.  Or perhaps the obsolete files could be moved to another table, or
+      marked as deleted at a particular time.
+    - Prune library: find and remove duplicate files in library based on
+      md5sums.  Need to provide a tick list defaulting everything to off.  GUI
+      should recommend a library rescan to be done before this.
+    - Reorganise library: re-file images in appropriate directories based on
+      the current settings file paths within the library.
+    - Consolidate libraries: re-file images from one library to another - may
+      be implemented as a media-to-library copy with a library location as the
+      source and a delete time of zero.
+    - Allow sharing of library data (to facilitate network use)?
+	- store SQLite DB in library?
+	- make path in library relative to library directory?
+
+- If invoked with no parameters, offer a menu of choices, possibly including:
+    - re-run startup assistant with existing values set as defaults
+    - add/remove library locations (optionally including pruning or scanning
+      the database)
+    - all of the above library maintenance features
+
