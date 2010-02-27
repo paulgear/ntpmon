@@ -15,6 +15,9 @@ the daemon was running or that the NTP port was reachable.  These are useful
 things, but they don't tell you what you really need to know about your NTP
 servers.  Hence, i created NTPmon.
 
+NTPmon is Free Software, released under the GNU General Public License, version
+3, or (at your option) any later version.
+
 
 Features
 --------

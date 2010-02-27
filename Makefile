@@ -1,3 +1,5 @@
+# This file is part of ntpmon 0.1 - see COPYING.txt for license.
+
 ROOT=root
 GROUP=root
 WWW=www-data
