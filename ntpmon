@@ -32,7 +32,9 @@ use Scalar::Util qw(tainted);
 my $debug;
 my $res;
 my $libdir;
-my $baseurl = "/ntpmon";
+my $imagedir;
+my $baseurl;
+my $imageurl;
 
 # constants
 my $xff = "0.5";
@@ -46,7 +48,7 @@ my $marginal = 1;
 my $bad = 2;
 my $ntpq_command = "ntpq -pn";
 
-my @statnames = (
+my @summary_statnames = (
     "HOST",
     "lastpoll",
     "lastsync",
@@ -65,6 +67,7 @@ my %statformats = (
     numdiscards		=> "%4.2f",
     numunknown		=> "%4.2f",
     offsetsurvivors	=> "%5.3f",
+    offsetsyncpeer	=> "%5.3f",
     offsetdiscards	=> "%5.3f",
     reachability	=> "%5.3f",
     insync		=> "%d",
@@ -77,6 +80,7 @@ my %statheadings = (
     numsurvivors	=> "Working peers",
     numunknown		=> "Unknown peers<br/><small>(if non-zero, please <a href=\"mailto:ntpmon\@libertsys.com.au?subject=ntpmon unknown peer bug report&body=Please supply ntpq output from the host in question\">report a bug</a>)</small>",
     offsetsurvivors	=> "Average working peer offset",
+    offsetsyncpeer	=> "Sync peer offset",
     offsetdiscards	=> "Average non-working peer offset",
     reachability	=> "Average peer reachability",
     insync		=> "In sync?",
@@ -88,6 +92,7 @@ my %rules = (
     numsurvivors	=> [   2,    3, [ $bad, $good, $marginal ] ],
     offsetdiscards	=> [ 500, 5000, [ $good, $good, $good ] ],
     offsetsurvivors	=> [  50,  250, [ $good, $bad, $marginal ] ],
+    offsetsyncpeer	=> [  50,  250, [ $good, $bad, $marginal ] ],
     reachability	=> [   5,    7, [ $bad, $good, $marginal ] ],
 );
 my %sevcodes = (
@@ -107,6 +112,9 @@ my $result = GetOptions(
 $res = 60			unless defined $res;
 $debug = (-t 0 ? 1 : 0)		unless defined $debug;
 $libdir = "/var/lib/ntpmon"	unless defined $libdir;
+$imagedir = "$libdir/images"	unless defined $imagedir;
+$baseurl = "/ntpmon"		unless defined $baseurl;
+$imageurl = "$baseurl/images"	unless defined $imageurl;
 
 my $heartbeat = $res * 2;
 my @rrd_definition = (
@@ -117,6 +125,7 @@ my @rrd_definition = (
     "DS:numunknown:GAUGE:$heartbeat:0:U",
     "DS:offsetdiscards:GAUGE:$heartbeat:0:U",
     "DS:offsetsurvivors:GAUGE:$heartbeat:0:U",
+    "DS:offsetsyncpeer:GAUGE:$heartbeat:0:U",
     "DS:reachability:GAUGE:$heartbeat:0:8",
     "RRA:LAST:$xff:1:1440",
     "RRA:MIN:$xff:1:1440",
@@ -155,6 +164,7 @@ Commands:
 Global options:
 	--debug			Display debugging information
 	--libdir		Set directory for RRD storage
+	--imagedir		Set directory for RRD image storage
 	--resolution		Set resolution of RRD data (default 1 minute)
 ";
     exit 1;
@@ -163,7 +173,7 @@ Global options:
 sub all_hosts ()
 {
     my @list;
-    for my $f (sort glob "*$ext") {
+    for my $f (sort glob "$libdir/*$ext") {
 	my $host = basename($f, $ext);
 	#print STDERR "Found $host\n" if $debug;
 	push @list, $host;
@@ -214,6 +224,13 @@ sub get_ntpq ($)
     return @output;
 }
 
+sub nbsp ($)
+{
+    my $str = $_[0];
+    $str =~ s/ +/&nbsp;/g;
+    return $str;
+}
+
 sub format_stat ($$)
 {
     my ($name, $value) = @_;
@@ -223,19 +240,12 @@ sub format_stat ($$)
     return $value unless exists $statformats{$name};
 
     if ($statformats{$name} eq "TIME") {
-	$str = localtime($value);
+	$str = nbsp(scalar localtime($value));
     }
     else {
 	$str = sprintf($statformats{$name}, $value);
     }
 
-    return $str;
-}
-
-sub nbsp ($)
-{
-    my $str = $_[0];
-    $str =~ s/ +/&nbsp;/g;
     return $str;
 }
 
@@ -258,6 +268,7 @@ sub ntpmon_collect_host ($)
     my $numsurvivors = 0;
     my $offsetdiscards = 0;
     my $offsetsurvivors = 0;
+    my $offsetsyncpeer = 0;
     my $reachability = 0;
 
     for (@output) {
@@ -291,6 +302,7 @@ sub ntpmon_collect_host ($)
 	    ++$numsurvivors;
 	    ++$numpeers;
 	    $offsetsurvivors += abs($offset);
+	    $offsetsyncpeer += abs($offset);
 	} elsif ($tally =~ /[+#]/) {
 	    # valid peer
 	    ++$numsurvivors;
@@ -330,13 +342,19 @@ sub ntpmon_collect_host ($)
     my $avgoffsetdiscards = $numdiscards > 0 ? $offsetdiscards / $numdiscards : 0;
     my $avgreachability = $numpeers > 0 ? $reachability / $numpeers : 0;
 
+    my $err;
+
     # create file if necessary
-    if (! -e "$host$ext") {
+    if (! -e "$libdir/$host$ext") {
 	RRDs::create( "$host$ext", "--step", "$res", @rrd_definition );
+	$err = RRDs::error;
+	die "Cannot create RRD $libdir/$host$ext: $err" if $err;
     }
 
     # add stats
-    RRDs::update( "$host$ext", "--template=insync:numdiscards:numpeers:numsurvivors:numunknown:offsetdiscards:offsetsurvivors:reachability", "N:$insync:$numdiscards:$numpeers:$numsurvivors:$numunknown:$avgoffsetdiscards:$avgoffsetsurvivors:$avgreachability" );
+    RRDs::update( "$libdir/$host$ext", "--template=insync:numdiscards:numpeers:numsurvivors:numunknown:offsetdiscards:offsetsurvivors:offsetsyncpeer:reachability", "N:$insync:$numdiscards:$numpeers:$numsurvivors:$numunknown:$avgoffsetdiscards:$avgoffsetsurvivors:$offsetsyncpeer:$avgreachability" );
+    $err = RRDs::error;
+    die "Cannot update RRD $libdir/$host$ext: $err" if $err;
 
 }
 
@@ -397,7 +415,7 @@ sub ntpmon_dump (@)
 	#print "time = $time, end = $end\n" if $debug;
 
 	#dump_rrd( "$host$ext", "LAST", "-s", "$end-${res}sec", "-e", "$end" );
-	dump_rrd( $host, fetch_rrd( 1, "$host$ext", "AVERAGE", "-r", $baseinterval,
+	dump_rrd( $host, fetch_rrd( 1, "$host$ext", "LAST", "-r", $baseinterval,
 	    "-s", "$end-${minutes}min", "-e", "$end" ) );
     }
 }
@@ -409,7 +427,7 @@ sub ntpmon_dump (@)
 sub host_headings (@)
 {
     my $ret = "";
-    for my $stat (@statnames) {
+    for my $stat (@summary_statnames) {
 	$ret .= th( { -class => "header" },
 		 a( {href => "help.html\#$stat"}, $statheadings{$stat} ) ) . "\n";
     }
@@ -526,7 +544,7 @@ sub host_stats ($$$)
 {
     my ($host, $stats, $results) = @_;
     my $ret = "";
-    for my $statname (@statnames) {
+    for my $statname (@summary_statnames) {
 	next if $statname eq "HOST";
 	#print "$statname = $stats->{$statname} -> ";
 	my $statstr = format_stat($statname, $stats->{$statname});
@@ -652,7 +670,7 @@ sub metric_rows ($$$@)
 	    --$i;
 	    next;
 	}
-	my $row = td( nbsp( format_stat("TIME", $time) ) );
+	my $row = td( format_stat("TIME", $time) );
 	$row .= metric_row( $names, $data->[$i] );
 	last if $num <= 0;
 	--$num;
@@ -687,9 +705,9 @@ sub create_graphs ($$$@)
 {
     my ($host, $name, $title, @graphdef) = @_;
     my @list;
-    for my $scope ("day", "week", "month") {	# TODO: add year
+    for my $scope ("hour", "day", "week") {	#, "month", "year"
 	my $basename = "$host-$name-$scope.png";
-	RRDs::graph("$libdir/$basename",
+	RRDs::graph("$imagedir/$basename",
 	    "--start=e-1$scope",
 	    "--title=$title - last $scope",
 	    @global_graphdef,
@@ -699,7 +717,7 @@ sub create_graphs ($$$@)
 	    push @list, span( {-class=>"error" }, "RRDs::error $err" );
 	}
 	else {
-	    push @list, img( {-src=>"/ntpmon/lib/$basename" } );
+	    push @list, img( {-src=>"$imageurl/$basename" } );
 	}
     }
     return @list;
@@ -714,10 +732,10 @@ sub graph_sync ($)
 	"LINE1:insync#000000:Synchronization status (1 = sync, 0 = no sync)",
     );
     return
-	a({-name => "lastsync"}) .
-	a({-name => "insync"}) .
-	h3("Synchronization status") .
-	join(" ", create_graphs($host, "sync", "$host synchronization status", @graphdef));
+	a({-name => "lastsync"}) . "\n" .
+	a({-name => "insync"}) . "\n" .
+	h3("Synchronization status") . "\n" .
+	join("\n", create_graphs($host, "sync", "$host synchronization status", @graphdef));
 }
 
 sub graph_peers ($)
@@ -732,36 +750,42 @@ sub graph_peers ($)
 	"AREA:survivors#00FF00:Working peers",
 	"STACK:discards#FF0000:Non-working peers",
 	"LINE2:peers#000000:Configured peers",
-	"HRULE:3#AAAAAA:Minimum desired working peers",
+	"HRULE:3#AAAAAA:Minimum viable working peers",
 	"AREA:unknown#0000FF:Unknown peers (if non-zero, please report a bug)",
     );
     return
-	a({-name => "numpeers"}) .
-	a({-name => "numsurvivors"}) .
-	a({-name => "numdiscards"}) .
-	a({-name => "numunknown"}) .
-	h3("Peer counts") .
-	join(" ", create_graphs($host, "peers", "$host peer counts", @graphdef));
+	a({-name => "numpeers"}) . "\n" .
+	a({-name => "numsurvivors"}) . "\n" .
+	a({-name => "numdiscards"}) . "\n" .
+	a({-name => "numunknown"}) . "\n" .
+	h3("Peer counts") . "\n" .
+	join("\n", create_graphs($host, "peers", "$host peer counts", @graphdef));
 }
 
 sub graph_offsets ($)
 {
     my $host = shift;
     my @graphdef = (
-	"--upper-limit=1",
-	"--vertical-label=Time (milliseconds)",
+	"--upper-limit=0.001",
+	"--vertical-label=Time (seconds)",
 	"DEF:survivors=$host$ext:offsetsurvivors:LAST",
+	"DEF:syncpeer=$host$ext:offsetsyncpeer:LAST",
 	"DEF:discards=$host$ext:offsetdiscards:LAST",
-	"LINE2:survivors#00FF00:Offset of working peers",
-	"LINE1:discards#FF0000:Offset of non-working peers",
-	"HRULE:50#AAAAAA:Maximum preferred offset",
-	"HRULE:250#555555:Maximum viable offset",
+	"CDEF:survivorsecs=survivors,1000,/",
+	"CDEF:syncpeersecs=syncpeer,1000,/",
+	"CDEF:discardsecs=discards,1000,/",
+	"LINE3:survivorsecs#00FF00:Offset of working peers",
+	"LINE2:discardsecs#FF0000:Offset of non-working peers",
+	"LINE1:syncpeersecs#0000FF:Offset of sync peer",
+	"HRULE:0.05#AAAAAA:Maximum preferred offset",
+	"HRULE:0.25#555555:Maximum viable offset",
     );
     return
-	a({-name => "offsetsurvivors"}) .
-	a({-name => "offsetdiscards"}) .
- 	h3("Time offset") .
-	join(" ", create_graphs($host, "offsets", "$host time offset", @graphdef));
+	a({-name => "offsetsurvivors"}) . "\n" .
+	a({-name => "offsetsyncpeer"}) . "\n" .
+	a({-name => "offsetdiscards"}) . "\n" .
+ 	h3("Time offset") . "\n" .
+	join("\n", create_graphs($host, "offsets", "$host time offset", @graphdef));
 }
 
 sub graph_reachability ($)
@@ -775,8 +799,10 @@ sub graph_reachability ($)
 	"HRULE:7#AAAAAA:Minimum preferred reachability",
 	"HRULE:5#555555:Minimum viable reachability",
     );
-    return h3("Peer reachability") .
-	join(" ", create_graphs($host, "reachability", "$host peer reachability", @graphdef));
+    return
+	a({-name => "reachability"}) . "\n" .
+	h3("Peer reachability") . "\n" .
+	join("\n", create_graphs($host, "reachability", "$host peer reachability", @graphdef));
 }
 
 sub graphs_rrd ($)
