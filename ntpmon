@@ -60,10 +60,10 @@ my %statformats = (
     TIME		=> "TIME",
     lastpoll		=> "TIME",
     lastsync		=> "TIME",
-    numpeers		=> "%3.1f",
-    numsurvivors	=> "%3.1f",
-    numdiscards		=> "%3.1f",
-    numunknown		=> "%3.1f",
+    numpeers		=> "%4.2f",
+    numsurvivors	=> "%4.2f",
+    numdiscards		=> "%4.2f",
+    numunknown		=> "%4.2f",
     offsetsurvivors	=> "%5.3f",
     offsetdiscards	=> "%5.3f",
     reachability	=> "%5.3f",
@@ -663,8 +663,6 @@ sub metric_rows ($$$@)
     return $ret;
 }
 
-my @graph_metrics = ();
-
 sub last_polls ($$)
 {
     my $host = shift;
@@ -673,39 +671,122 @@ sub last_polls ($$)
     my $file = "$host$ext";
     my $lastpoll = RRDs::last($file);
     my @data = fetch_rrd(0, $file, "LAST", "-s", $lastpoll - $maxinterval, "-e", $lastpoll);
-    @graph_metrics = @{$data[2]};
 
     return h3( "Last $num polls" ),
 	table( Tr( th( { -class => "header" }, "Time" ), metric_headings($data[2]) ),
 	    metric_rows($host, $num, $lastpoll, @data) );
 }
 
-sub create_graphs ($$)
+my @global_graphdef = (
+    "--lower-limit=0",
+    #"--lazy",
+    #"--watermark=ntpmon: Copyright (c) 2010 Liberty Systems & Software",
+);
+
+sub create_graphs ($$$@)
 {
-    my ($host, $metric) = @_;
+    my ($host, $name, $title, @graphdef) = @_;
     my @list;
     for my $scope ("day", "week", "month") {	# TODO: add year
-	my $basename = "$host-$metric-$scope.png";
+	my $basename = "$host-$name-$scope.png";
 	RRDs::graph("$libdir/$basename",
 	    "--start=e-1$scope",
-	    "DEF:$metric=$host$ext:$metric:LAST",
-	    "LINE2:$metric#000000",
-	    );
-	push @list, $basename;
+	    "--title=$title - last $scope",
+	    @global_graphdef,
+	    @graphdef);
+	my $err = RRDs::error;
+	if ($err) {
+	    push @list, span( {-class=>"error" }, "RRDs::error $err" );
+	}
+	else {
+	    push @list, img( {-src=>"/ntpmon/lib/$basename" } );
+	}
     }
     return @list;
+}
+
+sub graph_sync ($)
+{
+    my $host = shift;
+    my @graphdef = (
+	"--alt-autoscale-max",
+	"DEF:insync=$host$ext:insync:LAST",
+	"LINE1:insync#000000:Synchronization status (1 = sync, 0 = no sync)",
+    );
+    return
+	a({-name => "lastsync"}) .
+	a({-name => "insync"}) .
+	h3("Synchronization status") .
+	join(" ", create_graphs($host, "sync", "$host synchronization status", @graphdef));
+}
+
+sub graph_peers ($)
+{
+    my $host = shift;
+    my @graphdef = (
+	"--alt-autoscale-max",
+	"DEF:peers=$host$ext:numpeers:LAST",
+	"DEF:survivors=$host$ext:numsurvivors:LAST",
+	"DEF:discards=$host$ext:numdiscards:LAST",
+	"DEF:unknown=$host$ext:numunknown:LAST",
+	"AREA:survivors#00FF00:Working peers",
+	"STACK:discards#FF0000:Non-working peers",
+	"LINE2:peers#000000:Configured peers",
+	"HRULE:3#AAAAAA:Minimum desired working peers",
+	"AREA:unknown#0000FF:Unknown peers (if non-zero, please report a bug)",
+    );
+    return
+	a({-name => "numpeers"}) .
+	a({-name => "numsurvivors"}) .
+	a({-name => "numdiscards"}) .
+	a({-name => "numunknown"}) .
+	h3("Peer counts") .
+	join(" ", create_graphs($host, "peers", "$host peer counts", @graphdef));
+}
+
+sub graph_offsets ($)
+{
+    my $host = shift;
+    my @graphdef = (
+	"--upper-limit=1",
+	"--vertical-label=Time (milliseconds)",
+	"DEF:survivors=$host$ext:offsetsurvivors:LAST",
+	"DEF:discards=$host$ext:offsetdiscards:LAST",
+	"LINE2:survivors#00FF00:Offset of working peers",
+	"LINE1:discards#FF0000:Offset of non-working peers",
+	"HRULE:50#AAAAAA:Maximum preferred offset",
+	"HRULE:250#555555:Maximum viable offset",
+    );
+    return
+	a({-name => "offsetsurvivors"}) .
+	a({-name => "offsetdiscards"}) .
+ 	h3("Time offset") .
+	join(" ", create_graphs($host, "offsets", "$host time offset", @graphdef));
+}
+
+sub graph_reachability ($)
+{
+    my $host = shift;
+    my @graphdef = (
+	"--upper-limit=8",
+	"--vertical-label=Average reachability\n(last 8 polls)",
+	"DEF:reachability=$host$ext:reachability:LAST",
+	"LINE2:reachability#0000FF:Average peer reachability",
+	"HRULE:7#AAAAAA:Minimum preferred reachability",
+	"HRULE:5#555555:Minimum viable reachability",
+    );
+    return h3("Peer reachability") .
+	join(" ", create_graphs($host, "reachability", "$host peer reachability", @graphdef));
 }
 
 sub graphs_rrd ($)
 {
     my $host = shift;
     my $ret = "";
-    for my $metric (sort @graph_metrics) {
-	$ret .= h4("$statheadings{$metric}") . "\n";
-	for my $graph (create_graphs($host, $metric)) {
-	    $ret .= img({src=>"/ntpmon/lib/$graph"}) . "\n";
-	}
-    }
+    $ret .= graph_sync($host);
+    $ret .= graph_peers($host);
+    $ret .= graph_offsets($host);
+    $ret .= graph_reachability($host);
     return $ret;
 }
 
@@ -713,7 +794,7 @@ sub ntpmon_host ($)
 {
     my $host = untaint(shift);
     html_body( "NTP status summary for $host", current_time(),
-	ntpq_output($host), last_polls($host, 5), graphs_rrd($host) );
+	graphs_rrd($host), ntpq_output($host), last_polls($host, 5) );
 }
 
 sub ntpmon_cgi ()
