@@ -193,7 +193,7 @@ sub fetch_rrd (@)
     my $remove_empty_rows = shift;
     my ($start, $step, $names, $data) = RRDs::fetch(@_);
     my $err = RRDs::error();
-    die "ERROR: $err" if $err;
+    warn "ERROR: $err" if $err;
 
     if ($remove_empty_rows) {
 	# remove empty rows from the returned data set
@@ -217,7 +217,7 @@ sub get_ntpq ($)
     $ENV{"PATH"} = "/usr/sbin:/usr/bin:/sbin:/bin";
 
     my $host = shift;
-    open NTPQ, "$ntpq_command $host|" or die "Cannot open pipe for reading ntpq results: $!";
+    open NTPQ, "$ntpq_command $host|" or warn "Cannot open pipe for reading ntpq results: $!";
     my @output = <NTPQ>;
     close NTPQ;
     chomp @output;
@@ -337,24 +337,41 @@ sub ntpmon_collect_host ($)
 	print "|$tally|$peer|$lastpoll|$bits($reach)|$offset|\n" if $debug;
     }
 
-    # calculate averages, ensuring we do not divide by zero
-    my $avgoffsetsurvivors = $numsurvivors > 0 ? $offsetsurvivors / $numsurvivors : 0;
-    my $avgoffsetdiscards = $numdiscards > 0 ? $offsetdiscards / $numdiscards : 0;
-    my $avgreachability = $numpeers > 0 ? $reachability / $numpeers : 0;
-
     my $err;
 
     # create file if necessary
     if (! -e "$libdir/$host$ext") {
 	RRDs::create( "$host$ext", "--step", "$res", @rrd_definition );
 	$err = RRDs::error;
-	die "Cannot create RRD $libdir/$host$ext: $err" if $err;
+	warn "Cannot create RRD $libdir/$host$ext: $err" if $err;
+    }
+
+    my $template = "insync:numdiscards:numpeers:numsurvivors:numunknown";
+    my $data = "$insync:$numdiscards:$numpeers:$numsurvivors:$numunknown";
+
+    # do not add data if we have none
+    if ($numsurvivors > 0) {
+	$template .= ":offsetsurvivors";
+	$data .= ":" . ($offsetsurvivors / $numsurvivors);
+    }
+    if ($numdiscards > 0) {
+	$template .= ":offsetdiscards";
+	$data .= ":" . ($offsetdiscards / $numdiscards);
+    }
+    if ($insync > 0) {
+	$template .= ":offsetsyncpeer";
+	$data .= ":$offsetsyncpeer";
+    }
+    if ($numpeers > 0) {
+	$template .= ":reachability";
+	$data .= ":" . ($reachability / $numpeers);
     }
 
     # add stats
-    RRDs::update( "$libdir/$host$ext", "--template=insync:numdiscards:numpeers:numsurvivors:numunknown:offsetdiscards:offsetsurvivors:offsetsyncpeer:reachability", "N:$insync:$numdiscards:$numpeers:$numsurvivors:$numunknown:$avgoffsetdiscards:$avgoffsetsurvivors:$offsetsyncpeer:$avgreachability" );
+    print STDERR "Adding template=$template N:$data\n";
+    RRDs::update( "$libdir/$host$ext", "--template=$template", "N:$data" );
     $err = RRDs::error;
-    die "Cannot update RRD $libdir/$host$ext: $err" if $err;
+    warn "Cannot update RRD $libdir/$host$ext: $err" if $err;
 
 }
 
@@ -747,18 +764,42 @@ sub graph_peers ($)
 	"DEF:survivors=$host$ext:numsurvivors:LAST",
 	"DEF:discards=$host$ext:numdiscards:LAST",
 	"DEF:unknown=$host$ext:numunknown:LAST",
-	"AREA:survivors#00FF00:Working peers",
-	"STACK:discards#FF0000:Non-working peers",
-	"LINE2:peers#000000:Configured peers",
+	"VDEF:peersmin=peers,MINIMUM",
+	"VDEF:peersavg=peers,AVERAGE",
+	"VDEF:peersmax=peers,MAXIMUM",
+	"VDEF:survivorsmin=survivors,MINIMUM",
+	"VDEF:survivorsavg=survivors,AVERAGE",
+	"VDEF:survivorsmax=survivors,MAXIMUM",
+	"VDEF:discardsmin=discards,MINIMUM",
+	"VDEF:discardsavg=discards,AVERAGE",
+	"VDEF:discardsmax=discards,MAXIMUM",
+	"VDEF:unknownmin=unknown,MINIMUM",
+	"VDEF:unknownavg=unknown,AVERAGE",
+	"VDEF:unknownmax=unknown,MAXIMUM",
+	"AREA:survivors#00FF00:Working peers     ",
+	"GPRINT:survivorsmin:%6.2lf min",
+	"GPRINT:survivorsavg:%6.2lf avg",
+	"GPRINT:survivorsmax:%6.2lf max",
+	"STACK:discards#FF0000:Non-working peers ",
+	"GPRINT:discardsmin:%6.2lf min",
+	"GPRINT:discardsavg:%6.2lf avg",
+	"GPRINT:discardsmax:%6.2lf max",
+	"LINE2:peers#000000:Configured peers  ",
+	"GPRINT:peersmin:%6.2lf min",
+	"GPRINT:peersavg:%6.2lf avg",
+	"GPRINT:peersmax:%6.2lf max",
+	"AREA:unknown#0000FF:Unknown peers     ",
+	"GPRINT:unknownmin:%6.2lf min",
+	"GPRINT:unknownavg:%6.2lf avg",
+	"GPRINT:unknownmax:%6.2lf max",
 	"HRULE:3#AAAAAA:Minimum viable working peers",
-	"AREA:unknown#0000FF:Unknown peers (if non-zero, please report a bug)",
     );
     return
+	h3("Peer counts") . "\n" .
 	a({-name => "numpeers"}) . "\n" .
 	a({-name => "numsurvivors"}) . "\n" .
 	a({-name => "numdiscards"}) . "\n" .
 	a({-name => "numunknown"}) . "\n" .
-	h3("Peer counts") . "\n" .
 	join("\n", create_graphs($host, "peers", "$host peer counts", @graphdef));
 }
 
@@ -766,25 +807,43 @@ sub graph_offsets ($)
 {
     my $host = shift;
     my @graphdef = (
-	"--upper-limit=0.001",
-	"--vertical-label=Time (seconds)",
+	"--upper-limit=1",
+	"--vertical-label=Milliseconds",
 	"DEF:survivors=$host$ext:offsetsurvivors:LAST",
 	"DEF:syncpeer=$host$ext:offsetsyncpeer:LAST",
 	"DEF:discards=$host$ext:offsetdiscards:LAST",
 	"CDEF:survivorsecs=survivors,1000,/",
 	"CDEF:syncpeersecs=syncpeer,1000,/",
 	"CDEF:discardsecs=discards,1000,/",
-	"LINE3:survivorsecs#00FF00:Offset of working peers",
-	"LINE2:discardsecs#FF0000:Offset of non-working peers",
-	"LINE1:syncpeersecs#0000FF:Offset of sync peer",
-	"HRULE:0.05#AAAAAA:Maximum preferred offset",
-	"HRULE:0.25#555555:Maximum viable offset",
+	"VDEF:survivorsmin=survivors,MINIMUM",
+	"VDEF:survivorsavg=survivors,AVERAGE",
+	"VDEF:survivorsmax=survivors,MAXIMUM",
+	"VDEF:syncpeermin=syncpeer,MINIMUM",
+	"VDEF:syncpeeravg=syncpeer,AVERAGE",
+	"VDEF:syncpeermax=syncpeer,MAXIMUM",
+	"VDEF:discardsmin=discards,MINIMUM",
+	"VDEF:discardsavg=discards,AVERAGE",
+	"VDEF:discardsmax=discards,MAXIMUM",
+	"LINE3:survivors#00FF00:Working peers     ",
+	"GPRINT:survivorsmin:%6.2lf min",
+	"GPRINT:survivorsavg:%6.2lf avg",
+	"GPRINT:survivorsmax:%6.2lf max",
+	"LINE2:discards#FF0000:Non-working peers ",
+	"GPRINT:discardsmin:%6.2lf min",
+	"GPRINT:discardsavg:%6.2lf avg",
+	"GPRINT:discardsmax:%6.2lf max",
+	"LINE1:syncpeer#8000CC:Sync peer         ",
+	"GPRINT:syncpeermin:%6.2lf min",
+	"GPRINT:syncpeeravg:%6.2lf avg",
+	"GPRINT:syncpeermax:%6.2lf max",
+	"HRULE:50#AAAAAA:Maximum preferred offset",
+	"HRULE:250#555555:Maximum viable offset",
     );
     return
+ 	h3("Time offset") . "\n" .
 	a({-name => "offsetsurvivors"}) . "\n" .
 	a({-name => "offsetsyncpeer"}) . "\n" .
 	a({-name => "offsetdiscards"}) . "\n" .
- 	h3("Time offset") . "\n" .
 	join("\n", create_graphs($host, "offsets", "$host time offset", @graphdef));
 }
 
@@ -795,7 +854,13 @@ sub graph_reachability ($)
 	"--upper-limit=8",
 	"--vertical-label=Average reachability\n(last 8 polls)",
 	"DEF:reachability=$host$ext:reachability:LAST",
-	"LINE2:reachability#0000FF:Average peer reachability",
+	"VDEF:reachmin=reachability,MINIMUM",
+	"VDEF:reachavg=reachability,AVERAGE",
+	"VDEF:reachmax=reachability,MAXIMUM",
+	"LINE2:reachability#FFBB00:Average peer reachability",
+	"GPRINT:reachmin:%6.2lf min",
+	"GPRINT:reachavg:%6.2lf avg",
+	"GPRINT:reachmax:%6.2lf max",
 	"HRULE:7#AAAAAA:Minimum preferred reachability",
 	"HRULE:5#555555:Minimum viable reachability",
     );

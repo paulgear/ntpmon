@@ -14,6 +14,7 @@ CRON_CONF=$(PROG)-cron.conf
 CRON=/etc/cron.d
 INSTALL=install
 CGI=/usr/lib/cgi-bin
+SOURCES=ChangeLog COPYING.txt Makefile ntpmon ntpmon-all ntpmon-apache.conf ntpmon-cron.conf README.txt style.css THANKS.txt TODO.txt
 
 default:
 	@echo To install $(PROG) into $(CGI), $(SHARE), and $(VAR), run 'make install'
@@ -25,3 +26,11 @@ install:
 	@$(INSTALL) --owner=$(ROOT) --group=$(GROUP) $(SHARE_FILES) $(SHARE)/
 	@$(INSTALL) --owner=$(ROOT) --group=$(GROUP) $(APACHE_CONF) $(APACHE)/
 	@$(INSTALL) --owner=$(ROOT) --group=$(GROUP) $(CRON_CONF) $(CRON)/
+
+tarball:
+	rm -rf $(PROG)-$(VERSION)
+	mkdir $(PROG)-$(VERSION)
+	cp -al $(SOURCES) $(PROG)-$(VERSION)/
+	tar -czf $(PROG)-$(VERSION).tar.gz $(PROG)-$(VERSION)/
+	rm -rf $(PROG)-$(VERSION)/
+
