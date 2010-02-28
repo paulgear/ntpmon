@@ -368,7 +368,6 @@ sub ntpmon_collect_host ($)
     }
 
     # add stats
-    print STDERR "Adding template=$template N:$data\n";
     RRDs::update( "$libdir/$host$ext", "--template=$template", "N:$data" );
     $err = RRDs::error;
     warn "Cannot update RRD $libdir/$host$ext: $err" if $err;
@@ -825,17 +824,17 @@ sub graph_offsets ($)
 	"VDEF:discardsavg=discards,AVERAGE",
 	"VDEF:discardsmax=discards,MAXIMUM",
 	"LINE3:survivors#00FF00:Working peers     ",
-	"GPRINT:survivorsmin:%6.2lf min",
+	"GPRINT:survivorsmin:%5.2lf min",
 	"GPRINT:survivorsavg:%6.2lf avg",
-	"GPRINT:survivorsmax:%6.2lf max",
+	"GPRINT:survivorsmax:%7.2lf max",
 	"LINE2:discards#FF0000:Non-working peers ",
-	"GPRINT:discardsmin:%6.2lf min",
+	"GPRINT:discardsmin:%5.2lf min",
 	"GPRINT:discardsavg:%6.2lf avg",
-	"GPRINT:discardsmax:%6.2lf max",
+	"GPRINT:discardsmax:%7.2lf max",
 	"LINE1:syncpeer#8000CC:Sync peer         ",
-	"GPRINT:syncpeermin:%6.2lf min",
+	"GPRINT:syncpeermin:%5.2lf min",
 	"GPRINT:syncpeeravg:%6.2lf avg",
-	"GPRINT:syncpeermax:%6.2lf max",
+	"GPRINT:syncpeermax:%7.2lf max",
 	"HRULE:50#AAAAAA:Maximum preferred offset",
 	"HRULE:250#555555:Maximum viable offset",
     );
