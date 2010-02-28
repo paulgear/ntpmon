@@ -17,6 +17,7 @@ CRON=/etc/cron.d
 INSTALL=install
 CGI=/usr/lib/cgi-bin
 SOURCES=Makefile $(DOC_FILES) $(PROG) $(APACHE_CONF) $(CRON_CONF) $(SHARE_FILES)
+VERSION=$(shell head -1 ChangeLog|awk '{print $$3}')
 
 default:
 	@echo To install $(PROG), run 'make install'.  This will install files into

@@ -1,3 +1,8 @@
+NTPmon version 0.1.3
+by Paul Gear <ntpmon@libertysys.com.au>
+Copyright (c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
+Free Software, released under GNU GPLv3.
+
 Introduction
 ------------
 
@@ -14,9 +19,6 @@ tool that would monitor NTP for me, but everything i found merely checked that
 the daemon was running or that the NTP port was reachable.  These are useful
 things, but they don't tell you what you really need to know about your NTP
 servers.  Hence, i created NTPmon.
-
-NTPmon is Free Software, released under the GNU General Public License, version
-3, or (at your option) any later version.
 
 
 Features
@@ -111,5 +113,5 @@ Feedback
 As always, i am hungry for feedback about NTPmon.  If it works for you, or
 doesn't work for you, or pleases you, or doesn't please you, or has great
 metrics, or has really bad metrics, please drop me a line at
-ntpmon@libertysys.com.au.
+<ntpmon@libertysys.com.au>.
 
