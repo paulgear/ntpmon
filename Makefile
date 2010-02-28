@@ -38,6 +38,6 @@ tarball:
 	rm -rf $(PROG)-$(VERSION)
 	mkdir $(PROG)-$(VERSION)
 	cp -al $(SOURCES) $(PROG)-$(VERSION)/
-	tar -czf $(PROG)-$(VERSION).tar.gz $(PROG)-$(VERSION)/
+	tar -czf tarballs/$(PROG)-$(VERSION).tar.gz $(PROG)-$(VERSION)/
 	rm -rf $(PROG)-$(VERSION)/
 
