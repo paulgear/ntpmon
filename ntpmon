@@ -806,7 +806,8 @@ sub graph_offsets ($)
 {
     my $host = shift;
     my @graphdef = (
-	"--upper-limit=1",
+	#"--upper-limit=1",
+	"--alt-autoscale-max",
 	"--vertical-label=Milliseconds",
 	"DEF:survivors=$host$ext:offsetsurvivors:LAST",
 	"DEF:syncpeer=$host$ext:offsetsyncpeer:LAST",
