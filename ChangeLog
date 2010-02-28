@@ -1,3 +1,13 @@
+2010-02-28	ntpmon@libertysys.com.au	0.1.1
+	* Do not log data for stats which are not valid for the interval.  This
+	  creates gaps in the graphs rather than ugly drops to zero and back.
+	* Add min, avg, and max figures for the interval to the peer count and
+	  time offset graphs.
+	* Warn instead of die if a host RRD cannot be created or updated.  If
+	  there is a problem with just one host's database, the collector
+	  will now continue instead of failing on the first bad host.
+	* Changed offset graph to milliseconds as it was pre-0.1.
+
 2010-02-27	ntpmon@libertysys.com.au	0.1
 	* Initial release
 
