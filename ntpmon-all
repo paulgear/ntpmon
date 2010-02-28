@@ -25,9 +25,10 @@ if [ "$#" -gt 0 ]; then
 else
     CMD="dump"
 fi
+CGI_DIR=/usr/lib/cgi-bin
 RRD_DIR=/var/lib/ntpmon
 for i in $RRD_DIR/*.rrd; do
     host=`basename $i .rrd`
-    ./ntpmon $CMD $host "$@" &
+    $CGI_DIR/ntpmon $CMD $host "$@" &
     sleep 0.1
 done

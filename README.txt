@@ -72,12 +72,22 @@ On SUSE Linux Enterprise Server (SLES) 10, these prerequisites may be installed
 by running the following command as root:
 	zypper install perl rrdtool
 
+Depending on your distribution, you may also need to enable apache2 to start on
+boot by running
+	chkconfig apache2 on
+or similar, and starting it with
+	service apache2 start
+or similar.
+
+
 Installation
 ------------
 
-To install NTPmon, run
+To install NTPmon, check that the directory names at the top of Makefile are
+appropriate for your distribution, then run
 	make install
-from this directory.
+if you need to change any variables, include them on the command line like this (example is for SLES 10):
+	make install CGI=/srv/www/cgi-bin WWW=wwwrun
 
 
 Configuration
@@ -85,7 +95,8 @@ Configuration
 
 By default, NTPmon does not monitor any hosts.  To add a host for monitoring,
 simply run '/usr/lib/cgi-bin/ntpmon collect HOSTNAME', and the host named
-HOSTNAME will be added to NTPmon's databases.
+HOSTNAME will be added to NTPmon's databases.  It will take a few minutes for
+the host to be displayed correctly.
 
 No further intervention should be necessary for NTPmon to work, but there may
 be configuration required in your firewall or NTP server itself to allow your

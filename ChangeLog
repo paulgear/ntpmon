@@ -1,3 +1,18 @@
+2010-02-28	ntpmon@libertysys.com.au	0.1.2
+	* SLES 10 requires ENV to be untainted as well as PATH.
+	* Add some extra explanations to the README.
+	* Skip peers which are in .INIT. state - these have never worked.  It
+	  is common for a host's own IP to be included as a peer (for
+	  consistency of configuration), and it will always appear in the
+	  .INIT. state, so NTPmon counts this as a non-error.
+	* When there is no data to be displayed (usually when a host has just
+	  been added for collection), NTPmon now skips it, eliminating noise
+	  error messages in the apache error log.
+	* Minor fixes in graph display.
+	* Improved installation process.
+	* Ownership of the RRD databases & images now regularly (every 5
+	  minutes by default) changed to the apache user.
+
 2010-02-28	ntpmon@libertysys.com.au	0.1.1
 	* Do not log data for stats which are not valid for the interval.  This
 	  creates gaps in the graphs rather than ugly drops to zero and back.

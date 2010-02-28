@@ -215,6 +215,7 @@ sub get_ntpq ($)
 {
     # untaint environment
     $ENV{"PATH"} = "/usr/sbin:/usr/bin:/sbin:/bin";
+    $ENV{"ENV"} = "";
 
     my $host = shift;
     open NTPQ, "$ntpq_command $host|" or warn "Cannot open pipe for reading ntpq results: $!";
@@ -288,8 +289,8 @@ sub ntpmon_collect_host ($)
 	# give the fields sensible names
 	my ($peer, $refid, $stratum, $type, $lastpoll, $interval, $reach, $delay, $offset, $jitter) = @F;
 
-	# skip local clock
-	next if $refid eq ".LOCL.";
+	next if $refid eq ".LOCL.";	# skip local clock
+	next if $refid eq ".INIT.";	# skip peers which have never worked
 
 	# see the explanation of tally codes in the ntpq documentation for how these work:
 	# - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP
@@ -521,6 +522,7 @@ sub analyse_stats ($)
 	my $status = $rules{$stat}->[2];
 
 	my $newsev = 0;
+	next unless defined $val;
 	if ($val < $low) {
 	    $newsev = $status->[0];
 	}
@@ -563,6 +565,7 @@ sub host_stats ($$$)
     for my $statname (@summary_statnames) {
 	next if $statname eq "HOST";
 	#print "$statname = $stats->{$statname} -> ";
+	next unless defined $stats->{$statname};
 	my $statstr = format_stat($statname, $stats->{$statname});
 	#print "$statstr\n";
 	my %html_attrs;
@@ -832,7 +835,7 @@ sub graph_offsets ($)
 	"GPRINT:discardsmin:%5.2lf min",
 	"GPRINT:discardsavg:%6.2lf avg",
 	"GPRINT:discardsmax:%7.2lf max",
-	"LINE1:syncpeer#8000CC:Sync peer         ",
+	"LINE2:syncpeer#8000CC:Sync peer         ",
 	"GPRINT:syncpeermin:%5.2lf min",
 	"GPRINT:syncpeeravg:%6.2lf avg",
 	"GPRINT:syncpeermax:%7.2lf max",
@@ -852,7 +855,7 @@ sub graph_reachability ($)
     my $host = shift;
     my @graphdef = (
 	"--upper-limit=8",
-	"--vertical-label=Average reachability\n(last 8 polls)",
+	"--vertical-label=(out of last 8 polls)",
 	"DEF:reachability=$host$ext:reachability:LAST",
 	"VDEF:reachmin=reachability,MINIMUM",
 	"VDEF:reachavg=reachability,AVERAGE",
