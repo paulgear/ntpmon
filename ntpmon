@@ -240,6 +240,9 @@ sub format_stat ($$)
     # if there's no format for it, just return it
     return $value unless exists $statformats{$name};
 
+    # if it's non-numeric, just return it
+    return $value unless $value =~ /^\s*[\d.]+\s*$/;
+
     if ($statformats{$name} eq "TIME") {
 	$str = nbsp(scalar localtime($value));
     }
@@ -522,7 +525,10 @@ sub analyse_stats ($)
 	my $status = $rules{$stat}->[2];
 
 	my $newsev = 0;
-	next unless defined $val;
+	if (!defined $val) {
+	    $results->{$stat} = "n/a";
+	    next;
+	}
 	if ($val < $low) {
 	    $newsev = $status->[0];
 	}
