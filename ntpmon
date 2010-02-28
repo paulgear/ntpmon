@@ -525,10 +525,7 @@ sub analyse_stats ($)
 	my $status = $rules{$stat}->[2];
 
 	my $newsev = 0;
-	if (!defined $val) {
-	    $results->{$stat} = "n/a";
-	    next;
-	}
+	next unless defined $val;
 	if ($val < $low) {
 	    $newsev = $status->[0];
 	}
@@ -570,10 +567,10 @@ sub host_stats ($$$)
     my $ret = "";
     for my $statname (@summary_statnames) {
 	next if $statname eq "HOST";
-	#print "$statname = $stats->{$statname} -> ";
-	next unless defined $stats->{$statname};
+	if (!defined $stats->{$statname}) {
+	    $stats->{$statname} = "n/a";
+	}
 	my $statstr = format_stat($statname, $stats->{$statname});
-	#print "$statstr\n";
 	my %html_attrs;
 	if (exists $results->{$statname}) {
 	    $html_attrs{"-class"} = $results->{$statname};
