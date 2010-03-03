@@ -88,8 +88,8 @@ my %statheadings = (
 );
 my %rules = (
     lastsync		=> [ $now-$maxinterval, $now-$maxinterval/2, [ $bad, $good, $marginal ] ],
-    numpeers		=> [   2,    3, [ $bad, $good, $marginal ] ],
-    numsurvivors	=> [   2,    3, [ $bad, $good, $marginal ] ],
+    numpeers		=> [   2,  2.9, [ $bad, $good, $marginal ] ],
+    numsurvivors	=> [   2,  2.9, [ $bad, $good, $marginal ] ],
     offsetdiscards	=> [ 500, 5000, [ $good, $good, $good ] ],
     offsetsurvivors	=> [  50,  250, [ $good, $bad, $marginal ] ],
     offsetsyncpeer	=> [  50,  250, [ $good, $bad, $marginal ] ],
@@ -218,7 +218,7 @@ sub get_ntpq ($)
     $ENV{"ENV"} = "";
 
     my $host = shift;
-    open NTPQ, "$ntpq_command $host|" or warn "Cannot open pipe for reading ntpq results: $!";
+    open NTPQ, "$ntpq_command $host 2>/dev/null|" or warn "Cannot open pipe for reading ntpq results: $!";
     my @output = <NTPQ>;
     close NTPQ;
     chomp @output;
