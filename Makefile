@@ -22,7 +22,7 @@ VERSION=$(shell head -1 ChangeLog|awk '{print $$3}')
 default:
 	@echo To install $(PROG), run 'make install'.  This will install files into
 	@for i in $(APACHE) $(CRON) $(CGI) $(DOC) $(SHARE) $(VAR); do \
-	    echo "\t$$i"; \
+	    echo "	$$i"; \
 	done
 
 install:
