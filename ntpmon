@@ -286,7 +286,7 @@ sub ntpmon_collect_host ($)
 	# split fields & validate
 	my @F = split /\s+/, $rest;
 	if ($#F != 9) {
-	    print STDERR "Invalid line: $_\n";
+	    print STDERR "Invalid line (number of fields: $#F): $_\n";
 	}
 
 	# give the fields sensible names
