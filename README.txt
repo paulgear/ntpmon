@@ -1,4 +1,4 @@
-NTPmon version 0.1.3
+NTPmon version 0.1.5
 by Paul Gear <ntpmon@libertysys.com.au>
 Copyright (c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
 Free Software, released under GNU GPLv3.

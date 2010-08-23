@@ -3,8 +3,8 @@
 # Author:       Paul Gear
 # Copyright:	(c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
 # License:	GPLv3 <http://www.gnu.org/licenses/gpl.html>
-# Description:  Script to collect, dump, and display NTP health metrics using
-#		RRDtool.
+# Description:  Script to collect, dump, and display simplified NTP health
+#		metrics using RRDtool.
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software

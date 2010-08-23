@@ -1,7 +1,8 @@
 - Write the help file.
 
 - Add some bling.  HTML & CSS is pretty bland nowadays.  Input gratefully
-  accepted on this!
+  accepted on this!  Rewriting the display stuff in terms of a more modern
+  perl web library would be desirable.
 
 - Make it easier to add/change/remove metrics.  Make it possible to do this
   without trashing old RRD files.
