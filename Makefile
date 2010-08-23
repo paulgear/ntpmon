@@ -24,6 +24,7 @@ default:
 	@for i in $(APACHE) $(CRON) $(CGI) $(DOC) $(SHARE) $(VAR); do \
 	    echo "	$$i"; \
 	done
+	@echo Please ensure these values are correct for your system before continuing.
 
 install:
 	$(INSTALL) --directory --owner=$(WWW) --group=$(GROUP) $(VAR) $(IMG)
