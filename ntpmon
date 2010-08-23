@@ -32,6 +32,7 @@ use Scalar::Util qw(tainted);
 my $debug;
 my $res;
 my $libdir;
+my $errdir;
 my $imagedir;
 my $baseurl;
 my $imageurl;
@@ -115,6 +116,7 @@ $libdir = "/var/lib/ntpmon"	unless defined $libdir;
 $imagedir = "$libdir/images"	unless defined $imagedir;
 $baseurl = "/ntpmon"		unless defined $baseurl;
 $imageurl = "$baseurl/images"	unless defined $imageurl;
+$errdir = "$libdir/errors";
 
 my $heartbeat = $res * 2;
 my @rrd_definition = (
@@ -146,6 +148,9 @@ if (! -d $libdir) {
     mkdir "$libdir" or die "Cannot make directory $libdir: $!";
 }
 chdir "$libdir" or die "Cannot change directory to $libdir: $!";
+if (! -d $errdir) {
+    mkdir "$errdir" or die "Cannot make directory $errdir: $!";
+}
 
 
 ##############################################################################
@@ -279,6 +284,7 @@ sub ntpmon_collect_host ($)
 	# skip headers
 	next if /remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+delay\s+offset\s+jitter/;
 	next if /^=+$/;
+	next if /No association ID's returned/;
 
 	# get the tally code in the first column
 	my ($tally, $rest) = ($_ =~ /(.)(.*)/);
@@ -286,7 +292,17 @@ sub ntpmon_collect_host ($)
 	# split fields & validate
 	my @F = split /\s+/, $rest;
 	if ($#F != 9) {
-	    print STDERR "Invalid line (number of fields: $#F): $_\n";
+	    my $errfile = "$errdir/$host.err";
+	    print STDERR "Invalid line (number of fields: " . ($#F + 1) . "): $_\n";
+	    if (open( ERRFILE, "> $errfile")) {
+		print ERRFILE @output;
+		close ERRFILE;
+		print STDERR "See $errfile for details\n";
+	    }
+	    else {
+		warn "Cannot open $errfile: $!";
+	    }
+	    return;
 	}
 
 	# give the fields sensible names
@@ -294,6 +310,7 @@ sub ntpmon_collect_host ($)
 
 	next if $refid eq ".LOCL.";	# skip local clock
 	next if $refid eq ".INIT.";	# skip peers which have never worked
+	next if $stratum > 10;		# skip peers which are not synced
 
 	# see the explanation of tally codes in the ntpq documentation for how these work:
 	# - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP
