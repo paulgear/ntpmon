@@ -27,6 +27,7 @@ use File::Basename;
 use Getopt::Long;
 use RRDs;
 use Scalar::Util qw(tainted);
+use Unix::Syslog qw(:macros :subs);
 
 # globals
 my $debug;
@@ -145,13 +146,29 @@ my @rrd_definition = (
 
 # create directories if needed
 if (! -d $libdir) {
-    mkdir "$libdir" or die "Cannot make directory $libdir: $!";
+    mkdir "$libdir" or log_fatal "Cannot make directory $libdir: $!";
 }
-chdir "$libdir" or die "Cannot change directory to $libdir: $!";
+chdir "$libdir" or log_fatal "Cannot change directory to $libdir: $!";
 if (! -d $errdir) {
-    mkdir "$errdir" or die "Cannot make directory $errdir: $!";
+    mkdir "$errdir" or log_fatal "Cannot make directory $errdir: $!";
 }
 
+
+##############################################################################
+# logging
+##############################################################################
+
+my $prog = basename($0);
+openlog $prog, 
+
+sub log_warn ($) {
+}
+
+sub log_err ($) {
+}
+
+sub log_fatal ($) {
+}
 
 ##############################################################################
 # utilities
@@ -198,7 +215,7 @@ sub fetch_rrd (@)
     my $remove_empty_rows = shift;
     my ($start, $step, $names, $data) = RRDs::fetch(@_);
     my $err = RRDs::error();
-    warn "ERROR: $err" if $err;
+    log_error $err if $err;
 
     if ($remove_empty_rows) {
 	# remove empty rows from the returned data set
@@ -223,7 +240,8 @@ sub get_ntpq ($)
     $ENV{"ENV"} = "";
 
     my $host = shift;
-    open NTPQ, "$ntpq_command $host 2>/dev/null|" or warn "Cannot open pipe for reading ntpq results: $!";
+    open NTPQ, "$ntpq_command $host 2>/dev/null|" or
+	log_warn "Cannot open pipe for reading ntpq results: $!";
     my @output = <NTPQ>;
     close NTPQ;
     chomp @output;
@@ -293,14 +311,18 @@ sub ntpmon_collect_host ($)
 	my @F = split /\s+/, $rest;
 	if ($#F != 9) {
 	    my $errfile = "$errdir/$host.err";
-	    print STDERR "Invalid line (number of fields: " . ($#F + 1) . "): $_\n";
+	    log_error "Invalid line - skipping (number of fields: " . ($#F + 1) . "): $_\n";
 	    if (open( ERRFILE, "> $errfile")) {
 		print ERRFILE @output;
 		close ERRFILE;
-		print STDERR "See $errfile for details\n";
+		log_error "See $errfile for details\n";
 	    }
 	    else {
-		warn "Cannot open $errfile: $!";
+		log_error "Cannot open $errfile: $!";
+		log_error "ntpq output:";
+		for my $output (@output) {
+		    log_error $output;
+		}
 	    }
 	    return;
 	}
@@ -364,7 +386,7 @@ sub ntpmon_collect_host ($)
     if (! -e "$libdir/$host$ext") {
 	RRDs::create( "$host$ext", "--step", "$res", @rrd_definition );
 	$err = RRDs::error;
-	warn "Cannot create RRD $libdir/$host$ext: $err" if $err;
+	log_warn "Cannot create RRD $libdir/$host$ext: $err" if $err;
     }
 
     my $template = "insync:numdiscards:numpeers:numsurvivors:numunknown";
@@ -391,7 +413,7 @@ sub ntpmon_collect_host ($)
     # add stats
     RRDs::update( "$libdir/$host$ext", "--template=$template", "N:$data" );
     $err = RRDs::error;
-    warn "Cannot update RRD $libdir/$host$ext: $err" if $err;
+    log_warn "Cannot update RRD $libdir/$host$ext: $err" if $err;
 
 }
 
@@ -482,7 +504,7 @@ sub get_last_insync ($$)
     #dump_rrd(@result);
     my ($start, $step, $names, $data) = @result;
     if ($names->[0] ne "insync") {
-	warn "Expected insync as first DS, but got $names->[0]";
+	log_warn "Expected insync as first DS, but got $names->[0]";
 	next;
     }
     #print STDERR "data has $#$data elements\n" if $debug;

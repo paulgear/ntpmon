@@ -1,3 +1,10 @@
+2010-12-02	ntpmon@libertysys.com.au	0.1.6
+	* A disconcerting number of NTP servers out in the world produce
+	  absolute rubbish in the peer column of ntpq's output (which is still
+	  better than what openntpd produces, which is nothing).  We now suppress
+	  all warning messages and log the failures to syslog instead, reducing
+	  email noise.
+
 2010-08-23	ntpmon@libertysys.com.au	0.1.5
 	* Try to handle anomalous output from ntpq (especially refids) more sensibly.
 	  Erroneous output from ntpq is saved to assist with diagnosis.
