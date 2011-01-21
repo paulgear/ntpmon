@@ -1,4 +1,4 @@
-2011-??-??	ntpmon@libertysys.com.au	NEXT
+2011-01-21	ntpmon@libertysys.com.au	0.2.0-beta
 	* A disconcerting number of NTP servers out in the world produce
 	  absolute rubbish in the peer column of ntpq's output (which is still
 	  better than what openntpd produces, which is nothing).  We now suppress
