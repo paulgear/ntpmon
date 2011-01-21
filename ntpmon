@@ -122,6 +122,10 @@ sub log_finish () {
 	closelog;
 }
 
+sub log_info ($) {
+	syslog LOG_INFO, "%s", $_[0];
+}
+
 sub log_warn ($) {
 	syslog LOG_WARNING, "%s", $_[0];
 }
@@ -303,6 +307,7 @@ sub ntpmon_collect_host ($)
 {
     my $host = untaint($_[0]);
     print "host = $host\n" if $debug;
+    log_info "Getting data for $host" if $debug;
 
     # get output from ntpq
     my @output = get_ntpq($host);
