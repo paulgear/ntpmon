@@ -60,6 +60,7 @@ my @summary_statnames = (
     "offsetdiscards",
     "reachability",
 );
+
 my %statformats = (
     TIME		=> "TIME",
     lastpoll		=> "TIME",
@@ -74,6 +75,7 @@ my %statformats = (
     reachability	=> "%5.3f",
     insync		=> "%d",
 );
+
 my %statheadings = (
     lastpoll		=> "Last poll",
     lastsync		=> "Last sync",
@@ -88,6 +90,7 @@ my %statheadings = (
     insync		=> "In sync?",
     HOST		=> "Host",
 );
+
 my %rules = (
     lastsync		=> [ $now-$maxinterval, $now-$maxinterval/2, [ $bad, $good, $marginal ] ],
     numpeers		=> [   2,  2.9, [ $bad, $good, $marginal ] ],
@@ -97,13 +100,46 @@ my %rules = (
     offsetsyncpeer	=> [  50,  250, [ $good, $bad, $marginal ] ],
     reachability	=> [   5,    7, [ $bad, $good, $marginal ] ],
 );
+
 my %sevcodes = (
     0			=> "good",
     1			=> "marginal",
     2			=> "bad"
 );
 
+
+##############################################################################
+# logging
+##############################################################################
+
+my $prog = basename($0);
+
+sub log_start () {
+	openlog $prog, LOG_PID | LOG_CONS, LOG_DAEMON;
+}
+
+sub log_finish () {
+	closelog;
+}
+
+sub log_warn ($) {
+	syslog LOG_WARNING, "%s", $_[0];
+}
+
+sub log_error ($) {
+	syslog LOG_ERR, "%s", $_[0];
+}
+
+sub log_fatal ($) {
+	syslog LOG_CRIT, "%s", $_[0];
+	exit 2;
+}
+
+
+##############################################################################
 # process arguments
+##############################################################################
+
 my $result = GetOptions(
     "debug"		=> \$debug,
     "libdir"		=> \$libdir,
@@ -151,23 +187,6 @@ if (! -d $libdir) {
 chdir "$libdir" or log_fatal "Cannot change directory to $libdir: $!";
 if (! -d $errdir) {
     mkdir "$errdir" or log_fatal "Cannot make directory $errdir: $!";
-}
-
-
-##############################################################################
-# logging
-##############################################################################
-
-my $prog = basename($0);
-openlog $prog, 
-
-sub log_warn ($) {
-}
-
-sub log_err ($) {
-}
-
-sub log_fatal ($) {
 }
 
 ##############################################################################
@@ -948,6 +967,8 @@ sub ntpmon_cgi ()
 # main
 ##############################################################################
 
+log_start;
+
 # get parameters
 my $command = shift;
 
@@ -982,3 +1003,4 @@ else {
     usage();
 }
 
+log_finish;
