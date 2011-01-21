@@ -529,7 +529,7 @@ sub get_last_insync ($$)
     my ($start, $step, $names, $data) = @result;
     if ($names->[0] ne "insync") {
 	log_warn "Expected insync as first DS, but got $names->[0]";
-	next;
+	return 0;
     }
     #print STDERR "data has $#$data elements\n" if $debug;
     my $i = $#$data;
