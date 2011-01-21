@@ -37,6 +37,7 @@ install:
 	sed -ri -e 's/www-data/$(WWW)/' -e 's~/usr/lib/cgi-bin~$(CGI)~' -e 's~/var/lib/ntpmon~$(VAR)~' $(CRON)/$(CRON_CONF)
 
 tarball:
+	perl -cT $(PROG)
 	rm -rf $(PROG)-$(VERSION)
 	mkdir $(PROG)-$(VERSION)
 	cp -al $(SOURCES) $(PROG)-$(VERSION)/
