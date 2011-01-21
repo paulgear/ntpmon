@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Author:       Paul Gear
-# Copyright:	(c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
+# Copyright:	(c) 2010 Gear Consulting Pty Ltd <http://libertysys.com.au/>
 # License:	GPLv3 <http://www.gnu.org/licenses/gpl.html>
 # Description:  Run ntpmon in parallel for every host RRD
 #

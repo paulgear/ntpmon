@@ -1,7 +1,23 @@
-NTPmon version 0.1.5
+NTPmon
 by Paul Gear <ntpmon@libertysys.com.au>
-Copyright (c) 2010 Liberty Systems & Software <http://libertysys.com.au/>
-Free Software, released under GNU GPLv3.
+Copyright (c) 2010 Gear Consulting Pty Ltd <http://libertysys.com.au/>
+
+License Statement
+-----------------
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+
+You should have received a copy of the GNU General Public License along with
+this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 Introduction
 ------------
@@ -12,6 +28,13 @@ maintaining a functional network, and NTPmon is designed to help you work out
 whether your NTP servers are, in fact, doing what they're supposed to and
 keeping accurate time.
 
+"Essential" health metrics means a minimal number of metrics which should be
+understandable to non-specialists, simply presented.  NTPmon does not aim or
+claim to be the last word on NTP monitoring.  Much the opposite - it is more
+like the first word, and more advanced tools are both desirable and necessary.
+If you are a time synchronization geek, NTPmon is not for you - or at least,
+it's unlikely to offer you anything more than a quick overview.
+
 Many system administrators don't understand NTP well enough to configure it
 correctly for their environment, and some vendors' NTP documentation is rather
 lacking, or even just plain wrong.  Before i wrote NTPmon, i searched for a
@@ -19,6 +42,7 @@ tool that would monitor NTP for me, but everything i found merely checked that
 the daemon was running or that the NTP port was reachable.  These are useful
 things, but they don't tell you what you really need to know about your NTP
 servers.  Hence, i created NTPmon.
+
 
 
 Features

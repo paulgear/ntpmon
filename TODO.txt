@@ -1,3 +1,7 @@
+- Write something to automatically detect the best settings for installation.
+  Using facter if it is present would be a good start.  Import the info from
+  http://libertysys.com.au/node/84
+
 - Write the help file.
 
 - Add some bling.  HTML & CSS is pretty bland nowadays.  Input gratefully
