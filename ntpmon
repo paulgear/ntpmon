@@ -527,6 +527,11 @@ sub get_last_insync ($$)
 
     #dump_rrd(@result);
     my ($start, $step, $names, $data) = @result;
+    if (!defined $start or !defined $step or !defined $names or !defined $data) {
+	log_warn "Got invalid result from fetch_rrd";
+	return 0;
+    }
+
     if ($names->[0] ne "insync") {
 	log_warn "Expected insync as first DS, but got $names->[0]";
 	return 0;
