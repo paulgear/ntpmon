@@ -1,6 +1,6 @@
 NTPmon
 by Paul Gear <ntpmon@libertysys.com.au>
-Copyright (c) 2010 Gear Consulting Pty Ltd <http://libertysys.com.au/>
+Copyright (c) 2010-2011 Gear Consulting Pty Ltd <http://libertysys.com.au/>
 
 License Statement
 -----------------
@@ -31,9 +31,10 @@ keeping accurate time.
 "Essential" health metrics means a minimal number of metrics which should be
 understandable to non-specialists, simply presented.  NTPmon does not aim or
 claim to be the last word on NTP monitoring.  Much the opposite - it is more
-like the first word, and more advanced tools are both desirable and necessary.
-If you are a time synchronization geek, NTPmon is not for you - or at least,
-it's unlikely to offer you anything more than a quick overview.
+like the first word, and more advanced tools are both desirable and necessary if
+you require highly accurate time.  If you are a time synchronization geek,
+NTPmon is not for you - or at least, it's unlikely to offer you anything more
+than a quick overview.
 
 Many system administrators don't understand NTP well enough to configure it
 correctly for their environment, and some vendors' NTP documentation is rather
@@ -43,6 +44,13 @@ the daemon was running or that the NTP port was reachable.  These are useful
 things, but they don't tell you what you really need to know about your NTP
 servers.  Hence, i created NTPmon.
 
+
+Feedback
+--------
+
+I am hungry for feedback about NTPmon.  If it works for you, or doesn't work for
+you, or pleases you, or doesn't please you, or has great metrics, or has really
+bad metrics, please drop me a line at <ntpmon@libertysys.com.au>.
 
 
 Features
@@ -63,12 +71,18 @@ exceed one minute, in which case it may be necessary to poll in parallel rather
 than serial.  The sample (largely untested) script ntpmon-all shows a sample of
 how this might be achieved.
 
+The network bandwidth required to run 'ntpq -pn' for a host is fairly low, so
+there should be no need to run a separate NTPmon host for every site, unless you
+run a very large number of NTP servers.  My test server has no difficulty
+polling another server across an OpenVPN connection where both ends use
+consumer-grade ADSL.
+
 
 Selecting the NTPmon host
 -------------------------
 
 One important note about selection of a host to run NTPmon: the accuracy of the
-NTPmon host's own clock is crucial, since all of the data stored by RRD is
+NTPmon host's own clock is important, since all of the data stored by RRD is
 time-stamped.  This means generally that the host running NTPmon should be a
 standalone host, not a VM or VM server (both Xen and VMware seem to be less
 accurate at timekeeping than the vanilla Linux kernel).  It also should
@@ -87,23 +101,15 @@ library:
 	Getopt::Long
 	RRDs
 	Scalar::Util
-Most of these prerequisites are likely install on your system already, but if
+	Unix::Syslog
+
+Most of these prerequisites are likely installed on your system already, but if
 they are not, please continue reading below.
 
-On Debian (lenny) and Ubuntu (karmic) Linux, all of these prerequisites may be
-installed by running the following command as root:
-	apt-get install librrds-perl perl-modules
-
-On SUSE Linux Enterprise Server (SLES) 10, these prerequisites may be installed
-by running the following command as root:
-	zypper install perl rrdtool
-
-Depending on your distribution, you may also need to enable apache2 to start on
-boot by running
-	chkconfig apache2 on
-or similar, and starting it with
-	service apache2 start
-or similar.
+A web server configured for CGI programs is required.  Apache 2 is the only
+tested web server at this stage.  Depending on your distribution, you may need
+to enable apache2 to start on boot, and restart it after the installation of
+ntpmon.
 
 
 Installation
@@ -114,6 +120,31 @@ appropriate for your distribution, then run
 	make install
 if you need to change any variables, include them on the command line like this (example is for SLES 10):
 	make install CGI=/srv/www/cgi-bin WWW=wwwrun
+
+
+Installation examples
+---------------------
+
+Assuming that you have the ntpmon files in your current directory, on Debian and
+Ubuntu Linux, ntpmon and its prerequisites may be installed by running the
+following commands as root:
+	apt-get install apache2 librrds-perl libunix-syslog-perl perl-modules \
+		sysvconfig
+	make install
+	service apache2 restart
+
+On SUSE Linux Enterprise Server (SLES) 10, use the following commands:
+	zypper install apache2 perl perl-Unix-Syslog rrdtool
+	chkconfig apache2 on
+	make install CGI=/srv/www/cgi-bin WWW=wwwrun
+	service apache2 restart
+
+On CentOS Linux, use the following commands:
+	yum install httpd perl-Unix-Syslog rrdtool-perl
+	chkconfig httpd on
+	make install WWW=apache CGI=/var/www/cgi-bin APACHE=/etc/httpd/conf.d
+	service httpd restart
+You must have the EPEL repository enabled for this to work.
 
 
 Configuration
@@ -129,13 +160,4 @@ be configuration required in your firewall or NTP server itself to allow your
 NTPmon server permission to query the NTP server.  The basic rule is: if you
 can see valid output with 'ntpq -pn HOSTNAME', NTPmon should work for that
 host.
-
-
-Feedback
---------
-
-As always, i am hungry for feedback about NTPmon.  If it works for you, or
-doesn't work for you, or pleases you, or doesn't please you, or has great
-metrics, or has really bad metrics, please drop me a line at
-<ntpmon@libertysys.com.au>.
 

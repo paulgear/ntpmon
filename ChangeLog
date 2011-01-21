@@ -1,3 +1,7 @@
+2011-01-21	ntpmon@libertysys.com.au	0.2.0-beta3
+	* Rename cron configuration file - cron would not run ntpmon previously.
+	* Update doco for additional dependencies.
+
 2011-01-21	ntpmon@libertysys.com.au	0.2.0-beta2
 	* Added status reporting to syslog to help debug a problem on my test
 	  server.
