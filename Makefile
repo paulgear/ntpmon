@@ -34,7 +34,7 @@ install:
 	$(INSTALL) --owner=$(ROOT) --group=$(GROUP) -m 644 $(DOC_FILES) $(DOC)/
 	$(INSTALL) --owner=$(ROOT) --group=$(GROUP) -m 644 $(APACHE_CONF) $(APACHE)/
 	$(INSTALL) --owner=$(ROOT) --group=$(GROUP) -m 644 $(CRON_CONF) $(CRON)/$(PROG)
-	sed -ri -e 's/www-data/$(WWW)/' -e 's~/usr/lib/cgi-bin~$(CGI)~' -e 's~/var/lib/ntpmon~$(VAR)~' $(CRON)/$(CRON_CONF)
+	sed -ri -e 's/www-data/$(WWW)/' -e 's~/usr/lib/cgi-bin~$(CGI)~' -e 's~/var/lib/ntpmon~$(VAR)~' $(CRON)/$(PROG)
 
 tarball:
 	perl -cT $(PROG)
