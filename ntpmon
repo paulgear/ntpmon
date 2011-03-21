@@ -796,10 +796,20 @@ sub create_graphs ($$$@)
 {
     my ($host, $name, $title, @graphdef) = @_;
     my @list;
-    for my $scope ("hour", "day", "week") {	#, "month", "year"
+    my @big = ("--width=1000", "--height=350");
+    my $i = 0;
+    for my $scope ("hour", "day", "week", "month", "3months", "year") {
 	my $basename = "$host-$name-$scope.png";
+	my $bigname = "$host-$name-$scope-big.png";
+	my $graphscope = $scope =~ /^\d+/ ? "--start=e-$scope" : "--start=e-1$scope";
 	RRDs::graph("$imagedir/$basename",
-	    "--start=e-1$scope",
+	    $graphscope,
+	    "--title=$title - last $scope",
+	    @global_graphdef,
+	    @graphdef);
+	RRDs::graph("$imagedir/$bigname",
+	    $graphscope,
+	    @big,
 	    "--title=$title - last $scope",
 	    @global_graphdef,
 	    @graphdef);
@@ -808,8 +818,9 @@ sub create_graphs ($$$@)
 	    push @list, span( {-class=>"error" }, "RRDs::error $err" );
 	}
 	else {
-	    push @list, img( {-src=>"$imageurl/$basename" } );
+	    push @list, a( {href => "$imageurl/$bigname"}, img( {-src=>"$imageurl/$basename", -border => "0" } ) ) unless $i > 3;
 	}
+	++$i;
     }
     return @list;
 }
@@ -902,16 +913,16 @@ sub graph_offsets ($)
 	"LINE3:survivors#00FF00:Working peers     ",
 	"GPRINT:survivorsmin:%5.2lf min",
 	"GPRINT:survivorsavg:%6.2lf avg",
-	"GPRINT:survivorsmax:%7.2lf max",
+	"GPRINT:survivorsmax:%7.2lf max\\n",
 	"LINE2:discards#FF0000:Non-working peers ",
 	"GPRINT:discardsmin:%5.2lf min",
 	"GPRINT:discardsavg:%6.2lf avg",
-	"GPRINT:discardsmax:%7.2lf max",
+	"GPRINT:discardsmax:%7.2lf max\\n",
 	"LINE2:syncpeer#8000CC:Sync peer         ",
 	"GPRINT:syncpeermin:%5.2lf min",
 	"GPRINT:syncpeeravg:%6.2lf avg",
-	"GPRINT:syncpeermax:%7.2lf max",
-	"HRULE:50#AAAAAA:Maximum preferred offset",
+	"GPRINT:syncpeermax:%7.2lf max\\n",
+	"HRULE:50#AAAAAA:Maximum preferred offset\\n",
 	"HRULE:250#555555:Maximum viable offset",
     );
     return
