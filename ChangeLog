@@ -1,3 +1,6 @@
+2011-04-04	ntpmon@libertysys.com.au	0.2.0
+	* Add a link to a larger graph in each graph on the host detail page.
+
 2011-02-17	ntpmon@libertysys.com.au	0.2.0-beta3
 	* Rename cron configuration file - cron would not run ntpmon previously.
 	* Update doco for additional dependencies.
