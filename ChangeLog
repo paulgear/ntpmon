@@ -1,3 +1,6 @@
+2011-04-05	ntpmon@libertysys.com.au	0.2.1
+	* Fix graph legend display.
+
 2011-04-04	ntpmon@libertysys.com.au	0.2.0
 	* Add a link to a larger graph in each graph on the host detail page.
 
