@@ -818,7 +818,15 @@ sub create_graphs ($$$@)
 	    push @list, span( {-class=>"error" }, "RRDs::error $err" );
 	}
 	else {
-	    push @list, a( {href => "$imageurl/$bigname"}, img( {-src=>"$imageurl/$basename", -border => "0" } ) ) unless $i > 3;
+	    if ($i <= 3) {
+		push @list, a( {href => "$imageurl/$bigname"}, img( {-src=>"$imageurl/$basename", -border => "0" } ) );
+	    }
+	    else {
+		push @list, a( {href => "$imageurl/$bigname"}, $scope );
+	    }
+	    if ($i == 3) {
+		push @list, "<br>";
+	    }
 	}
 	++$i;
     }
