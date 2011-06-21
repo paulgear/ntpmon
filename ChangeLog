@@ -1,3 +1,8 @@
+2011-06-21	ntpmon@libertysys.com.au	(next)
+	* Add textual links to quarterly and yearly graphs. Graph sizing and
+	  layout will likely change over the next few releases to optimise
+	  performance and screen width usage.
+
 2011-04-05	ntpmon@libertysys.com.au	0.2.1
 	* Fix graph legend display.
 

@@ -112,6 +112,17 @@ to enable apache2 to start on boot, and restart it after the installation of
 ntpmon.
 
 
+Versioning
+----------
+
+NTPmon uses the same versioning scheme as the Linux kernel: minor releases
+(the second component of the version number) are even for stable versions and
+odd for development versions.  For example, 0.2.1 is a stable release, and
+0.3.1 is a development release.  I will attempt to make only bug fixes in the
+stable releases and reserve new features and gratuitous changes for
+development versions.
+
+
 Installation
 ------------
 

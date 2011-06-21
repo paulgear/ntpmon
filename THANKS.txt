@@ -9,6 +9,14 @@ And as usual:
 - Neal Morse <http://www.nealmorse.com/>, for producing amazing progressive
   rock which inspires and soothes while i code!
 
-- The Linux community for producing an operating system that works so well for
-  me, especially the Debian and Ubuntu teams.
+- The Linux community for producing an operating system that works so well,
+  especially the Debian <http://www.debian.org/> and Ubuntu
+  <http://www.ubuntu.com/> teams.
+
+And a special apology to:
+
+- The next person who had to touch the NTP setup on the HP-UX systems at
+  Queensland Police Service <http://www.police.qld.gov.au/> after i left,
+  whoever that might be.  I knew basically nothing about NTP when i set it up
+  (except that NTP is a good idea), so i'm sorry for the mess i left you. :-)
 

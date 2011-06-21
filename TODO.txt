@@ -1,12 +1,37 @@
+Some tasks i've set myself or ideas for improvement (feedback requested):
+
+- Possibly merge the synchronization status and peer count graphs.
+
+- The hourly and monthly graphs are pretty useless due to the resolution of
+  the data kept.  They probably should disappear, or at least be reduced to
+  thumbnails.
+
+- Add summary graphs/thumbnails for the 3 monthly and yearly graphs?
+
+- Performance seems a little sluggish in viewing the host detail pages. This
+  is probably due to generating all of the large graphs behind the scenes.  A
+  workaround for this would be to create a separate entry point in the CGI
+  script for the larger graphs and only generate them when they are required.
+  However, if we thumbnail the quarterly & yearly graphs this may eliminate
+  any performance gains made by separating them out, since the overhead may be
+  in pulling the RRD data into memory.  (NTPmon's data files are fairly large
+  by RRD's standards, due to their small interval.)
+
+- Write the help file.
+
+- Modularise some of the utility functions (e.g. logging).
+
 - Write something to automatically detect the best settings for installation.
   Using facter if it is present would be a good start.  Import the info from
   http://libertysys.com.au/node/84
 
-- Write the help file.
-
 - Add some bling.  HTML & CSS is pretty bland nowadays.  Input gratefully
   accepted on this!  Rewriting the display stuff in terms of a more modern
   perl web library would be desirable.
+
+- Perhaps a better long-term strategy which would take care of the point above
+  (and possibly the one below) would be to port NTPmon to PHP and implement it
+  as a module in Observium <http://www.observium.org/>.
 
 - Make it easier to add/change/remove metrics.  Make it possible to do this
   without trashing old RRD files.
