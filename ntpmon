@@ -1,8 +1,7 @@
 #!/usr/bin/perl -Tw
 #
 # Author:       Paul Gear
-# Version:	0.2.0-beta3
-# Copyright:	(c) 2010 Gear Consulting Pty Ltd <http://libertysys.com.au/>
+# Copyright:	(c) 2010-2011 Gear Consulting Pty Ltd <http://libertysys.com.au/>
 # License:	GPLv3 <http://www.gnu.org/licenses/gpl.html>
 # Description:  Script to collect, dump, and display simplified NTP health
 #		metrics using RRDtool.
