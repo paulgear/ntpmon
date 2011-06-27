@@ -44,7 +44,6 @@ my $baseinterval = 60;
 my $maxinterval = 2048;
 my $ext = ".rrd";
 my $now = time();
-my $seconds_in_year = 366 * 24 * 60 * 60;	# includes leap year just to be sure
 my $good = 0;
 my $marginal = 1;
 my $bad = 2;
@@ -799,7 +798,7 @@ sub create_graphs ($$$@)
 {
     my ($host, $name, $title, @graphdef) = @_;
     my @list;
-    my @small = ("--width=100", "--height=35");
+    my @small = ("--width=200", "--height=70", "--only-graph");
     my @big = ("--width=1000", "--height=350");
     my $i = 0;
     for my $scope ("day", "week", "year") {
@@ -823,7 +822,8 @@ sub create_graphs ($$$@)
 	    push @list, span( {-class=>"error" }, "RRDs::error $err" );
 	}
 	else {
-	    push @list, a( {href => "$imageurl/$bigname"}, img( {-src=>"$imageurl/$basename", -border => "0" } ) );
+	    push @list, a( {href => "$imageurl/$bigname"},
+		img( {-src=>"$imageurl/$basename", -border => "1" } ) );
 	}
 	++$i;
     }
@@ -852,7 +852,6 @@ sub graph_peers ($)
 	"VDEF:unknownmin=unknown,MINIMUM",
 	"VDEF:unknownavg=unknown,AVERAGE",
 	"VDEF:unknownmax=unknown,MAXIMUM",
-	"LINE1:insync#000000:Synchronization status (1 = sync, 0 = no sync)",
 	"AREA:survivors#00FF00:Working peers     ",
 	"GPRINT:survivorsmin:%6.2lf min",
 	"GPRINT:survivorsavg:%6.2lf avg",
@@ -869,6 +868,7 @@ sub graph_peers ($)
 	"GPRINT:unknownmin:%6.2lf min",
 	"GPRINT:unknownavg:%6.2lf avg",
 	"GPRINT:unknownmax:%6.2lf max\\n",
+	"LINE2:insync#990099:Synchronization status (1 = sync, 0 = no sync)\\n",
 	"HRULE:3#AAAAAA:Minimum viable working peers",
     );
     return
