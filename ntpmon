@@ -170,18 +170,21 @@ my @rrd_definition = (
     "DS:offsetsurvivors:GAUGE:$heartbeat:0:U",
     "DS:offsetsyncpeer:GAUGE:$heartbeat:0:U",
     "DS:reachability:GAUGE:$heartbeat:0:8",
+    # 24 hours at 1 minute resolution
     "RRA:LAST:$xff:1:1440",
     "RRA:MIN:$xff:1:1440",
     "RRA:MAX:$xff:1:1440",
     "RRA:AVERAGE:$xff:1:1440",
+    # 7 days at 1 hour resolution
     "RRA:LAST:$xff:60:168",
     "RRA:MIN:$xff:60:168",
     "RRA:MAX:$xff:60:168",
     "RRA:AVERAGE:$xff:60:168",
-    "RRA:LAST:$xff:1440:365",
-    "RRA:MIN:$xff:1440:365",
-    "RRA:MAX:$xff:1440:365",
-    "RRA:AVERAGE:$xff:1440:365",
+    # 366 days at 1 day resolution
+    "RRA:LAST:$xff:1440:366",
+    "RRA:MIN:$xff:1440:366",
+    "RRA:MAX:$xff:1440:366",
+    "RRA:AVERAGE:$xff:1440:366",
 );
 
 # create directories if needed
@@ -204,7 +207,8 @@ Commands:
 	collect HOSTNAME	Collect and store data for HOSTNAME
 	dump HOSTNAME		Display recent data for HOSTNAME
 	summary			Display summary page in HTML
-	host HOSTNAME		Display detail page for HOSTNAME in HTML
+	host HOSTNAME		Display host page for HOSTNAME in HTML
+	host HOSTNAME INTERVAL	Display host detail graph for HOSTNAME & INTERVAL
 	help			Display HTML help page
 Global options:
 	--debug			Display debugging information
