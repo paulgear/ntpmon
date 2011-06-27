@@ -799,14 +799,16 @@ sub create_graphs ($$$@)
 {
     my ($host, $name, $title, @graphdef) = @_;
     my @list;
+    my @small = ("--width=100", "--height=35");
     my @big = ("--width=1000", "--height=350");
     my $i = 0;
-    for my $scope ("hour", "day", "week", "month", "3months", "year") {
+    for my $scope ("day", "week", "year") {
 	my $basename = "$host-$name-$scope.png";
 	my $bigname = "$host-$name-$scope-big.png";
 	my $graphscope = $scope =~ /^\d+/ ? "--start=e-$scope" : "--start=e-1$scope";
 	RRDs::graph("$imagedir/$basename",
 	    $graphscope,
+	    @small,
 	    "--title=$title - last $scope",
 	    @global_graphdef,
 	    @graphdef);
@@ -821,34 +823,11 @@ sub create_graphs ($$$@)
 	    push @list, span( {-class=>"error" }, "RRDs::error $err" );
 	}
 	else {
-	    if ($i <= 3) {
-		push @list, a( {href => "$imageurl/$bigname"}, img( {-src=>"$imageurl/$basename", -border => "0" } ) );
-	    }
-	    else {
-		push @list, a( {href => "$imageurl/$bigname"}, $scope );
-	    }
-	    if ($i == 3) {
-		push @list, "<br>";
-	    }
+	    push @list, a( {href => "$imageurl/$bigname"}, img( {-src=>"$imageurl/$basename", -border => "0" } ) );
 	}
 	++$i;
     }
     return @list;
-}
-
-sub graph_sync ($)
-{
-    my $host = shift;
-    my @graphdef = (
-	"--alt-autoscale-max",
-	"DEF:insync=$host$ext:insync:LAST",
-	"LINE1:insync#000000:Synchronization status (1 = sync, 0 = no sync)",
-    );
-    return
-	a({-name => "lastsync"}) . "\n" .
-	a({-name => "insync"}) . "\n" .
-	h3("Synchronization status") . "\n" .
-	join("\n", create_graphs($host, "sync", "$host synchronization status", @graphdef));
 }
 
 sub graph_peers ($)
@@ -856,6 +835,7 @@ sub graph_peers ($)
     my $host = shift;
     my @graphdef = (
 	"--alt-autoscale-max",
+	"DEF:insync=$host$ext:insync:LAST",
 	"DEF:peers=$host$ext:numpeers:LAST",
 	"DEF:survivors=$host$ext:numsurvivors:LAST",
 	"DEF:discards=$host$ext:numdiscards:LAST",
@@ -872,6 +852,7 @@ sub graph_peers ($)
 	"VDEF:unknownmin=unknown,MINIMUM",
 	"VDEF:unknownavg=unknown,AVERAGE",
 	"VDEF:unknownmax=unknown,MAXIMUM",
+	"LINE1:insync#000000:Synchronization status (1 = sync, 0 = no sync)",
 	"AREA:survivors#00FF00:Working peers     ",
 	"GPRINT:survivorsmin:%6.2lf min",
 	"GPRINT:survivorsavg:%6.2lf avg",
@@ -891,12 +872,16 @@ sub graph_peers ($)
 	"HRULE:3#AAAAAA:Minimum viable working peers",
     );
     return
-	h3("Peer counts") . "\n" .
+	h3("Synchronisation status and peer counts") . "\n" .
+	a({-name => "lastsync"}) . "\n" .
+	a({-name => "insync"}) . "\n" .
+	a({-name => "sync"}) . "\n" .
 	a({-name => "numpeers"}) . "\n" .
 	a({-name => "numsurvivors"}) . "\n" .
 	a({-name => "numdiscards"}) . "\n" .
 	a({-name => "numunknown"}) . "\n" .
-	join("\n", create_graphs($host, "peers", "$host peer counts", @graphdef));
+	a({-name => "peers"}) . "\n" .
+	join("\n", create_graphs($host, "peers", "$host peer counts/sync status", @graphdef));
 }
 
 sub graph_offsets ($)
@@ -971,7 +956,6 @@ sub graphs_rrd ($)
 {
     my $host = shift;
     my $ret = "";
-    $ret .= graph_sync($host);
     $ret .= graph_peers($host);
     $ret .= graph_offsets($host);
     $ret .= graph_reachability($host);
