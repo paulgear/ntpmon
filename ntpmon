@@ -49,6 +49,14 @@ my $marginal = 1;
 my $bad = 2;
 my $ntpq_command = "ntpq -pn";
 
+# thresholds
+my $prefpeers = 3;
+my $minpeers = 2;
+my $maxoffset = 250;
+my $prefoffset = 50;
+my $minreach = 5;
+my $prefreach = 7;
+
 my @summary_statnames = (
     "HOST",
     "lastpoll",
@@ -92,12 +100,12 @@ my %statheadings = (
 
 my %rules = (
     lastsync		=> [ $now-$maxinterval, $now-$maxinterval/2, [ $bad, $good, $marginal ] ],
-    numpeers		=> [   2,  2.9, [ $bad, $good, $marginal ] ],
-    numsurvivors	=> [   2,  2.9, [ $bad, $good, $marginal ] ],
+    numpeers		=> [ $minpeers, $prefpeers * 0.97, [ $bad, $good, $marginal ] ],
+    numsurvivors	=> [ $minpeers, $prefpeers * 0.97, [ $bad, $good, $marginal ] ],
     offsetdiscards	=> [ 500, 5000, [ $good, $good, $good ] ],
-    offsetsurvivors	=> [  50,  250, [ $good, $bad, $marginal ] ],
-    offsetsyncpeer	=> [  50,  250, [ $good, $bad, $marginal ] ],
-    reachability	=> [   5,    7, [ $bad, $good, $marginal ] ],
+    offsetsurvivors	=> [ $prefoffset, $maxoffset, [ $good, $bad, $marginal ] ],
+    offsetsyncpeer	=> [ $prefoffset, $maxoffset, [ $good, $bad, $marginal ] ],
+    reachability	=> [ $minreach, $prefreach, [ $bad, $good, $marginal ] ],
 );
 
 my %sevcodes = (
@@ -798,7 +806,7 @@ sub create_graphs ($$$@)
 {
     my ($host, $name, $title, @graphdef) = @_;
     my @list;
-    my @small = ("--width=200", "--height=70", "--only-graph");
+    my @small = ("--width=250", "--height=87", "--only-graph");
     my @big = ("--width=1000", "--height=350");
     my $i = 0;
     for my $scope ("day", "week", "year") {
@@ -869,7 +877,7 @@ sub graph_peers ($)
 	"GPRINT:unknownavg:%6.2lf avg",
 	"GPRINT:unknownmax:%6.2lf max\\n",
 	"LINE2:insync#990099:Synchronization status (1 = sync, 0 = no sync)\\n",
-	"HRULE:3#AAAAAA:Minimum viable working peers",
+	"HRULE:$prefpeers#AAAAAA:Minimum viable working peers",
     );
     return
 	h3("Synchronisation status and peer counts") . "\n" .
@@ -918,8 +926,8 @@ sub graph_offsets ($)
 	"GPRINT:syncpeermin:%5.2lf min",
 	"GPRINT:syncpeeravg:%6.2lf avg",
 	"GPRINT:syncpeermax:%7.2lf max\\n",
-	"HRULE:50#AAAAAA:Maximum preferred offset\\n",
-	"HRULE:250#555555:Maximum viable offset",
+	"HRULE:$prefoffset#AAAAAA:Maximum preferred offset\\n",
+	"HRULE:$maxoffset#555555:Maximum viable offset",
     );
     return
  	h3("Time offset") . "\n" .
@@ -943,8 +951,8 @@ sub graph_reachability ($)
 	"GPRINT:reachmin:%6.2lf min",
 	"GPRINT:reachavg:%6.2lf avg",
 	"GPRINT:reachmax:%6.2lf max\\n",
-	"HRULE:7#AAAAAA:Minimum preferred reachability\\n",
-	"HRULE:5#555555:Minimum viable reachability",
+	"HRULE:$prefreach#AAAAAA:Minimum preferred reachability\\n",
+	"HRULE:$minreach#555555:Minimum viable reachability",
     );
     return
 	a({-name => "reachability"}) . "\n" .
