@@ -367,6 +367,7 @@ sub ntpmon_collect_host ($)
 
 	next if $refid eq ".LOCL.";	# skip local clock
 	next if $refid eq ".INIT.";	# skip peers which have never worked
+	next if $refid eq ".XFAC.";	# skip peers which are in interface change state
 	next if $stratum > 10;		# skip peers which are not synced
 
 	# see the explanation of tally codes in the ntpq documentation for how these work:
@@ -805,7 +806,7 @@ my @global_graphdef = (
 sub create_graphs ($$$@)
 {
     my ($host, $name, $title, @graphdef) = @_;
-    my @list;
+    my @list = ("<table border=\"0\"><tr>\n");
     my @small = ("--width=250", "--height=87", "--only-graph");
     my @big = ("--width=1000", "--height=350");
     my $i = 0;
@@ -827,14 +828,15 @@ sub create_graphs ($$$@)
 	    @graphdef);
 	my $err = RRDs::error;
 	if ($err) {
-	    push @list, span( {-class=>"error" }, "RRDs::error $err" );
+	    push @list, td( {-class=>"error" }, "RRDs::error $err" );
 	}
 	else {
-	    push @list, a( {href => "$imageurl/$bigname"},
-		img( {-src=>"$imageurl/$basename", -border => "1" } ) );
+	    push @list, td( $scope, br(), a( {href => "$imageurl/$bigname"},
+		img( {-src=>"$imageurl/$basename", -border => "1" } ) ) );
 	}
 	++$i;
     }
+    push @list, "</tr></table>\n";
     return @list;
 }
 
@@ -877,7 +879,7 @@ sub graph_peers ($)
 	"GPRINT:unknownavg:%6.2lf avg",
 	"GPRINT:unknownmax:%6.2lf max\\n",
 	"LINE2:insync#990099:Synchronization status (1 = sync, 0 = no sync)\\n",
-	"HRULE:$prefpeers#AAAAAA:Minimum viable working peers",
+	"HRULE:$prefpeers#A52A2A:Minimum viable working peers",
     );
     return
 	h3("Synchronisation status and peer counts") . "\n" .

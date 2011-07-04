@@ -1,10 +1,12 @@
 Some tasks i've set myself or ideas for improvement (feedback requested):
 
+- Add tooltips to thumbnail graphs.
+
 - Performance seems a little sluggish in viewing the host summary pages.
-  This may be fixed now due to the removal of the hourly, monthly, and
+  This *may* be fixed now due to the removal of the hourly, monthly, and
   3-monthly graphs.  If not, a workaround for this would be to create a
   separate entry point in the CGI script for the larger graphs and only
-  generate them when they are required.
+  generate them when they are accessed.
 
 - Write the help file.
 
