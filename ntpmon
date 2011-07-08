@@ -799,8 +799,8 @@ sub last_polls ($$)
 
 my @global_graphdef = (
     "--lower-limit=0",
-    #"--lazy",
-    #"--watermark=ntpmon: Copyright (c) 2010 Liberty Systems & Software",
+    "--lazy",
+    "--watermark=Created by ntpmon <http://libertysys.com.au/software/ntpmon>",
 );
 
 sub create_graphs ($$$@)
