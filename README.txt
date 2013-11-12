@@ -139,8 +139,7 @@ Installation examples
 Assuming that you have the ntpmon files in your current directory, on Debian and
 Ubuntu Linux, ntpmon and its prerequisites may be installed by running the
 following commands as root:
-	apt-get install apache2 librrds-perl libunix-syslog-perl perl-modules \
-		sysvconfig
+	apt-get install apache2 librrds-perl libunix-syslog-perl perl-modules
 	make install
 	service apache2 restart
 
