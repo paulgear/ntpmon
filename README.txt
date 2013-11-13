@@ -177,3 +177,12 @@ your NTPmon server permission to query the NTP server.  The basic rule is:
 if you can see valid output with 'ntpq -pn HOSTNAME', NTPmon should work for
 that host.
 
+
+Using NTPmon
+------------
+
+To see what NTPmon has collected, visit the URL
+    http://your.server.example.com/cgi-bin/ntpmon
+where your.server.example.com is the hostname of the server where you
+installed NTPmon.
+
