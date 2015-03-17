@@ -33,22 +33,26 @@ def isipaddressy(name):
     """Return true if the passed name is roughly ip addressy.  NTP is very 'casual' about how it
     reports hostnames and IP addresses, so we can't be too strict.  This function simply tests
     that all of the characters in the string are hexadecimal digits, period, or colon."""
-    return re.search('^[0-9a-f.:]*$', name) is not None
+    return re.search(r'^[0-9a-f.:]*$', name) is not None
 
 
 class CheckNTPMon(object):
 
     okpeers = 0
     warnpeers = 0
-
     critoffset = 0
     warnoffset = 0
+    critreach = 0
+    warnreach = 0
 
-    def __init__(self, warnpeers=2, okpeers=4, warnoffset=10, critoffset=50):
+    def __init__(self, warnpeers=2, okpeers=4, warnoffset=10, critoffset=50, warnreach=75,
+            critreach=50):
         self.warnpeers = warnpeers
         self.okpeers = okpeers
         self.warnoffset = warnoffset
         self.critoffset = critoffset
+        self.warnreach = warnreach
+        self.critreach = critreach
 
     def peers(self, n):
         """Return 0 if the number of peers is OK
@@ -80,8 +84,24 @@ class CheckNTPMon(object):
             print "OK: Offset normal (%d)" % (offset)
             return 0
 
-    def reachability(self, blah):
-        pass
+    def reachability(self, percent):
+        """Return 0 if the reachability percentage is OK
+        Return 1 if the reachability percentage is warning
+        Return 2 if the reachability percentage is critical
+        Raise a ValueError if reachability is not a percentage"""
+        if percent < 0 or percent > 100:
+            raise ValueError('Value must be a percentage')
+        if percent <= self.critreach:
+            print "CRITICAL: Reachability too low (%g) - must be more than %g" % (percent,
+                    self.critreach)
+            return 2
+        elif percent <= self.warnreach:
+            print "WARNING: Reachability too low (%g) - should be more than %g" % (percent,
+                    self.warnreach)
+            return 1
+        else:
+            print "OK: Reachability normal (%g)" % (percent)
+            return 0
 
     def sync(self, synchost):
         """Return true if the synchost is non-zero in length and is a roughly valid host identifier"""
