@@ -1,6 +1,6 @@
 NTPmon
 by Paul Gear <ntpmon@libertysys.com.au>
-Copyright (c) 2010-2011 Gear Consulting Pty Ltd <http://libertysys.com.au/>
+Copyright (c) 2010-2015 Gear Consulting Pty Ltd <http://libertysys.com.au/>
 
 License Statement
 -----------------

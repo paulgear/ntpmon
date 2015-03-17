@@ -44,3 +44,5 @@ tarball:
 	tar -czf tarballs/$(PROG)-$(VERSION).tar.gz $(PROG)-$(VERSION)/
 	rm -rf $(PROG)-$(VERSION)/
 
+pytest:
+	python -m unittest -b test_check_ntpmon
