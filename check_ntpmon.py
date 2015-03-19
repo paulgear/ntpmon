@@ -120,7 +120,7 @@ class NTPPeers(object):
         r'remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+',
         r'^=*$',
         r'No association ID.s returned',
-        ]
+    ]
     ignorepeers = [".LOCL.", ".INIT.", ".XFAC."]
 
     def isnoiseline(self, line):
@@ -138,6 +138,12 @@ class NTPPeers(object):
         return False
 
     def checktally(self, tally, peerdata):
+        """Check the tally code and add the appropriate items to the peer data based on that code.
+           See the explanation of tally codes in the ntpq documentation for how these work:
+             - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
+             - http://www.eecis.udel.edu/~mills/ntp/html/ntpq.html
+             - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP
+        """
         if tally in ['*', 'o'] and 'syncpeer' not in self.ntpdata:
             # this is our sync peer
             self.ntpdata['syncpeer'] = peerdata['peer']
@@ -167,7 +173,7 @@ class NTPPeers(object):
             'peers': 0,
             'offsetall': 0,
             'totalreach': 0,
-            }
+        }
 
         for l in peerlines:
             if self.isnoiseline(l):
@@ -183,11 +189,6 @@ class NTPPeers(object):
             fieldnames = ['peer', 'refid', 'stratum', 'type', 'lastpoll', 'interval', 'reach',
                           'delay', 'offset', 'jitter']
             peerdata = dict(zip(fieldnames, fields))
-
-            # see the explanation of tally codes in the ntpq documentation for how these work:
-            # - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
-            # - http://www.eecis.udel.edu/~mills/ntp/html/ntpq.html
-            # - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP
 
             if not self.checktally(tally, peerdata):
                 warnings.warn('Unknown tally code detected - please report a bug: %s' % (l))
