@@ -39,8 +39,14 @@ def isipaddressy(name):
 
 class CheckNTPMon(object):
 
-    def __init__(self, warnpeers=2, okpeers=4, warnoffset=10, critoffset=50, warnreach=75,
-            critreach=50):
+    def __init__(self,
+                 warnpeers=2,
+                 okpeers=4,
+                 warnoffset=10,
+                 critoffset=50,
+                 warnreach=75,
+                 critreach=50):
+
         self.warnpeers = warnpeers
         self.okpeers = okpeers
         self.warnoffset = warnoffset
@@ -67,12 +73,12 @@ class CheckNTPMon(object):
         Return 1 if the offset is WARNING
         Return 2 if the offset is CRITICAL"""
         if abs(offset) > self.critoffset:
-            print "CRITICAL: Offset too high (%g) - must be less than %g" % (offset,
-                    self.critoffset)
+            print "CRITICAL: Offset too high (%g) - must be less than %g" % \
+                    (offset, self.critoffset)
             return 2
         if abs(offset) > self.warnoffset:
-            print "WARNING: Offset too high (%g) - should be less than %g" % (offset,
-                    self.warnoffset)
+            print "WARNING: Offset too high (%g) - should be less than %g" % \
+                    (offset, self.warnoffset)
             return 1
         else:
             print "OK: Offset normal (%d)" % (offset)
@@ -86,12 +92,12 @@ class CheckNTPMon(object):
         if percent < 0 or percent > 100:
             raise ValueError('Value must be a percentage')
         if percent <= self.critreach:
-            print "CRITICAL: Reachability too low (%g) - must be more than %g" % (percent,
-                    self.critreach)
+            print "CRITICAL: Reachability too low (%g) - must be more than %g" % \
+                    (percent, self.critreach)
             return 2
         elif percent <= self.warnreach:
-            print "WARNING: Reachability too low (%g) - should be more than %g" % (percent,
-                    self.warnreach)
+            print "WARNING: Reachability too low (%g) - should be more than %g" % \
+                    (percent, self.warnreach)
             return 1
         else:
             print "OK: Reachability normal (%g)" % (percent)
@@ -110,62 +116,80 @@ class CheckNTPMon(object):
 class NTPPeers(object):
     """Turn the peer lines returned by 'ntpq -pn' into a data structure usable for checks."""
 
+    noiselines = [
+        r'remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+',
+        r'^=*$',
+        r'No association ID.s returned',
+        ]
+    ignorepeers = [".LOCL.", ".INIT.", ".XFAC."]
+
+    def isnoiseline(self, line):
+        for regex in self.noiselines:
+            if re.search(regex, line) is not None:
+                return True
+        return False
+
+    def shouldignore(self, fields, l):
+        if len(fields) != 10:
+            warnings.warn('Invalid ntpq peer line - there are %d fields: %s' % (len(fields), l))
+            return True
+        if fields[0] in self.ignorepeers:
+            return True
+        return False
+
+    def checktally(self, tally, peerdata):
+        if tally in ['*', 'o'] and 'syncpeer' not in self.ntpdata:
+            # this is our sync peer
+            self.ntpdata['syncpeer'] = peerdata['peer']
+            self.ntpdata['offsetsyncpeer'] = abs(float(peerdata['offset']))
+            self.ntpdata['survivors'] += 1
+            self.ntpdata['offsetsurvivors'] += abs(float(peerdata['offset']))
+        elif tally in ['+', '#']:
+            # valid peer
+            self.ntpdata['survivors'] += 1
+            self.ntpdata['offsetsurvivors'] += abs(float(peerdata['offset']))
+        elif tally in [' ', 'x', '.', '-']:
+            # discarded peer
+            self.ntpdata['discards'] += 1
+            self.ntpdata['offsetdiscards'] += abs(float(peerdata['offset']))
+        else:
+            self.ntpdata['unknown'] += 1
+            return False
+        return True
+
     def __init__(self, peerlines):
         self.ntpdata = {
-                'survivors': 0,
-                'offsetsurvivors': 0,
-                'discards': 0,
-                'offsetdiscards': 0,
-                'unknown': 0,
-                'peers': 0,
-                'offsetall': 0,
-                'totalreach': 0,
-                }
+            'survivors': 0,
+            'offsetsurvivors': 0,
+            'discards': 0,
+            'offsetdiscards': 0,
+            'unknown': 0,
+            'peers': 0,
+            'offsetall': 0,
+            'totalreach': 0,
+            }
 
         for l in peerlines:
-            if re.search(r'remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+', l) is not None:
-                continue
-            if re.search(r'^=*$', l) is not None:
-                # this matches blank line as well the header
-                continue
-            if re.search(r'No association ID.s returned', l) is not None:
+            if self.isnoiseline(l):
                 continue
 
             # first column is the tally field, the rest are whitespace-separated fields
             tally = l[0]
             fields = l[1:-1].split()
-            if len(fields) != 10:
-                warnings.warn('Invalid ntpq peer line - there are %d fields: %s' % (len(fields), l))
+
+            if self.shouldignore(fields, l):
                 continue
 
             fieldnames = ['peer', 'refid', 'stratum', 'type', 'lastpoll', 'interval', 'reach',
-                    'delay', 'offset', 'jitter']
+                          'delay', 'offset', 'jitter']
             peerdata = dict(zip(fieldnames, fields))
-
-            if peerdata['peer'] in [".LOCL.", ".INIT.", ".XFAC."]:
-                continue
 
             # see the explanation of tally codes in the ntpq documentation for how these work:
             # - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
             # - http://www.eecis.udel.edu/~mills/ntp/html/ntpq.html
             # - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP
 
-            if tally in ['*', 'o'] and 'syncpeer' not in self.ntpdata:
-                # this is our sync peer
-                self.ntpdata['syncpeer'] = peerdata['peer']
-                self.ntpdata['offsetsyncpeer'] = abs(float(peerdata['offset']))
-                self.ntpdata['survivors'] += 1
-                self.ntpdata['offsetsurvivors'] += abs(float(peerdata['offset']))
-            elif tally in ['+', '#']:
-                # valid peer
-                self.ntpdata['survivors'] += 1
-                self.ntpdata['offsetsurvivors'] += abs(float(peerdata['offset']))
-            elif tally in [' ', 'x', '.', '-']:
-                # discarded peer
-                self.ntpdata['discards'] += 1
-                self.ntpdata['offsetdiscards'] += abs(float(peerdata['offset']))
-            else:
-                self.ntpdata['unknown'] += 1
+            if not self.checktally(tally, peerdata):
                 warnings.warn('Unknown tally code detected - please report a bug: %s' % (l))
                 continue
 
@@ -191,16 +215,16 @@ class NTPPeers(object):
 
     def dump(self):
         if self.ntpdata['syncpeer']:
-            print "Synced to: %s, offset %g" % (self.ntpdata['syncpeer'],
-                    self.ntpdata['offsetsyncpeer'])
-        print "%d peers, average offset %g" % (self.ntpdata['peers'],
-                self.ntpdata['averageoffset'])
+            print "Synced to: %s, offset %g" % \
+                    (self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer'])
+        print "%d peers, average offset %g" % \
+                (self.ntpdata['peers'], self.ntpdata['averageoffset'])
         if self.ntpdata['survivors'] > 0:
-            print "%d good peers, average offset %g" % (self.ntpdata['survivors'],
-                    self.ntpdata['averageoffsetsurvivors'])
+            print "%d good peers, average offset %g" % \
+                    (self.ntpdata['survivors'], self.ntpdata['averageoffsetsurvivors'])
         if self.ntpdata['discards'] > 0:
-            print "%d discarded peers, average offset %g" % (self.ntpdata['discards'],
-                    self.ntpdata['averageoffsetdiscards'])
+            print "%d discarded peers, average offset %g" % \
+                    (self.ntpdata['discards'], self.ntpdata['averageoffsetdiscards'])
         print "Average reachability of all peers: %d%%" % (self.ntpdata['reachability'])
 
 

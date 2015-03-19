@@ -1,8 +1,8 @@
 #!/usr/bin/python
 #
 # Author:       Paul Gear
-# Copyright:	(c) 2015 Gear Consulting Pty Ltd <http://libertysys.com.au/>
-# License:	GPLv3 <http://www.gnu.org/licenses/gpl.html>
+# Copyright:    (c) 2015 Gear Consulting Pty Ltd <http://libertysys.com.au/>
+# License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
 # Description:  Test CheckNTPMon class
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -22,7 +22,8 @@
 import unittest
 from check_ntpmon import CheckNTPMon, NTPPeers
 
-testdata = ["""
+testdata = [
+"""
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  137.189.4.10    .STEP.          16 u    - 1024    0    0.000    0.000   0.000
@@ -35,8 +36,8 @@ testdata = ["""
  27.54.95.11     .STEP.          16 u    - 1024    0    0.000    0.000   0.000
  54.252.129.186  .STEP.          16 u    - 1024    0    0.000    0.000   0.000
 """,
-
-"""     remote           refid      st t when poll reach   delay   offset  jitter
+"""
+     remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
 -203.19.252.1    210.9.192.50     2 u  456 1024  377   47.629   -1.526  35.084
 *202.60.94.11    223.252.32.9     2 u  618 1024  377   18.785    0.259   0.371
