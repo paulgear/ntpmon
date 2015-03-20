@@ -274,7 +274,7 @@ class NTPPeers(object):
     def query():
         lines = None
         try:
-            output = subprocess.check_output(["ntpqasdf", "-pn"])
+            output = subprocess.check_output(["ntpq", "-pn"])
             lines = output.split("\n")
         except:
             traceback.print_exc(file=sys.stdout)
