@@ -22,7 +22,6 @@
 import re
 import subprocess
 import sys
-import sys
 import traceback
 import warnings
 
