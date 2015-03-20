@@ -20,6 +20,10 @@
 #
 
 import re
+import subprocess
+import sys
+import sys
+import traceback
 import warnings
 
 
@@ -104,13 +108,13 @@ class CheckNTPMon(object):
             return 0
 
     def sync(self, synchost):
-        """Return true if the synchost is non-zero in length and is a roughly valid host identifier"""
+        """Return 0 if the synchost is non-zero in length and is a roughly valid host identifier, return 2 otherwise."""
         synced = len(synchost) > 0 and (ishostnamey(synchost) or isipaddressy(synchost))
         if synced:
             print "OK: time is in sync with %s" % (synchost)
         else:
             print "CRITICAL: no sync host selected"
-        return synced
+        return 0 if synced else 2
 
 
 class NTPPeers(object):
@@ -137,8 +141,8 @@ class NTPPeers(object):
             return True
         return False
 
-    def checktally(self, tally, peerdata):
-        """Check the tally code and add the appropriate items to the peer data based on that code.
+    def parsetally(self, tally, peerdata):
+        """Parse the tally code and add the appropriate items to the peer data based on that code.
            See the explanation of tally codes in the ntpq documentation for how these work:
              - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
              - http://www.eecis.udel.edu/~mills/ntp/html/ntpq.html
@@ -190,7 +194,7 @@ class NTPPeers(object):
                           'delay', 'offset', 'jitter']
             peerdata = dict(zip(fieldnames, fields))
 
-            if not self.checktally(tally, peerdata):
+            if not self.parsetally(tally, peerdata):
                 warnings.warn('Unknown tally code detected - please report a bug: %s' % (l))
                 continue
 
@@ -228,15 +232,74 @@ class NTPPeers(object):
                     (self.ntpdata['discards'], self.ntpdata['averageoffsetdiscards'])
         print "Average reachability of all peers: %d%%" % (self.ntpdata['reachability'])
 
+    def check_peers(self, check=None):
+        """Check the number of configured peers"""
+        if check is None:
+            check = CheckNTPMon()
+        return check.peers(self.ntpdata['peers'])
+
+    def check_offset(self, check=None):
+        """Check the offset from the sync peer, returning critical, warning,
+        or OK based on the CheckNTPMon results.
+        If there is no sync peer, use the average offset of survivors instead.
+        If there are no survivors, use the average offset of discards instead, and return warning as a minimum.
+        If there are no discards, return critical.
+        """
+        if check is None:
+            check = CheckNTPMon()
+        if 'offsetsyncpeer' in self.ntpdata:
+            return check.offset(self.ntpdata['offsetsyncpeer'])
+        if 'averageoffsetsurvivors' in self.ntpdata:
+            return check.offset(self.ntpdata['averageoffsetsurvivors'])
+        if 'averageoffsetdiscards' in self.ntpdata:
+            result = check.offset(self.ntpdata['averageoffsetdiscards'])
+            return 1 if result < 1 else result
+        else:
+            print "CRITICAL: No peers for which to check offset"
+            return 2
+
+    def check_reachability(self, check=None):
+        """Check reachability of all peers"""
+        if check is None:
+            check = CheckNTPMon()
+        return check.reachability(self.ntpdata['reachability'])
+
+    def check_sync(self, check=None):
+        """Check whether host is in sync with a peer"""
+        if check is None:
+            check = CheckNTPMon()
+        return check.sync(self.ntpdata['syncpeer'])
+
+    @staticmethod
+    def query():
+        lines = None
+        try:
+            output = subprocess.check_output(["ntpqasdf", "-pn"])
+            lines = output.split("\n")
+        except:
+            traceback.print_exc(file=sys.stdout)
+        return lines
+
 
 def main():
-    # parse args - if none, show current data & interpretation, plus how to use as Nagios check
-    # call ntpq -pn
-    # parse ntpq output
-    # check results
-    # return correct error code
-    pass
+    # TODO: parse check parameters - if no check selected, show help text about how to use as Nagios check
 
+    lines = NTPPeers.query()
+    if lines is None:
+        # Unknown result
+        print "Cannot get peers from ntpq - please check that an NTP server is installed and functional"
+        sys.exit(3)
+
+    ntp = NTPPeers(lines)
+    ret = 0
+
+    methods = [ntp.check_sync, ntp.check_peers, ntp.check_offset, ntp.check_reachability]
+    for method in methods:
+        check = method()            # TODO: add check parameters here
+        if ret < check:
+            ret = check
+
+    sys.exit(ret)
 
 if __name__ == "__main__":
     main()
