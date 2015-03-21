@@ -141,7 +141,7 @@ class NTPPeers(object):
             return True
         return False
 
-    def parsetally(self, tally, peerdata):
+    def parsetally(self, tally, peerdata, offset):
         """Parse the tally code and add the appropriate items to the peer data based on that code.
            See the explanation of tally codes in the ntpq documentation for how these work:
              - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
@@ -151,17 +151,17 @@ class NTPPeers(object):
         if tally in ['*', 'o'] and 'syncpeer' not in self.ntpdata:
             # this is our sync peer
             self.ntpdata['syncpeer'] = peerdata['peer']
-            self.ntpdata['offsetsyncpeer'] = abs(float(peerdata['offset']))
+            self.ntpdata['offsetsyncpeer'] = offset
             self.ntpdata['survivors'] += 1
-            self.ntpdata['offsetsurvivors'] += abs(float(peerdata['offset']))
+            self.ntpdata['offsetsurvivors'] += offset
         elif tally in ['+', '#']:
             # valid peer
             self.ntpdata['survivors'] += 1
-            self.ntpdata['offsetsurvivors'] += abs(float(peerdata['offset']))
+            self.ntpdata['offsetsurvivors'] += offset
         elif tally in [' ', 'x', '.', '-']:
             # discarded peer
             self.ntpdata['discards'] += 1
-            self.ntpdata['offsetdiscards'] += abs(float(peerdata['offset']))
+            self.ntpdata['offsetdiscards'] += offset
         else:
             self.ntpdata['unknown'] += 1
             return False
@@ -195,12 +195,13 @@ class NTPPeers(object):
                           'delay', 'offset', 'jitter']
             peerdata = dict(zip(fieldnames, fields))
 
-            if not self.parsetally(tally, peerdata):
+            offset = abs(float(peerdata['offset']))
+            if not self.parsetally(tally, peerdata, offset):
                 warnings.warn('Unknown tally code detected - please report a bug: %s' % (l))
                 continue
 
             self.ntpdata['peers'] += 1
-            self.ntpdata['offsetall'] += abs(float(peerdata['offset']))
+            self.ntpdata['offsetall'] += offset
 
             # reachability - this counts the number of bits set in the reachability field
             # (which is displayed in octal in the ntpq output)
