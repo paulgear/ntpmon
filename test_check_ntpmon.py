@@ -128,11 +128,11 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 0.598)
         self.assertEqual(ntp.ntpdata['survivors'], 1)
         self.assertEqual(ntp.ntpdata['averageoffsetsurvivors'], 0.598)
-        self.assertEqual(ntp.ntpdata['discards'], 8)
-        self.assertEqual(ntp.ntpdata['averageoffsetdiscards'], 0)
-        self.assertEqual(ntp.ntpdata['peers'], 9)
-        self.assertEqual(ntp.ntpdata['averageoffset'], 0.06644444444444444)
-        self.assertEqual(ntp.ntpdata['reachability'], 11.11111111111111)
+        self.assertEqual(ntp.ntpdata['discards'], 0)
+        self.assertEqual(ntp.ntpdata.get('averageoffsetdiscards'), None)
+        self.assertEqual(ntp.ntpdata['peers'], 1)
+        self.assertEqual(ntp.ntpdata['averageoffset'], 0.598)
+        self.assertEqual(ntp.ntpdata['reachability'], 100)
 
         # run checks on the data
         check = CheckNTPMon()
@@ -140,15 +140,15 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(check.offset(ntp.ntpdata['offsetsyncpeer']), 0, 'Low offset non-OK')
         self.assertEqual(check.offset(ntp.ntpdata['averageoffsetsurvivors']), 0, 'Low offset non-OK')
         self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 0, 'Low offset non-OK')
-        self.assertEqual(check.peers(ntp.ntpdata['peers']), 0, 'High peers non-OK')
-        self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 2,
-                         'Low reachability non-critical')
+        self.assertEqual(check.peers(ntp.ntpdata['peers']), 2, 'Low peers non-critical')
+        self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 0,
+                'High reachability non-OK')
 
         # run overall health checks
         self.assertEqual(ntp.check_sync(), 0, 'Sync peer not detected')
         self.assertEqual(ntp.check_offset(), 0, 'Low offset non-OK')
-        self.assertEqual(ntp.check_peers(), 0, 'High peers non-OK')
-        self.assertEqual(ntp.check_reachability(), 2, 'Low reachability non-critical')
+        self.assertEqual(ntp.check_peers(), 2, 'Low peers non-critical')
+        self.assertEqual(ntp.check_reachability(), 0, 'High reachability non-OK')
 
     def test_NTPPeer1(self):
         # check the parsing done by NTPPeers
