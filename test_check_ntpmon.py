@@ -139,7 +139,6 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(check.sync(ntp.ntpdata['syncpeer']), 0, 'Sync peer not detected')
         self.assertEqual(check.offset(ntp.ntpdata['offsetsyncpeer']), 0, 'Low offset non-OK')
         self.assertEqual(check.offset(ntp.ntpdata['averageoffsetsurvivors']), 0, 'Low offset non-OK')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffsetdiscards']), 0, 'Low offset non-OK')
         self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 0, 'Low offset non-OK')
         self.assertEqual(check.peers(ntp.ntpdata['peers']), 0, 'High peers non-OK')
         self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 2,
@@ -158,11 +157,11 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 0.259)
         self.assertEqual(ntp.ntpdata['survivors'], 3)
         self.assertEqual(ntp.ntpdata['averageoffsetsurvivors'], 0.21133333333333335)
-        self.assertEqual(ntp.ntpdata['discards'], 4)
-        self.assertEqual(ntp.ntpdata['averageoffsetdiscards'], 0.768)
-        self.assertEqual(ntp.ntpdata['peers'], 7)
-        self.assertEqual(ntp.ntpdata['averageoffset'], 0.5294285714285715)
-        self.assertEqual(ntp.ntpdata['reachability'], 85.71428571428571)
+        self.assertEqual(ntp.ntpdata['discards'], 3)
+        self.assertEqual(ntp.ntpdata['averageoffsetdiscards'], 1.024)
+        self.assertEqual(ntp.ntpdata['peers'], 6)
+        self.assertEqual(ntp.ntpdata['averageoffset'], 0.6176666666666667)
+        self.assertEqual(ntp.ntpdata['reachability'], 100)
 
         # run checks on the data
         check = CheckNTPMon()
@@ -218,24 +217,24 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.ntpdata.get('offsetsyncpeer'), None)
         self.assertEqual(ntp.ntpdata['survivors'], 0)
         self.assertEqual(ntp.ntpdata.get('averageoffsetsurvivors'), None)
-        self.assertEqual(ntp.ntpdata['discards'], 8)
-        self.assertEqual(ntp.ntpdata['averageoffsetdiscards'], 0.114125)
-        self.assertEqual(ntp.ntpdata['peers'], 8)
-        self.assertEqual(ntp.ntpdata['averageoffset'], 0.114125)
-        self.assertEqual(ntp.ntpdata['reachability'], 4.6875)
+        self.assertEqual(ntp.ntpdata['discards'], 1)
+        self.assertEqual(ntp.ntpdata['averageoffsetdiscards'], 0.913)
+        self.assertEqual(ntp.ntpdata['peers'], 1)
+        self.assertEqual(ntp.ntpdata['averageoffset'], 0.913)
+        self.assertEqual(ntp.ntpdata['reachability'], 37.5)
 
         # run checks on the data
         check = CheckNTPMon()
         self.assertEqual(check.offset(ntp.ntpdata['averageoffsetdiscards']), 0, 'Low offset non-OK')
         self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 0, 'Low offset non-OK')
-        self.assertEqual(check.peers(ntp.ntpdata['peers']), 0, 'High peers non-OK')
+        self.assertEqual(check.peers(ntp.ntpdata['peers']), 2, 'Low peers non-critical')
         self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 2,
                          'Low reachability non-critical')
 
         # run overall health checks
         self.assertEqual(ntp.check_sync(), 2, 'Missing sync peer not detected')
         self.assertEqual(ntp.check_offset(), 1, 'Missing sync peer/survivor offset non-warning')
-        self.assertEqual(ntp.check_peers(), 0, 'High peers non-OK')
+        self.assertEqual(ntp.check_peers(), 2, 'Low peers non-critical')
         self.assertEqual(ntp.check_reachability(), 2, 'Low reachability non-critical')
 
 
