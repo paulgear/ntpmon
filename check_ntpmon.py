@@ -104,7 +104,7 @@ class CheckNTPMon(object):
                     (percent, self.warnreach)
             return 1
         else:
-            print "OK: Reachability normal (%g)" % (percent)
+            print "OK: Reachability normal (%g%%)" % (percent)
             return 0
 
     def sync(self, synchost):
@@ -224,17 +224,17 @@ class NTPPeers(object):
 
     def dump(self):
         if self.ntpdata.get('syncpeer'):
-            print "Synced to: %s, offset %g" % \
+            print "Synced to: %s, offset %g ms" % \
                     (self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer'])
         else:
             print "No remote sync peer"
-        print "%d total peers, average offset %g" % \
+        print "%d total peers, average offset %g ms" % \
                 (self.ntpdata['peers'], self.ntpdata['averageoffset'])
         if self.ntpdata['survivors'] > 0:
-            print "%d good peers, average offset %g" % \
+            print "%d good peers, average offset %g ms" % \
                     (self.ntpdata['survivors'], self.ntpdata['averageoffsetsurvivors'])
         if self.ntpdata['discards'] > 0:
-            print "%d discarded peers, average offset %g" % \
+            print "%d discarded peers, average offset %g ms" % \
                     (self.ntpdata['discards'], self.ntpdata['averageoffsetdiscards'])
         print "Average reachability of all peers: %d%%" % (self.ntpdata['reachability'])
 
@@ -278,6 +278,16 @@ class NTPPeers(object):
             print "CRITICAL: No sync peer"
             return 2
         return check.sync(self.ntpdata['syncpeer'])
+
+    def checks(self, methods=None, check=None):
+        ret = 0
+        if not methods:
+            methods = [self.check_offset, self.check_peers, self.check_reachability, self.check_sync]
+        for method in methods:
+            check = method()
+            if ret < check:
+                ret = check
+        return ret
 
     @staticmethod
     def query():
@@ -337,17 +347,15 @@ def main():
 
     # if check argument is specified, run just that check
     ret = 0
-    if checkmethods.get(args.check) is not None:
+    if checkmethods.get(args.check):
         method = checkmethods[args.check]
         ret = method()
     # else check all the methods
     else:
-        for method in methods:
-            check = method()
-            if ret < check:
-                ret = check
+        ret = ntp.checks(methods)
 
     sys.exit(ret)
 
 if __name__ == "__main__":
     main()
+

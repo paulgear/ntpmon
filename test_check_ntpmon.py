@@ -66,6 +66,97 @@ testdata = [
 """,
 ]
 
+demodata = [
+"""
+     remote  refid   st t when poll reach   delay   offset    disp
+=========================================================================
+*WWVB_SPEC(1)  .WWVB.  0 l  114   64  377     0.00   37.623   12.77
+ relay.hp.com    listo 2 u  225  512  377     6.93   34.052   10.79
+ cosl4.cup.hp.co listo 2 u  226  512  377     4.18   29.385   13.21
+ paloalto.cns.hp listo 2 u  235  512  377     9.80   33.487   11.61
+ chelmsford.cns. listo 2 u  233  512  377    88.79   30.462    9.66
+ atlanta.cns.hp. listo 2 u  231  512  377    67.44   32.909   12.86
+ colorado.cns.hp listo 2 u  233  512  377    43.70   30.077   18.63
+ boise.cns.hp.co listo 2 u  224  512  377    33.42   31.682    8.54
+""",
+"""
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+ GENERIC(1)      .GPS.            0 l    4   64    1    0.000   -0.719   0.001
+ PPS(1)          .PPS.           16 l    -   64    0    0.000    0.000 4000.00
+ ltgpsdemo       .INIT.          16 u    3   64    0    0.000    0.000 4000.00
+""",
+"""
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+ GENERIC(1)      .GPS.            0 l   38   64    7    0.000   -1.193   0.528
+ PPS(1)          .PPS.           16 l    -   64    0    0.000    0.000 4000.00
+ ltgpsdemo       .GPS.            1 u   33   64    1    0.624   -0.417   0.001
+""",
+"""
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+*GENERIC(1)      .GPS.            0 l   45   64  377    0.000   -0.437   0.203
+ PPS(1)          .PPS.           16 l    -   64    0    0.000    0.000 4000.00
++ltgpsdemo       .PPS.            1 u  116  512  377    0.500    0.349   0.106
+""",
+# mangled from Cisco router demo output:
+"""
+ 27.54.95.11     .STEP.          16 u    -     64     0  0.000   0.000 15937.
++130.102.128.23  216.218.254.20   2 u   25     64    77 51.267  32.537 189.39
+ 128.184.34.53   169.254.0.1      3 u   64     64   122 49.115  29.474 1939.5
+*129.250.35.250  133.243.238.24   2 u   14     64   177 261.47   7.906 65.514
++129.250.35.251  133.243.238.24   2 u   55     64    77 255.70  13.942 190.86
+""",
+"""
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+ ff05::101       .MCST.          16 u    -   64    0    0.000    0.000 4000.00
+*example.site.co .PPS.            1 u  320 1024  377    1.955   -1.234   1.368
+""",
+"""
+remote refid st t when poll reach delay offset jitter
+==========================================================
+-navobs1.oar.net .USNO. 1 u 958 1024 377 89.425 -6.073 0.695
+*navobs1.gatech. .GPS. 1 u 183 1024 375 82.102 1.639 0.281
+-NAVOBS1.MIT.EDU .PSC. 1 u 895 1024 377 90.912 -0.207 0.368
++navobs1.wustl.e .GPS. 1 u 48 1024 377 76.890 1.093 0.525
+-bigben.cac.wash .USNO. 1 u 924 1024 377 113.327 0.028 0.326
++tick.ucla.edu .GPS. 1 u 107 1024 377 102.470 2.032 0.482
+-ntp.alaska.edu .GPS. 1 u 881 1024 377 168.741 5.180 5.157
+-tock.mhpcc.hpc. .GPS. 1 u 933 1024 377 174.518 -1.094 0.054
+""",
+"""
+remote refid st t when poll reach delay offset disp
+==========================================================
++128.252.19.1 .GPS. 1 u 495 1024 377 30.90 -6.366 8.26
+*139.78.133.139 .USNO. 1 u 936 1024 377 48.43 -2.906 5.20
+""",
+"""
+remote refid st t when poll reach delay offset jitter
+======================================================
++navobs1.wustl.e .GPS. 1 u 241 256 377 77.626 1.744 0.195
+-tick.ucla.edu .GPS. 1 u 136 256 377 102.069 2.019 2.281
++ntp.alaska.edu .GPS. 1 u 207 256 377 168.971 0.528 6.612
+*GPS_NMEA(1) .GPS. 0 l 62 64 377 0.000 0.000 0.001
+LOCAL(0) .LOCL. 10 l 62 64 377 0.000 0.000 0.000
+""",
+"""
+     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+*dione.cbane.org 204.123.2.5      2 u  509 1024  377   51.661   -3.343   0.279
++ns1.your-site.c 132.236.56.252   3 u  899 1024  377   48.395    2.047   1.006
++ntp.yoinks.net  129.7.1.66       2 u  930 1024  377    0.693    1.035   0.241
+ LOCAL(0)        .LOCL.          10 l   45   64  377    0.000    0.000   0.001
+""",
+"""
+remote refid st t when poll reach delay offset jitter
+======================================================================
+ 6s-ntp .ACST. 16 u - 64 0 0.000 0.000 0.002
+*ntp0.kostecke.n 192.168.19.2 3 u 225 1024 377 0.723 -3.463 1.889
+""",
+]
+
 
 class TestCheckNTPMon(unittest.TestCase):
 
@@ -238,6 +329,17 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.check_reachability(), 2, 'Low reachability non-critical')
 
 
+def demo():
+    i = 0
+    for d in demodata:
+        print "Parsing demo data %d: %s" % (i, d)
+        ntp = NTPPeers(d.split("\n"))
+        i += 1
+        ntp.dump()
+        ntp.checks()
+
+
 if __name__ == "__main__":
     unittest.main()
+#    demo()
 
