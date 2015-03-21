@@ -304,7 +304,7 @@ def main():
     parser.add_argument('--check', choices=methodnames,
             help='Select check to run; if omitted, run all checks and return the worst result.')
     parser.add_argument('--debug', action='store_true',
-            help='Include "ntpq -pn" output.')
+            help='Include "ntpq -pn" output and internal state dump along with check results.')
     for o in options.keys():
         helptext = options[o][2] + ' (default: %d)' % (options[o][0])
         parser.add_argument('--' + o, default=options[o][0], help=helptext, type=options[o][1])
@@ -318,11 +318,12 @@ def main():
         print "Please check that an NTP server is installed and functional."
         sys.exit(3)
 
-    if args.debug:
-        print "\n".join(lines)
-
     # initialise our object with the results of ntpq and our preferred check thresholds
     ntp = NTPPeers(lines, checkntpmon)
+
+    if args.debug:
+        print "\n".join(lines)
+        ntp.dump()
 
     # work out which method to run
     # (methods must be in the same order as methodnames above)
