@@ -96,11 +96,11 @@ class CheckNTPMon(object):
         if percent < 0 or percent > 100:
             raise ValueError('Value must be a percentage')
         if percent <= self.critreach:
-            print "CRITICAL: Reachability too low (%g) - must be more than %g" % \
+            print "CRITICAL: Reachability too low (%g%%) - must be more than %g%%" % \
                     (percent, self.critreach)
             return 2
         elif percent <= self.warnreach:
-            print "WARNING: Reachability too low (%g) - should be more than %g" % \
+            print "WARNING: Reachability too low (%g%%) - should be more than %g%%" % \
                     (percent, self.warnreach)
             return 1
         else:
@@ -303,10 +303,11 @@ def main():
     parser = argparse.ArgumentParser(description='Nagios NTP check incorporating the logic of NTPmon')
     parser.add_argument('--check', choices=methodnames,
             help='Select check to run; if omitted, run all checks and return the worst result.')
+    parser.add_argument('--debug', action='store_true',
+            help='Include "ntpq -pn" output.')
     for o in options.keys():
         helptext = options[o][2] + ' (default: %d)' % (options[o][0])
-        parser.add_argument('--' + o, default=options[o][0], dest=o, help=helptext,
-                type=options[o][1])
+        parser.add_argument('--' + o, default=options[o][0], help=helptext, type=options[o][1])
     args = parser.parse_args(namespace=checkntpmon)
 
     # run ntpq
@@ -316,6 +317,9 @@ def main():
         print "Cannot get peers from ntpq."
         print "Please check that an NTP server is installed and functional."
         sys.exit(3)
+
+    if args.debug:
+        print "\n".join(lines)
 
     # initialise our object with the results of ntpq and our preferred check thresholds
     ntp = NTPPeers(lines, checkntpmon)
