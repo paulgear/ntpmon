@@ -137,7 +137,7 @@ class NTPPeers(object):
         if len(fields) != 10:
             warnings.warn('Invalid ntpq peer line - there are %d fields: %s' % (len(fields), l))
             return True
-        if fields[0] in self.ignorepeers:
+        if fields[1] in self.ignorepeers:
             return True
         return False
 
@@ -221,9 +221,11 @@ class NTPPeers(object):
         self.ntpdata['averageoffset'] = self.ntpdata['offsetall'] / self.ntpdata['peers']
 
     def dump(self):
-        if self.ntpdata['syncpeer']:
+        if self.ntpdata.get('syncpeer'):
             print "Synced to: %s, offset %g" % \
                     (self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer'])
+        else:
+            print "No remote sync peer"
         print "%d peers, average offset %g" % \
                 (self.ntpdata['peers'], self.ntpdata['averageoffset'])
         if self.ntpdata['survivors'] > 0:
