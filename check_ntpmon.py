@@ -63,7 +63,7 @@ class CheckNTPMon(object):
         Return 1 if the number of peers is WARNING
         Return 2 if the number of peers is CRITICAL"""
         if n >= self.okpeers:
-            print "OK: %d configured peers" % n
+            print "OK: %d usable peers" % n
             return 0
         elif n < self.warnpeers:
             print "CRITICAL: Too few peers (%d) - must be at least %d" % (n, self.warnpeers)
@@ -239,7 +239,7 @@ class NTPPeers(object):
         print "Average reachability of all peers: %d%%" % (self.ntpdata['reachability'])
 
     def check_peers(self, check=None):
-        """Check the number of configured peers"""
+        """Check the number of usable peers"""
         if check is None:
             check = self.check if self.check else CheckNTPMon()
         return check.peers(self.ntpdata['peers'])
