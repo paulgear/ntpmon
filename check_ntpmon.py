@@ -267,6 +267,9 @@ class NTPPeers(object):
         """Check whether host is in sync with a peer"""
         if check is None:
             check = CheckNTPMon()
+        if self.ntpdata.get('syncpeer') is None:
+            print "CRITICAL: No sync peer"
+            return 2
         return check.sync(self.ntpdata['syncpeer'])
 
     @staticmethod
