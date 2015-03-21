@@ -139,6 +139,8 @@ class NTPPeers(object):
             return True
         if fields[1] in self.ignorepeers:
             return True
+        if int(fields[2]) > 15:
+            return True
         return False
 
     def parsetally(self, tally, peerdata, offset):
@@ -226,7 +228,7 @@ class NTPPeers(object):
                     (self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer'])
         else:
             print "No remote sync peer"
-        print "%d peers, average offset %g" % \
+        print "%d total peers, average offset %g" % \
                 (self.ntpdata['peers'], self.ntpdata['averageoffset'])
         if self.ntpdata['survivors'] > 0:
             print "%d good peers, average offset %g" % \
