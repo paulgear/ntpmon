@@ -19,6 +19,7 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import argparse
 import re
 import subprocess
 import sys
@@ -62,7 +63,7 @@ class CheckNTPMon(object):
         Return 1 if the number of peers is WARNING
         Return 2 if the number of peers is CRITICAL"""
         if n >= self.okpeers:
-            print "OK: %d functional peers" % n
+            print "OK: %d configured peers" % n
             return 0
         elif n < self.warnpeers:
             print "CRITICAL: Too few peers (%d) - must be at least %d" % (n, self.warnpeers)
@@ -84,7 +85,7 @@ class CheckNTPMon(object):
                     (offset, self.warnoffset)
             return 1
         else:
-            print "OK: Offset normal (%d)" % (offset)
+            print "OK: Offset normal (%g)" % (offset)
             return 0
 
     def reachability(self, percent):
@@ -166,7 +167,7 @@ class NTPPeers(object):
             return False
         return True
 
-    def __init__(self, peerlines):
+    def __init__(self, peerlines, check=None):
         self.ntpdata = {
             'survivors': 0,
             'offsetsurvivors': 0,
@@ -177,6 +178,7 @@ class NTPPeers(object):
             'offsetall': 0,
             'totalreach': 0,
         }
+        self.check = check
 
         for l in peerlines:
             if self.isnoiseline(l):
@@ -234,7 +236,7 @@ class NTPPeers(object):
     def check_peers(self, check=None):
         """Check the number of configured peers"""
         if check is None:
-            check = CheckNTPMon()
+            check = self.check if self.check else CheckNTPMon()
         return check.peers(self.ntpdata['peers'])
 
     def check_offset(self, check=None):
@@ -245,7 +247,7 @@ class NTPPeers(object):
         If there are no discards, return critical.
         """
         if check is None:
-            check = CheckNTPMon()
+            check = self.check if self.check else CheckNTPMon()
         if 'offsetsyncpeer' in self.ntpdata:
             return check.offset(self.ntpdata['offsetsyncpeer'])
         if 'averageoffsetsurvivors' in self.ntpdata:
@@ -260,13 +262,13 @@ class NTPPeers(object):
     def check_reachability(self, check=None):
         """Check reachability of all peers"""
         if check is None:
-            check = CheckNTPMon()
+            check = self.check if self.check else CheckNTPMon()
         return check.reachability(self.ntpdata['reachability'])
 
     def check_sync(self, check=None):
         """Check whether host is in sync with a peer"""
         if check is None:
-            check = CheckNTPMon()
+            check = self.check if self.check else CheckNTPMon()
         if self.ntpdata.get('syncpeer') is None:
             print "CRITICAL: No sync peer"
             return 2
@@ -284,22 +286,56 @@ class NTPPeers(object):
 
 
 def main():
-    # TODO: parse check parameters - if no check selected, show help text about how to use as Nagios check
+    methodnames = ['offset', 'peers', 'reachability', 'sync']
+    options = {
+        'warnpeers':  [  2, int,   'Minimum number of peers to be considered non-critical'],
+        'okpeers':    [  4, int,   'Minimum number of peers to be considered OK'],
+        'warnoffset': [ 10, float, 'Minimum offset to be considered warning'],
+        'critoffset': [ 50, float, 'Minimum offset to be considered critical'],
+        'warnreach':  [ 75, float, 'Minimum peer reachability percentage to be considered OK'],
+        'critreach':  [ 50, float, 'Minimum peer reachability percentage to be considered non-crtical'],
+    }
 
+    # Create check ranges; will be used by parse_args to store options
+    checkntpmon = CheckNTPMon()
+
+    # parse command line
+    parser = argparse.ArgumentParser(description='Nagios NTP check incorporating the logic of NTPmon')
+    parser.add_argument('--check', choices=methodnames,
+            help='Select check to run; if omitted, run all checks and return the worst result.')
+    for o in options.keys():
+        helptext = options[o][2] + ' (default: %d)' % (options[o][0])
+        parser.add_argument('--' + o, default=options[o][0], dest=o, help=helptext,
+                type=options[o][1])
+    args = parser.parse_args(namespace=checkntpmon)
+
+    # run ntpq
     lines = NTPPeers.query()
     if lines is None:
         # Unknown result
-        print "Cannot get peers from ntpq - please check that an NTP server is installed and functional"
+        print "Cannot get peers from ntpq."
+        print "Please check that an NTP server is installed and functional."
         sys.exit(3)
 
-    ntp = NTPPeers(lines)
-    ret = 0
+    # initialise our object with the results of ntpq and our preferred check thresholds
+    ntp = NTPPeers(lines, checkntpmon)
 
-    methods = [ntp.check_sync, ntp.check_peers, ntp.check_offset, ntp.check_reachability]
-    for method in methods:
-        check = method()            # TODO: add check parameters here
-        if ret < check:
-            ret = check
+    # work out which method to run
+    # (methods must be in the same order as methodnames above)
+    methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability, ntp.check_sync]
+    checkmethods = dict(zip(methodnames, methods))
+
+    # if check argument is specified, run just that check
+    ret = 0
+    if checkmethods.get(args.check) is not None:
+        method = checkmethods[args.check]
+        ret = method()
+    # else check all the methods
+    else:
+        for method in methods:
+            check = method()
+            if ret < check:
+                ret = check
 
     sys.exit(ret)
 
