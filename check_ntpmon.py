@@ -41,7 +41,7 @@ def isipaddressy(name):
     return re.search(r'^[0-9a-f.:]*$', name) is not None
 
 
-class CheckNTPMon(object):
+class CheckNTPMonSilent(object):
 
     def __init__(self,
                  warnpeers=2,
@@ -50,7 +50,6 @@ class CheckNTPMon(object):
                  critoffset=50,
                  warnreach=75,
                  critreach=50):
-
         self.warnpeers = warnpeers
         self.okpeers = okpeers
         self.warnoffset = warnoffset
@@ -59,62 +58,95 @@ class CheckNTPMon(object):
         self.critreach = critreach
 
     def peers(self, n):
+        if n >= self.okpeers:
+            return (0, "OK: %d usable peers" % (n))
+        elif n < self.warnpeers:
+            return (2, "CRITICAL: Too few peers (%d) - must be at least %d" % (n, self.warnpeers))
+        else:
+            return (1, "WARNING: Too few peers (%d) - should be at least %d" % (n, self.okpeers))
+
+    def offset(self, offset):
+        if abs(offset) > self.critoffset:
+            return (2,
+                "CRITICAL: Offset too high (%g) - must be less than %g" %
+                (offset, self.critoffset))
+        if abs(offset) > self.warnoffset:
+            return (1, "WARNING: Offset too high (%g) - should be less than %g"
+                % (offset, self.warnoffset))
+        else:
+            return (0, "OK: Offset normal (%g)" % (offset))
+
+    def reachability(self, percent):
+        if percent < 0 or percent > 100:
+            raise ValueError('Value must be a percentage')
+        if percent <= self.critreach:
+            return (2, "CRITICAL: Reachability too low (%g%%) - must be more than %g%%" %
+                    (percent, self.critreach))
+        elif percent <= self.warnreach:
+            return (1, "WARNING: Reachability too low (%g%%) - should be more than %g%%" %
+                    (percent, self.warnreach))
+        else:
+            return (0, "OK: Reachability normal (%g%%)" % (percent))
+
+    def sync(self, synchost):
+        synced = len(synchost) > 0 and (ishostnamey(synchost) or isipaddressy(synchost))
+        if synced:
+            return (0, "OK: time is in sync with %s" % (synchost))
+        else:
+            return (2, "CRITICAL: no sync host selected")
+
+    def is_silent(self):
+        return True
+
+
+class CheckNTPMon(object):
+    """Version of CheckNTPMonSilent which prints out the diagnostic message and returns
+    integer return code instead of a list"""
+
+    def __init__(self,
+                 warnpeers=2,
+                 okpeers=4,
+                 warnoffset=10,
+                 critoffset=50,
+                 warnreach=75,
+                 critreach=50):
+        self.impl = CheckNTPMonSilent(warnpeers, okpeers, warnoffset, critoffset, warnreach,
+                critreach)
+
+    def peers(self, n):
         """Return 0 if the number of peers is OK
         Return 1 if the number of peers is WARNING
         Return 2 if the number of peers is CRITICAL"""
-        if n >= self.okpeers:
-            print "OK: %d usable peers" % n
-            return 0
-        elif n < self.warnpeers:
-            print "CRITICAL: Too few peers (%d) - must be at least %d" % (n, self.warnpeers)
-            return 2
-        else:
-            print "WARNING: Too few peers (%d) - should be at least %d" % (n, self.okpeers)
-            return 1
+        result = self.impl.peers(n)
+        print result[1]
+        return result[0]
 
     def offset(self, offset):
         """Return 0 if the offset is OK
         Return 1 if the offset is WARNING
         Return 2 if the offset is CRITICAL"""
-        if abs(offset) > self.critoffset:
-            print "CRITICAL: Offset too high (%g) - must be less than %g" % \
-                    (offset, self.critoffset)
-            return 2
-        if abs(offset) > self.warnoffset:
-            print "WARNING: Offset too high (%g) - should be less than %g" % \
-                    (offset, self.warnoffset)
-            return 1
-        else:
-            print "OK: Offset normal (%g)" % (offset)
-            return 0
+        result = self.impl.offset(offset)
+        print result[1]
+        return result[0]
 
     def reachability(self, percent):
         """Return 0 if the reachability percentage is OK
         Return 1 if the reachability percentage is warning
         Return 2 if the reachability percentage is critical
         Raise a ValueError if reachability is not a percentage"""
-        if percent < 0 or percent > 100:
-            raise ValueError('Value must be a percentage')
-        if percent <= self.critreach:
-            print "CRITICAL: Reachability too low (%g%%) - must be more than %g%%" % \
-                    (percent, self.critreach)
-            return 2
-        elif percent <= self.warnreach:
-            print "WARNING: Reachability too low (%g%%) - should be more than %g%%" % \
-                    (percent, self.warnreach)
-            return 1
-        else:
-            print "OK: Reachability normal (%g%%)" % (percent)
-            return 0
+        result = self.impl.reachability(percent)
+        print result[1]
+        return result[0]
 
     def sync(self, synchost):
-        """Return 0 if the synchost is non-zero in length and is a roughly valid host identifier, return 2 otherwise."""
-        synced = len(synchost) > 0 and (ishostnamey(synchost) or isipaddressy(synchost))
-        if synced:
-            print "OK: time is in sync with %s" % (synchost)
-        else:
-            print "CRITICAL: no sync host selected"
-        return 0 if synced else 2
+        """Return 0 if the synchost is non-zero in length and is a roughly valid host identifier
+        Return 2 otherwise"""
+        result = self.impl.sync(synchost)
+        print result[1]
+        return result[0]
+
+    def is_silent(self):
+        return False
 
 
 class NTPPeers(object):
@@ -246,11 +278,13 @@ class NTPPeers(object):
 
     def check_offset(self, check=None):
         """Check the offset from the sync peer, returning critical, warning,
-        or OK based on the CheckNTPMon results.
+            or OK based on the CheckNTPMon results.
         If there is no sync peer, use the average offset of survivors instead.
-        If there are no survivors, use the average offset of discards instead, and return warning as a minimum.
+        If there are no survivors, use the average offset of discards instead,
+            and return warning as a minimum.
         If there are no discards, return critical.
         """
+        result = 0
         if check is None:
             check = self.check if self.check else CheckNTPMon()
         if 'offsetsyncpeer' in self.ntpdata:
@@ -259,10 +293,20 @@ class NTPPeers(object):
             return check.offset(self.ntpdata['averageoffsetsurvivors'])
         if 'averageoffsetdiscards' in self.ntpdata:
             result = check.offset(self.ntpdata['averageoffsetdiscards'])
-            return 1 if result < 1 else result
+            msg = "WARNING: No sync peer or survivors - used discard offsets"
+            if check.is_silent():
+                result = [1 if result[0] < 1 else result[0],
+                        msg + " (" + result[1] + ")"]
+            else:
+                print msg
+                return 1 if result < 1 else result
         else:
-            print "CRITICAL: No peers for which to check offset"
-            return 2
+            ret = [2, "CRITICAL: No peers for which to check offset"]
+            if check.is_silent():
+                return ret
+            else:
+                print ret[1]
+                return ret[0]
 
     def check_reachability(self, check=None):
         """Check reachability of all peers"""
@@ -275,18 +319,36 @@ class NTPPeers(object):
         if check is None:
             check = self.check if self.check else CheckNTPMon()
         if self.ntpdata.get('syncpeer') is None:
-            print "CRITICAL: No sync peer"
-            return 2
+            ret = [2, "CRITICAL: No sync peer"]
+            if check.is_silent():
+                return ret
+            else:
+                print ret[1]
+                return ret[0]
         return check.sync(self.ntpdata['syncpeer'])
 
     def checks(self, methods=None, check=None):
+        """Run the specified list of checks (or all of them if none is supplied)
+        and return the worst result.  Output only the diagnostic message for that
+        result."""
+
         ret = 0
+        if check is None:
+            check = self.check if self.check else CheckNTPMon()
+
+        # we only ever call the silent versions of the functions
+        impl = check if check.is_silent() else check.impl
+
         if not methods:
             methods = [self.check_offset, self.check_peers, self.check_reachability, self.check_sync]
+
         for method in methods:
-            check = method()
-            if ret < check:
-                ret = check
+            result = method(check=impl)
+            if ret < result[0]:
+                ret = result[0]
+                msg = result[1]
+
+        print msg
         return ret
 
     @staticmethod
@@ -352,7 +414,7 @@ def main():
         ret = method()
     # else check all the methods
     else:
-        ret = ntp.checks(methods)
+        ret = ntp.checks()
 
     sys.exit(ret)
 
