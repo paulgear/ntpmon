@@ -242,8 +242,9 @@ class NTPPeers(object):
             # http://stackoverflow.com/questions/9829578/fast-way-of-counting-bits-in-python
             self.ntpdata['totalreach'] += bin(int(peerdata['reach'], 8)).count("1")
 
-        # reachability as a percentage of the last 8 polls, across all peers
-        self.ntpdata['reachability'] = float(self.ntpdata['totalreach']) * 100 / self.ntpdata['peers'] / 8
+        # precent average reachability of all peers over the last 8 polls
+        reach = float(self.ntpdata['totalreach']) * 100 / self.ntpdata['peers']
+        self.ntpdata['reachability'] = reach / 8
 
         # average offsets
         if self.ntpdata['survivors'] > 0:
@@ -365,12 +366,18 @@ class NTPPeers(object):
 def main():
     methodnames = ['offset', 'peers', 'reachability', 'sync']
     options = {
-        'warnpeers':  [  2, int,   'Minimum number of peers to be considered non-critical'],
-        'okpeers':    [  4, int,   'Minimum number of peers to be considered OK'],
-        'warnoffset': [ 10, float, 'Minimum offset to be considered warning'],
-        'critoffset': [ 50, float, 'Minimum offset to be considered critical'],
-        'warnreach':  [ 75, float, 'Minimum peer reachability percentage to be considered OK'],
-        'critreach':  [ 50, float, 'Minimum peer reachability percentage to be considered non-crtical'],
+        'warnpeers': [
+            2, int, 'Minimum number of peers to be considered non-critical'],
+        'okpeers': [
+            4, int, 'Minimum number of peers to be considered OK'],
+        'warnoffset': [
+            10, float, 'Minimum offset to be considered warning'],
+        'critoffset': [
+            50, float, 'Minimum offset to be considered critical'],
+        'warnreach': [
+            75, float, 'Minimum peer reachability percentage to be considered OK'],
+        'critreach': [
+            50, float, 'Minimum peer reachability percentage to be considered non-crtical'],
     }
 
     # Create check ranges; will be used by parse_args to store options

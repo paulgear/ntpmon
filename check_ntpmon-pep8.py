@@ -255,10 +255,9 @@ class NTPPeers(object):
             self.ntpdata['totalreach'] += bin(int(peerdata['reach'],
                                                   8)).count("1")
 
-        # reachability as a percentage of the last 8 polls, across all peers
-        self.ntpdata[
-            'reachability'
-        ] = float(self.ntpdata['totalreach']) * 100 / self.ntpdata['peers'] / 8
+        # precent average reachability of all peers over the last 8 polls
+        reach = float(self.ntpdata['totalreach']) * 100 / self.ntpdata['peers']
+        self.ntpdata['reachability'] = reach / 8
 
         # average offsets
         if self.ntpdata['survivors'] > 0:
