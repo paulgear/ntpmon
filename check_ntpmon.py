@@ -117,33 +117,33 @@ class CheckNTPMon(object):
         """Return 0 if the number of peers is OK
         Return 1 if the number of peers is WARNING
         Return 2 if the number of peers is CRITICAL"""
-        result = self.impl.peers(n)
-        print result[1]
-        return result[0]
+        code, msg = self.impl.peers(n)
+        print msg
+        return code
 
     def offset(self, offset):
         """Return 0 if the offset is OK
         Return 1 if the offset is WARNING
         Return 2 if the offset is CRITICAL"""
-        result = self.impl.offset(offset)
-        print result[1]
-        return result[0]
+        code, msg = self.impl.offset(offset)
+        print msg
+        return code
 
     def reachability(self, percent):
         """Return 0 if the reachability percentage is OK
         Return 1 if the reachability percentage is warning
         Return 2 if the reachability percentage is critical
         Raise a ValueError if reachability is not a percentage"""
-        result = self.impl.reachability(percent)
-        print result[1]
-        return result[0]
+        code, msg = self.impl.reachability(percent)
+        print msg
+        return code
 
     def sync(self, synchost):
         """Return 0 if the synchost is non-zero in length and is a roughly valid host identifier
         Return 2 otherwise"""
-        result = self.impl.sync(synchost)
-        print result[1]
-        return result[0]
+        code, msg = self.impl.sync(synchost)
+        print msg
+        return code
 
     def is_silent(self):
         return False
