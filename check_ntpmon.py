@@ -61,18 +61,21 @@ class CheckNTPMonSilent(object):
         if n >= self.okpeers:
             return (0, "OK: %d usable peers" % (n))
         elif n < self.warnpeers:
-            return (2, "CRITICAL: Too few peers (%d) - must be at least %d" % (n, self.warnpeers))
+            return (2, "CRITICAL: Too few peers (%d) - must be at least %d" %
+                    (n, self.warnpeers))
         else:
-            return (1, "WARNING: Too few peers (%d) - should be at least %d" % (n, self.okpeers))
+            return (1, "WARNING: Too few peers (%d) - should be at least %d" %
+                    (n, self.okpeers))
 
     def offset(self, offset):
         if abs(offset) > self.critoffset:
             return (2,
-                "CRITICAL: Offset too high (%g) - must be less than %g" %
-                (offset, self.critoffset))
+                    "CRITICAL: Offset too high (%g) - must be less than %g" %
+                    (offset, self.critoffset))
         if abs(offset) > self.warnoffset:
-            return (1, "WARNING: Offset too high (%g) - should be less than %g"
-                % (offset, self.warnoffset))
+            return (1,
+                    "WARNING: Offset too high (%g) - should be less than %g" %
+                    (offset, self.warnoffset))
         else:
             return (0, "OK: Offset normal (%g)" % (offset))
 
@@ -80,16 +83,21 @@ class CheckNTPMonSilent(object):
         if percent < 0 or percent > 100:
             raise ValueError('Value must be a percentage')
         if percent <= self.critreach:
-            return (2, "CRITICAL: Reachability too low (%g%%) - must be more than %g%%" %
-                    (percent, self.critreach))
+            return (
+                2,
+                "CRITICAL: Reachability too low (%g%%) - must be more than %g%%" %
+                (percent, self.critreach))
         elif percent <= self.warnreach:
-            return (1, "WARNING: Reachability too low (%g%%) - should be more than %g%%" %
-                    (percent, self.warnreach))
+            return (
+                1,
+                "WARNING: Reachability too low (%g%%) - should be more than %g%%" %
+                (percent, self.warnreach))
         else:
             return (0, "OK: Reachability normal (%g%%)" % (percent))
 
     def sync(self, synchost):
-        synced = len(synchost) > 0 and (ishostnamey(synchost) or isipaddressy(synchost))
+        synced = len(synchost) > 0 and (ishostnamey(synchost) or
+                                        isipaddressy(synchost))
         if synced:
             return (0, "OK: time is in sync with %s" % (synchost))
         else:
@@ -100,6 +108,7 @@ class CheckNTPMonSilent(object):
 
 
 class CheckNTPMon(object):
+
     """Version of CheckNTPMonSilent which prints out the diagnostic message and returns
     integer return code instead of a list"""
 
@@ -110,8 +119,8 @@ class CheckNTPMon(object):
                  critoffset=50,
                  warnreach=75,
                  critreach=50):
-        self.impl = CheckNTPMonSilent(warnpeers, okpeers, warnoffset, critoffset, warnreach,
-                critreach)
+        self.impl = CheckNTPMonSilent(warnpeers, okpeers, warnoffset,
+                                      critoffset, warnreach, critreach)
 
     def peers(self, n):
         """Return 0 if the number of peers is OK
@@ -150,6 +159,7 @@ class CheckNTPMon(object):
 
 
 class NTPPeers(object):
+
     """Turn the peer lines returned by 'ntpq -pn' into a data structure usable for checks."""
 
     noiselines = [
@@ -167,7 +177,8 @@ class NTPPeers(object):
 
     def shouldignore(self, fields, l):
         if len(fields) != 10:
-            warnings.warn('Invalid ntpq peer line - there are %d fields: %s' % (len(fields), l))
+            warnings.warn('Invalid ntpq peer line - there are %d fields: %s' %
+                          (len(fields), l))
             return True
         if fields[1] in self.ignorepeers:
             return True
@@ -218,20 +229,23 @@ class NTPPeers(object):
             if self.isnoiseline(l):
                 continue
 
-            # first column is the tally field, the rest are whitespace-separated fields
+            # first column is the tally field, the rest are
+            # whitespace-separated fields
             tally = l[0]
             fields = l[1:-1].split()
 
             if self.shouldignore(fields, l):
                 continue
 
-            fieldnames = ['peer', 'refid', 'stratum', 'type', 'lastpoll', 'interval', 'reach',
-                          'delay', 'offset', 'jitter']
+            fieldnames = ['peer', 'refid', 'stratum', 'type', 'lastpoll',
+                          'interval', 'reach', 'delay', 'offset', 'jitter']
             peerdata = dict(zip(fieldnames, fields))
 
             offset = abs(float(peerdata['offset']))
             if not self.parsetally(tally, peerdata, offset):
-                warnings.warn('Unknown tally code detected - please report a bug: %s' % (l))
+                warnings.warn(
+                    'Unknown tally code detected - please report a bug: %s' %
+                    (l))
                 continue
 
             self.ntpdata['peers'] += 1
@@ -240,7 +254,8 @@ class NTPPeers(object):
             # reachability - this counts the number of bits set in the reachability field
             # (which is displayed in octal in the ntpq output)
             # http://stackoverflow.com/questions/9829578/fast-way-of-counting-bits-in-python
-            self.ntpdata['totalreach'] += bin(int(peerdata['reach'], 8)).count("1")
+            self.ntpdata['totalreach'] += bin(int(peerdata['reach'],
+                                                  8)).count("1")
 
         # precent average reachability of all peers over the last 8 polls
         reach = float(self.ntpdata['totalreach']) * 100 / self.ntpdata['peers']
@@ -248,28 +263,27 @@ class NTPPeers(object):
 
         # average offsets
         if self.ntpdata['survivors'] > 0:
-            self.ntpdata['averageoffsetsurvivors'] = \
-                    self.ntpdata['offsetsurvivors'] / self.ntpdata['survivors']
+            self.ntpdata['averageoffsetsurvivors'] = self.ntpdata['offsetsurvivors'] / self.ntpdata['survivors']
         if self.ntpdata['discards'] > 0:
-            self.ntpdata['averageoffsetdiscards'] = \
-                    self.ntpdata['offsetdiscards'] / self.ntpdata['discards']
+            self.ntpdata['averageoffsetdiscards'] = self.ntpdata['offsetdiscards'] / self.ntpdata['discards']
         self.ntpdata['averageoffset'] = self.ntpdata['offsetall'] / self.ntpdata['peers']
 
     def dump(self):
         if self.ntpdata.get('syncpeer'):
-            print "Synced to: %s, offset %g ms" % \
-                    (self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer'])
+            print "Synced to: %s, offset %g ms" % (
+                self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer'])
         else:
             print "No remote sync peer"
-        print "%d total peers, average offset %g ms" % \
-                (self.ntpdata['peers'], self.ntpdata['averageoffset'])
+        print "%d total peers, average offset %g ms" % (
+            self.ntpdata['peers'], self.ntpdata['averageoffset'])
         if self.ntpdata['survivors'] > 0:
-            print "%d good peers, average offset %g ms" % \
-                    (self.ntpdata['survivors'], self.ntpdata['averageoffsetsurvivors'])
+            print "%d good peers, average offset %g ms" % (
+                self.ntpdata['survivors'], self.ntpdata['averageoffsetsurvivors'])
         if self.ntpdata['discards'] > 0:
-            print "%d discarded peers, average offset %g ms" % \
-                    (self.ntpdata['discards'], self.ntpdata['averageoffsetdiscards'])
-        print "Average reachability of all peers: %d%%" % (self.ntpdata['reachability'])
+            print "%d discarded peers, average offset %g ms" % (
+                self.ntpdata['discards'], self.ntpdata['averageoffsetdiscards'])
+        print "Average reachability of all peers: %d%%" % (
+            self.ntpdata['reachability'])
 
     def check_peers(self, check=None):
         """Check the number of usable peers"""
@@ -297,7 +311,7 @@ class NTPPeers(object):
             msg = "WARNING: No sync peer or survivors - used discard offsets"
             if check.is_silent():
                 result = [1 if result[0] < 1 else result[0],
-                        msg + " (" + result[1] + ")"]
+                          msg + " (" + result[1] + ")"]
             else:
                 print msg
                 return 1 if result < 1 else result
@@ -341,7 +355,8 @@ class NTPPeers(object):
         impl = check if check.is_silent() else check.impl
 
         if not methods:
-            methods = [self.check_offset, self.check_peers, self.check_reachability, self.check_sync]
+            methods = [self.check_offset, self.check_peers,
+                       self.check_reachability, self.check_sync]
 
         for method in methods:
             result = method(check=impl)
@@ -367,31 +382,45 @@ def main():
     methodnames = ['offset', 'peers', 'reachability', 'sync']
     options = {
         'warnpeers': [
-            2, int, 'Minimum number of peers to be considered non-critical'],
+            2, int, 'Minimum number of peers to be considered non-critical',
+        ],
         'okpeers': [
-            4, int, 'Minimum number of peers to be considered OK'],
+            4, int, 'Minimum number of peers to be considered OK',
+        ],
         'warnoffset': [
-            10, float, 'Minimum offset to be considered warning'],
+            10, float, 'Minimum offset to be considered warning',
+        ],
         'critoffset': [
-            50, float, 'Minimum offset to be considered critical'],
+            50, float, 'Minimum offset to be considered critical',
+        ],
         'warnreach': [
-            75, float, 'Minimum peer reachability percentage to be considered OK'],
+            75, float, 'Minimum peer reachability percentage to be considered OK',
+        ],
         'critreach': [
-            50, float, 'Minimum peer reachability percentage to be considered non-crtical'],
+            50, float, 'Minimum peer reachability percentage to be considered non-crtical',
+        ],
     }
 
     # Create check ranges; will be used by parse_args to store options
     checkntpmon = CheckNTPMon()
 
     # parse command line
-    parser = argparse.ArgumentParser(description='Nagios NTP check incorporating the logic of NTPmon')
-    parser.add_argument('--check', choices=methodnames,
-            help='Select check to run; if omitted, run all checks and return the worst result.')
-    parser.add_argument('--debug', action='store_true',
-            help='Include "ntpq -pn" output and internal state dump along with check results.')
+    parser = argparse.ArgumentParser(
+        description='Nagios NTP check incorporating the logic of NTPmon')
+    parser.add_argument(
+        '--check',
+        choices=methodnames,
+        help='Select check to run; if omitted, run all checks and return the worst result.')
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='Include "ntpq -pn" output and internal state dump along with check results.')
     for o in options.keys():
         helptext = options[o][2] + ' (default: %d)' % (options[o][0])
-        parser.add_argument('--' + o, default=options[o][0], help=helptext, type=options[o][1])
+        parser.add_argument('--' + o,
+                            default=options[o][0],
+                            help=helptext,
+                            type=options[o][1])
     args = parser.parse_args(namespace=checkntpmon)
 
     # run ntpq
@@ -402,7 +431,8 @@ def main():
         print "Please check that an NTP server is installed and functional."
         sys.exit(3)
 
-    # initialise our object with the results of ntpq and our preferred check thresholds
+    # initialise our object with the results of ntpq and our preferred check
+    # thresholds
     ntp = NTPPeers(lines, checkntpmon)
 
     if args.debug:
@@ -411,7 +441,8 @@ def main():
 
     # work out which method to run
     # (methods must be in the same order as methodnames above)
-    methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability, ntp.check_sync]
+    methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability,
+               ntp.check_sync]
     checkmethods = dict(zip(methodnames, methods))
 
     # if check argument is specified, run just that check
@@ -424,6 +455,7 @@ def main():
         ret = ntp.checks()
 
     sys.exit(ret)
+
 
 if __name__ == "__main__":
     main()
