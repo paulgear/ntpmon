@@ -19,7 +19,10 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import argparse
 import unittest
+import sys
+
 from check_ntpmon import CheckNTPMon, NTPPeers
 
 testdata = [
@@ -334,22 +337,46 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.check_peers(), 2, 'Low peers non-critical')
         self.assertEqual(ntp.check_reachability(), 2, 'Low reachability non-critical')
 
+    def test_demos(self):
+        for d in demodata:
+            ntp = NTPPeers(d.split("\n"))
+            ntp.dump()
+            methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability,
+                       ntp.check_sync, ntp.checks]
+            for method in methods:
+                ret = method()
+                self.assertIn(ret, [0, 1, 2],
+                    "Method %s returned invalid result parsing demo data:\n%s\nTry running with --show-demos." % (method, d))
+
 
 def demo():
+    """Duplicate of test_demos which shows full output"""
     i = 0
     for d in demodata:
         print "Parsing demo data %d: %s" % (i, d)
         ntp = NTPPeers(d.split("\n"))
         i += 1
         ntp.dump()
-        ntp.check_peers()
-        ntp.check_offset()
-        ntp.check_reachability()
-        ntp.check_sync()
-        ntp.checks()
+        methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability,
+                   ntp.check_sync, ntp.checks]
+        for method in methods:
+            ret = method()
+            if ret not in [0, 1, 2]:
+                print "Method %s returned invalid result parsing demo data:\n%s" % (method, d)
+                sys.exit(3)
 
 
 if __name__ == "__main__":
-    demo()
-    unittest.main()
+    # object to store parsed arguments
+    test_checkntpmon = CheckNTPMon()
+
+    # parse command line
+    parser = argparse.ArgumentParser(description='NTPmon test class')
+    parser.add_argument('--show-demos', action='store_true',
+        help='Show demo output.')
+    args = parser.parse_args(namespace=test_checkntpmon)
+    if test_checkntpmon.show_demos:
+        demo()
+    else:
+        unittest.main()
 
