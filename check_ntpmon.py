@@ -347,7 +347,6 @@ class NTPPeers(object):
         and return the worst result.  Output only the diagnostic message for that
         result."""
 
-        ret = 0
         if check is None:
             check = self.check if self.check else CheckNTPMon()
 
@@ -358,12 +357,17 @@ class NTPPeers(object):
             methods = [self.check_offset, self.check_peers,
                        self.check_reachability, self.check_sync]
 
+        ret = -1
+        msg = None
         for method in methods:
             result = method(check=impl)
             if ret < result[0]:
                 ret = result[0]
                 msg = result[1]
 
+        if msg is None:
+            print "%s returned no results - please report a bug" % (method)
+            return 3
         print msg
         return ret
 
