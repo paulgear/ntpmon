@@ -257,16 +257,23 @@ class NTPPeers(object):
             self.ntpdata['totalreach'] += bin(int(peerdata['reach'],
                                                   8)).count("1")
 
-        # precent average reachability of all peers over the last 8 polls
-        reach = float(self.ntpdata['totalreach']) * 100 / self.ntpdata['peers']
-        self.ntpdata['reachability'] = reach / 8
-
         # average offsets
         if self.ntpdata['survivors'] > 0:
             self.ntpdata['averageoffsetsurvivors'] = self.ntpdata['offsetsurvivors'] / self.ntpdata['survivors']
         if self.ntpdata['discards'] > 0:
             self.ntpdata['averageoffsetdiscards'] = self.ntpdata['offsetdiscards'] / self.ntpdata['discards']
-        self.ntpdata['averageoffset'] = self.ntpdata['offsetall'] / self.ntpdata['peers']
+
+        if self.ntpdata['peers'] > 0:
+            # precent average reachability of all peers over the last 8 polls
+            reach = float(self.ntpdata['totalreach']) * 100 / self.ntpdata['peers']
+            self.ntpdata['reachability'] = reach / 8
+
+            # average offset of all peers
+            self.ntpdata['averageoffset'] = self.ntpdata['offsetall'] / self.ntpdata['peers']
+        else:
+            # if there are no peers, reachability is zero and average offset is invalid
+            self.ntpdata['reachability'] = 0.0
+            self.ntpdata['averageoffset'] = float('nan')
 
     def dump(self):
         if self.ntpdata.get('syncpeer'):
