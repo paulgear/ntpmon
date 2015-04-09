@@ -155,6 +155,12 @@ remote refid st t when poll reach delay offset jitter
  6s-ntp .ACST. 16 u - 64 0 0.000 0.000 0.002
 *ntp0.kostecke.n 192.168.19.2 3 u 225 1024 377 0.723 -3.463 1.889
 """,
+"""
+     remote refid st t when poll reach delay offset jitter
+==============================================================================
+ 10.35.60.40 .INIT. 16 u 505 1024 0 0.000 0.000 0.000
+ 10.35.60.41 .INIT. 16 u 471 1024 0 0.000 0.000 0.000
+""",
 ]
 
 
@@ -336,10 +342,14 @@ def demo():
         ntp = NTPPeers(d.split("\n"))
         i += 1
         ntp.dump()
+        ntp.check_peers()
+        ntp.check_offset()
+        ntp.check_reachability()
+        ntp.check_sync()
         ntp.checks()
 
 
 if __name__ == "__main__":
+    demo()
     unittest.main()
-#    demo()
 
