@@ -449,6 +449,10 @@ def main():
         '--debug',
         action='store_true',
         help='Include "ntpq -pn" output and internal state dump along with check results.')
+    parser.add_argument(
+        '--test',
+        action='store_true',
+        help='Accept "ntpq -pn" output on standard input instead of running it.')
     for o in options.keys():
         helptext = options[o][2] + ' (default: %d)' % (options[o][0])
         parser.add_argument('--' + o,
@@ -458,7 +462,7 @@ def main():
     args = parser.parse_args(namespace=checkntpmon)
 
     # run ntpq
-    lines = NTPPeers.query()
+    lines = NTPPeers.query() if not args.test else [x.rstrip() for x in sys.stdin.readlines()]
     if lines is None:
         # Unknown result
         print "Cannot get peers from ntpq."
