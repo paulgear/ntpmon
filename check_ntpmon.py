@@ -106,8 +106,30 @@ class CheckNTPMonSilent(object):
     def is_silent(self):
         return True
 
+    def dump(self):
+        print "warnpeers  = %d" % (self.warnpeers)
+        print "okpeers    = %d" % (self.okpeers)
+        print "warnoffset = %g" % (self.warnoffset)
+        print "critoffset = %g" % (self.critoffset)
+        print "warnreach  = %g" % (self.warnreach)
+        print "critreach  = %g" % (self.critreach)
 
-class CheckNTPMon(object):
+    @classmethod
+    def clone(cls, obj):
+        # must actually be a CheckNTPMonSilent object
+        assert obj.warnpeers is not None
+        if obj.is_silent():
+            return obj
+        else:
+            return CheckNTPMonSilent(warnpeers=obj.warnpeers,
+                                     okpeers=obj.okpeers,
+                                     warnoffset=obj.warnoffset,
+                                     critoffset=obj.critoffset,
+                                     warnreach=obj.warnreach,
+                                     critreach=obj.critreach)
+
+
+class CheckNTPMon(CheckNTPMonSilent):
 
     """Version of CheckNTPMonSilent which prints out the diagnostic message and returns
     integer return code instead of a list"""
@@ -119,14 +141,14 @@ class CheckNTPMon(object):
                  critoffset=50,
                  warnreach=75,
                  critreach=50):
-        self.impl = CheckNTPMonSilent(warnpeers, okpeers, warnoffset,
-                                      critoffset, warnreach, critreach)
+        CheckNTPMonSilent.__init__(self, warnpeers, okpeers, warnoffset,
+                                   critoffset, warnreach, critreach)
 
     def peers(self, n):
         """Return 0 if the number of peers is OK
         Return 1 if the number of peers is WARNING
         Return 2 if the number of peers is CRITICAL"""
-        code, msg = self.impl.peers(n)
+        code, msg = CheckNTPMonSilent.peers(self, n)
         print msg
         return code
 
@@ -134,7 +156,7 @@ class CheckNTPMon(object):
         """Return 0 if the offset is OK
         Return 1 if the offset is WARNING
         Return 2 if the offset is CRITICAL"""
-        code, msg = self.impl.offset(offset)
+        code, msg = CheckNTPMonSilent.offset(self, offset)
         print msg
         return code
 
@@ -143,14 +165,14 @@ class CheckNTPMon(object):
         Return 1 if the reachability percentage is warning
         Return 2 if the reachability percentage is critical
         Raise a ValueError if reachability is not a percentage"""
-        code, msg = self.impl.reachability(percent)
+        code, msg = CheckNTPMonSilent.reachability(self, percent)
         print msg
         return code
 
     def sync(self, synchost):
         """Return 0 if the synchost is non-zero in length and is a roughly valid host identifier
         Return 2 otherwise"""
-        code, msg = self.impl.sync(synchost)
+        code, msg = CheckNTPMonSilent.sync(self, synchost)
         print msg
         return code
 
@@ -354,11 +376,12 @@ class NTPPeers(object):
         and return the worst result.  Output only the diagnostic message for that
         result."""
 
+        # ensure check exists and is silent
         if check is None:
-            check = self.check if self.check else CheckNTPMon()
-
-        # we only ever call the silent versions of the functions
-        impl = check if check.is_silent() else check.impl
+            check = self.check if self.check else CheckNTPMonSilent()
+        if not check.is_silent():
+            check = CheckNTPMonSilent.clone(check)
+        assert check.is_silent()
 
         if not methods:
             methods = [self.check_offset, self.check_peers,
@@ -367,7 +390,7 @@ class NTPPeers(object):
         ret = -1
         msg = None
         for method in methods:
-            result = method(check=impl)
+            result = method(check=check)
             if ret < result[0]:
                 ret = result[0]
                 msg = result[1]
@@ -448,6 +471,7 @@ def main():
 
     if args.debug:
         print "\n".join(lines)
+        checkntpmon.dump()
         ntp.dump()
 
     # work out which method to run

@@ -23,7 +23,7 @@ import argparse
 import unittest
 import sys
 
-from check_ntpmon import CheckNTPMon, NTPPeers
+from check_ntpmon import CheckNTPMon, CheckNTPMonSilent, NTPPeers
 
 testdata = [
 """
@@ -337,7 +337,112 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.check_peers(), 2, 'Low peers non-critical')
         self.assertEqual(ntp.check_reachability(), 2, 'Low reachability non-critical')
 
+    def test_defaults(self):
+        c = CheckNTPMon()
+        self.assertEqual(c.warnpeers, 2)
+        self.assertEqual(c.okpeers, 4)
+        self.assertEqual(c.warnoffset, 10)
+        self.assertEqual(c.critoffset, 50)
+        self.assertEqual(c.warnreach, 75)
+        self.assertEqual(c.critreach, 50)
+
+    def test_non_default(self):
+        c = CheckNTPMon(1, 2, 9, 49, 80, 60)
+        self.assertEqual(c.warnpeers, 1)
+        self.assertEqual(c.okpeers, 2)
+        self.assertEqual(c.warnoffset, 9)
+        self.assertEqual(c.critoffset, 49)
+        self.assertEqual(c.warnreach, 80)
+        self.assertEqual(c.critreach, 60)
+
+    def test_clone(self):
+        ch = CheckNTPMon()
+        self.assertFalse(ch.is_silent())
+        c = CheckNTPMonSilent.clone(ch)
+        self.assertTrue(c.is_silent())
+        self.assertEqual(c.warnpeers, 2)
+        self.assertEqual(c.okpeers, 4)
+        self.assertEqual(c.warnoffset, 10)
+        self.assertEqual(c.critoffset, 50)
+        self.assertEqual(c.warnreach, 75)
+        self.assertEqual(c.critreach, 50)
+
+    def test_clone_non_default(self):
+        ch = CheckNTPMon(1, 2, 9, 49, 80, 60)
+        self.assertFalse(ch.is_silent())
+        c = CheckNTPMonSilent.clone(ch)
+        self.assertTrue(c.is_silent())
+        self.assertEqual(c.warnpeers, 1)
+        self.assertEqual(c.okpeers, 2)
+        self.assertEqual(c.warnoffset, 9)
+        self.assertEqual(c.critoffset, 49)
+        self.assertEqual(c.warnreach, 80)
+        self.assertEqual(c.critreach, 60)
+
+    def test_clone_silent(self):
+        """Cloning CheckNTPMonSilent should return itself"""
+        cs = CheckNTPMonSilent()
+        c = CheckNTPMonSilent.clone(cs)
+        self.assertEqual(c, cs)
+
+    def test_clone_inheritance(self):
+        """Cloning a child class should work too"""
+        class testobject(CheckNTPMonSilent):
+            def dump(self):
+                pass
+        obj = testobject()
+        self.assertEqual(obj.warnpeers, 2)
+        self.assertEqual(obj.okpeers, 4)
+        self.assertEqual(obj.warnoffset, 10)
+        self.assertEqual(obj.critoffset, 50)
+        self.assertEqual(obj.warnreach, 75)
+        self.assertEqual(obj.critreach, 50)
+        c = CheckNTPMonSilent.clone(obj)
+        self.assertEqual(c.warnpeers, 2)
+        self.assertEqual(c.okpeers, 4)
+        self.assertEqual(c.warnoffset, 10)
+        self.assertEqual(c.critoffset, 50)
+        self.assertEqual(c.warnreach, 75)
+        self.assertEqual(c.critreach, 50)
+
+    def test_clone_inheritance_non_silent(self):
+        """Cloning a non-silent child class should work too"""
+        class testobject(CheckNTPMon):
+            def dump(self):
+                pass
+        obj = testobject()
+        self.assertEqual(obj.warnpeers, 2)
+        self.assertEqual(obj.okpeers, 4)
+        self.assertEqual(obj.warnoffset, 10)
+        self.assertEqual(obj.critoffset, 50)
+        self.assertEqual(obj.warnreach, 75)
+        self.assertEqual(obj.critreach, 50)
+        c = CheckNTPMonSilent.clone(obj)
+        self.assertEqual(c.warnpeers, 2)
+        self.assertEqual(c.okpeers, 4)
+        self.assertEqual(c.warnoffset, 10)
+        self.assertEqual(c.critoffset, 50)
+        self.assertEqual(c.warnreach, 75)
+        self.assertEqual(c.critreach, 50)
+
+    def test_clone_inheritance_non_silent_made_silent(self):
+        """Don't try this at home, kids"""
+        class testobject(CheckNTPMon):
+            def is_silent(self):
+                return True
+        obj = testobject()
+        c = CheckNTPMonSilent.clone(obj)
+        self.assertEqual(c, obj)
+
+    def test_bad_clone(self):
+        """Cloning something that's not a CheckNTPMonSilent or CheckNTPMon should raise an AttributeError"""
+        class testobject(object):
+            pass
+        obj = testobject()
+        self.assertRaises(AttributeError, CheckNTPMonSilent.clone, obj)
+
     def test_demos(self):
+        """Ensure that demo data is parsed successfully and doesn't produce exceptions or unknown results"""
         for d in demodata:
             ntp = NTPPeers(d.split("\n"))
             ntp.dump()
