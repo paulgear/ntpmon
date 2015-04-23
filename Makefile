@@ -2,3 +2,6 @@
 
 pytest:
 	python -m unittest -b test_check_ntpmon
+
+push:	pytest
+	git push
