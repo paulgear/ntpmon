@@ -405,8 +405,10 @@ class NTPPeers(object):
     def query():
         lines = None
         try:
-            output = subprocess.check_output(["ntpq", "-pn"])
-            lines = output.split("\n")
+            null = open("/dev/null", "a")
+            output = subprocess.check_output(["ntpq", "-pn"], stderr=null)
+            if len(output) > 0:
+                lines = output.split("\n")
         except:
             traceback.print_exc(file=sys.stdout)
         return lines
@@ -465,8 +467,7 @@ def main():
     lines = NTPPeers.query() if not args.test else [x.rstrip() for x in sys.stdin.readlines()]
     if lines is None:
         # Unknown result
-        print "Cannot get peers from ntpq."
-        print "Please check that an NTP server is installed and functional."
+        print "UNKNOWN: Cannot get peers from ntpq.  Please check that an NTP server is installed and running."
         sys.exit(3)
 
     # initialise our object with the results of ntpq and our preferred check
