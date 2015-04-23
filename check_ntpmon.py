@@ -20,9 +20,11 @@
 #
 
 import argparse
+import psutil
 import re
 import subprocess
 import sys
+import time
 import traceback
 import warnings
 
@@ -414,6 +416,34 @@ class NTPPeers(object):
         return lines
 
 
+class NTPProcess(object):
+
+    def __init__(self, names=None):
+        """Look for ntpd or xntpd in the process table and save its process object."""
+        if names is None:
+            names = ["ntpd", "xntpd"]
+        self.proc = None
+        for proc in psutil.process_iter():
+            try:
+                if proc.name() in names:
+                    self.proc = proc
+                    break
+            except psutil.Error:
+                pass
+
+    def runtime(self):
+        """Return the length of time in seconds that the process has been running.
+        If ntpd is not running or any error occurs, return -1."""
+        if self.proc is None:
+            return -1
+        try:
+            now = time.time()
+            start = int(self.proc.create_time())
+            return now - start
+        except psutil.Error:
+            return -1
+
+
 def main():
     methodnames = ['offset', 'peers', 'reachability', 'sync']
     options = {
@@ -469,6 +499,13 @@ def main():
         # Unknown result
         print "UNKNOWN: Cannot get peers from ntpq.  Please check that an NTP server is installed and running."
         sys.exit(3)
+
+    # Don't report anything other than OK until ntpd has been running for at
+    # least enough time for 8 polling intervals of 64 seconds each.
+    age = NTPProcess().runtime()
+    if age > 0 and age <= 8 * 64:
+        print "OK: ntpd still starting up (running %d seconds)" % age
+        sys.exit(0)
 
     # initialise our object with the results of ntpq and our preferred check
     # thresholds
