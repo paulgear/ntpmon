@@ -29,14 +29,14 @@ import warnings
 
 def ishostnamey(name):
     """Return true if the passed name is roughly hostnamey.  NTP is rather casual about how it
-    reports hostnames and IP addresses, so we can't be too strict.  This function simply tests
+    reports hostnames and IP addresses, so we can't be too strict.  This method simply tests
     that all of the characters in the string are letters, digits, dash, or period."""
     return re.search(r'^[\w.-]*$', name) is not None and name.find('_') == -1
 
 
 def isipaddressy(name):
     """Return true if the passed name is roughly IP addressy.  NTP is rather casual about how it
-    reports hostnames and IP addresses, so we can't be too strict.  This function simply tests
+    reports hostnames and IP addresses, so we can't be too strict.  This method simply tests
     that all of the characters in the string are hexadecimal digits, period, or colon."""
     return re.search(r'^[0-9a-f.:]*$', name) is not None
 

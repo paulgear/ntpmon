@@ -36,13 +36,44 @@ Metrics
 Usage
 -----
 
-(TODO)
+check_ntpmon.py [-h] [--check {offset,peers,reachability,sync}]
+                [--debug] [--test] [--critreach CRITREACH]
+                [--warnreach WARNREACH] [--okpeers OKPEERS]
+                [--warnoffset WARNOFFSET] [--warnpeers WARNPEERS]
+                [--critoffset CRITOFFSET]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --check {offset,peers,reachability,sync}
+                        Select check to run; if omitted, run all checks and
+                        return the worst result.
+  --debug               Include "ntpq -pn" output and internal state dump
+                        along with check results.
+  --test                Accept "ntpq -pn" output on standard input instead of
+                        running it.
+  --critreach CRITREACH
+                        Minimum peer reachability percentage to be considered
+                        non-crtical (default: 50)
+  --warnreach WARNREACH
+                        Minimum peer reachability percentage to be considered
+                        OK (default: 75)
+  --okpeers OKPEERS     Minimum number of peers to be considered OK (default:
+                        4)
+  --warnoffset WARNOFFSET
+                        Minimum offset to be considered warning (default: 10)
+  --warnpeers WARNPEERS
+                        Minimum number of peers to be considered non-critical
+                        (default: 2)
+  --critoffset CRITOFFSET
+                        Minimum offset to be considered critical (default: 50)
 
 
 Prerequisites
 -------------
 
-check_ntpmon.py is written in python.  It requires the following modules from the
-standard python library:
+check_ntpmon.py is written in python.  It requires modules from the standard
+python library, and also requires the psutil library, which is available
+from pypi or your operating system repositories.  On Debian and Ubuntu
+Linux, psutil can be installed by running:
 
-(TODO)
+    apt-get install python-psutil
