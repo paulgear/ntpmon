@@ -482,6 +482,11 @@ def main():
         action='store_true',
         help='Include "ntpq -pn" output and internal state dump along with check results.')
     parser.add_argument(
+        '--run-time',
+        default=512,
+        type=int,
+        help='Time in seconds (default: 512) for which to always return OK after ntpd startup.')
+    parser.add_argument(
         '--test',
         action='store_true',
         help='Accept "ntpq -pn" output on standard input instead of running it.')
@@ -503,7 +508,7 @@ def main():
     # Don't report anything other than OK until ntpd has been running for at
     # least enough time for 8 polling intervals of 64 seconds each.
     age = NTPProcess().runtime()
-    if age > 0 and age <= 8 * 64:
+    if age > 0 and age <= args.run_time:
         print "OK: ntpd still starting up (running %d seconds)" % age
         sys.exit(0)
 
