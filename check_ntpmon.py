@@ -422,10 +422,13 @@ class NTPProcess(object):
         """Look for ntpd or xntpd in the process table and save its process object."""
         if names is None:
             names = ["ntpd", "xntpd"]
+        # Check for old psutil per http://grodola.blogspot.com.au/2014/01/psutil-20-porting.html
+        self.PSUTIL = psutil.version_info >= (2, 0)
         self.proc = None
         for proc in psutil.process_iter():
             try:
-                if proc.name() in names:
+                name = proc.name() if self.PSUTIL else proc.name
+                if name in names:
                     self.proc = proc
                     break
             except psutil.Error:
@@ -438,7 +441,8 @@ class NTPProcess(object):
             return -1
         try:
             now = time.time()
-            start = int(self.proc.create_time())
+            create_time = self.proc.create_time() if self.PSUTIL else self.proc.create_time
+            start = int(create_time)
             return now - start
         except psutil.Error:
             return -1
