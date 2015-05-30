@@ -423,11 +423,11 @@ class NTPProcess(object):
         if names is None:
             names = ["ntpd", "xntpd"]
         # Check for old psutil per http://grodola.blogspot.com.au/2014/01/psutil-20-porting.html
-        self.PSUTIL = psutil.version_info >= (2, 0)
+        self.PSUTIL2 = psutil.version_info >= (2, 0)
         self.proc = None
         for proc in psutil.process_iter():
             try:
-                name = proc.name() if self.PSUTIL else proc.name
+                name = proc.name() if self.PSUTIL2 else proc.name
                 if name in names:
                     self.proc = proc
                     break
@@ -441,7 +441,7 @@ class NTPProcess(object):
             return -1
         try:
             now = time.time()
-            create_time = self.proc.create_time() if self.PSUTIL else self.proc.create_time
+            create_time = self.proc.create_time() if self.PSUTIL2 else self.proc.create_time
             start = int(create_time)
             return now - start
         except psutil.Error:
@@ -545,4 +545,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
