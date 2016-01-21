@@ -341,8 +341,10 @@ class NTPPeers(object):
             result = check.offset(self.ntpdata['averageoffsetdiscards'])
             msg = "WARNING: No sync peer or survivors - used discard offsets"
             if check.is_silent():
-                return [1 if result[0] < 1 else result[0],
-                          msg + " (" + result[1] + ")"]
+                return [
+                    1 if result[0] < 1 else result[0],
+                    msg + " (" + result[1] + ")"
+                ]
             else:
                 print msg
                 return 1 if result < 1 else result
