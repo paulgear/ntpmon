@@ -26,7 +26,7 @@ import sys
 from check_ntpmon import CheckNTPMon, CheckNTPMonSilent, NTPPeers
 
 testdata = [
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  137.189.4.10    .STEP.          16 u    - 1024    0    0.000    0.000   0.000
@@ -39,7 +39,7 @@ testdata = [
  27.54.95.11     .STEP.          16 u    - 1024    0    0.000    0.000   0.000
  54.252.129.186  .STEP.          16 u    - 1024    0    0.000    0.000   0.000
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
 -203.19.252.1    210.9.192.50     2 u  456 1024  377   47.629   -1.526  35.084
@@ -50,12 +50,12 @@ testdata = [
 -192.168.1.1     203.23.237.200   3 u  123 1024  377    0.299   -0.941   0.329
  192.168.1.21    .INIT.          16 u    - 1024    0    0.000    0.000   0.000
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
 *91.189.94.4     131.188.3.220    2 u  338 1024  377    1.600  -194.54 171.548
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  218.189.210.3   .INIT.          16 u    -   64    0    0.000    0.000   0.000
@@ -70,7 +70,7 @@ testdata = [
 ]
 
 demodata = [
-"""
+    """
      remote  refid   st t when poll reach   delay   offset    disp
 =========================================================================
 *WWVB_SPEC(1)  .WWVB.  0 l  114   64  377     0.00   37.623   12.77
@@ -82,42 +82,42 @@ demodata = [
  colorado.cns.hp listo 2 u  233  512  377    43.70   30.077   18.63
  boise.cns.hp.co listo 2 u  224  512  377    33.42   31.682    8.54
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  GENERIC(1)      .GPS.            0 l    4   64    1    0.000   -0.719   0.001
  PPS(1)          .PPS.           16 l    -   64    0    0.000    0.000 4000.00
  ltgpsdemo       .INIT.          16 u    3   64    0    0.000    0.000 4000.00
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  GENERIC(1)      .GPS.            0 l   38   64    7    0.000   -1.193   0.528
  PPS(1)          .PPS.           16 l    -   64    0    0.000    0.000 4000.00
  ltgpsdemo       .GPS.            1 u   33   64    1    0.624   -0.417   0.001
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
 *GENERIC(1)      .GPS.            0 l   45   64  377    0.000   -0.437   0.203
  PPS(1)          .PPS.           16 l    -   64    0    0.000    0.000 4000.00
 +ltgpsdemo       .PPS.            1 u  116  512  377    0.500    0.349   0.106
 """,
-# mangled from Cisco router demo output:
-"""
+    # mangled from Cisco router demo output:
+    """
  27.54.95.11     .STEP.          16 u    -     64     0  0.000   0.000 15937.
 +130.102.128.23  216.218.254.20   2 u   25     64    77 51.267  32.537 189.39
  128.184.34.53   169.254.0.1      3 u   64     64   122 49.115  29.474 1939.5
 *129.250.35.250  133.243.238.24   2 u   14     64   177 261.47   7.906 65.514
 +129.250.35.251  133.243.238.24   2 u   55     64    77 255.70  13.942 190.86
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
  ff05::101       .MCST.          16 u    -   64    0    0.000    0.000 4000.00
 *example.site.co .PPS.            1 u  320 1024  377    1.955   -1.234   1.368
 """,
-"""
+    """
 remote refid st t when poll reach delay offset jitter
 ==========================================================
 -navobs1.oar.net .USNO. 1 u 958 1024 377 89.425 -6.073 0.695
@@ -129,13 +129,13 @@ remote refid st t when poll reach delay offset jitter
 -ntp.alaska.edu .GPS. 1 u 881 1024 377 168.741 5.180 5.157
 -tock.mhpcc.hpc. .GPS. 1 u 933 1024 377 174.518 -1.094 0.054
 """,
-"""
+    """
 remote refid st t when poll reach delay offset disp
 ==========================================================
 +128.252.19.1 .GPS. 1 u 495 1024 377 30.90 -6.366 8.26
 *139.78.133.139 .USNO. 1 u 936 1024 377 48.43 -2.906 5.20
 """,
-"""
+    """
 remote refid st t when poll reach delay offset jitter
 ======================================================
 +navobs1.wustl.e .GPS. 1 u 241 256 377 77.626 1.744 0.195
@@ -144,7 +144,7 @@ remote refid st t when poll reach delay offset jitter
 *GPS_NMEA(1) .GPS. 0 l 62 64 377 0.000 0.000 0.001
 LOCAL(0) .LOCL. 10 l 62 64 377 0.000 0.000 0.000
 """,
-"""
+    """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
 *dione.cbane.org 204.123.2.5      2 u  509 1024  377   51.661   -3.343   0.279
@@ -152,13 +152,13 @@ LOCAL(0) .LOCL. 10 l 62 64 377 0.000 0.000 0.000
 +ntp.yoinks.net  129.7.1.66       2 u  930 1024  377    0.693    1.035   0.241
  LOCAL(0)        .LOCL.          10 l   45   64  377    0.000    0.000   0.001
 """,
-"""
+    """
 remote refid st t when poll reach delay offset jitter
 ======================================================================
  6s-ntp .ACST. 16 u - 64 0 0.000 0.000 0.002
 *ntp0.kostecke.n 192.168.19.2 3 u 225 1024 377 0.723 -3.463 1.889
 """,
-"""
+    """
      remote refid st t when poll reach delay offset jitter
 ==============================================================================
  10.35.60.40 .INIT. 16 u 505 1024 0 0.000 0.000 0.000
@@ -241,8 +241,9 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(check.offset(ntp.ntpdata['averageoffsetsurvivors']), 0, 'Low offset non-OK')
         self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 0, 'Low offset non-OK')
         self.assertEqual(check.peers(ntp.ntpdata['peers']), 2, 'Low peers non-critical')
-        self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 0,
-                'High reachability non-OK')
+        self.assertEqual(
+            check.reachability(ntp.ntpdata['reachability']), 0,
+            'High reachability non-OK')
 
         # run overall health checks
         self.assertEqual(ntp.check_sync(), 0, 'Sync peer not detected')
@@ -450,7 +451,8 @@ class TestCheckNTPMon(unittest.TestCase):
                        ntp.check_sync, ntp.checks]
             for method in methods:
                 ret = method()
-                self.assertIn(ret, [0, 1, 2],
+                self.assertIn(
+                    ret, [0, 1, 2],
                     "Method %s returned invalid result parsing demo data:\n%s\nTry running with --show-demos." % (method, d))
 
 
@@ -477,7 +479,8 @@ if __name__ == "__main__":
 
     # parse command line
     parser = argparse.ArgumentParser(description='NTPmon test class')
-    parser.add_argument('--show-demos', action='store_true',
+    parser.add_argument(
+        '--show-demos', action='store_true',
         help='Show demo output.')
     args = parser.parse_args(namespace=test_checkntpmon)
     if test_checkntpmon.show_demos:
