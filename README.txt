@@ -83,3 +83,6 @@ from pypi or your operating system repositories.  On Debian and Ubuntu
 Linux, psutil can be installed by running:
 
     apt-get install python-psutil
+
+check_ntpmon.py also requires 'timeout' from the GNU coreutils distribution,
+and 'ntpq' and 'ntpmon', from the NTP distribution.
