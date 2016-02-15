@@ -1,7 +1,6 @@
 #!/usr/bin/python
 #
-# Author:       Paul Gear
-# Copyright:    (c) 2015 Gear Consulting Pty Ltd <http://libertysys.com.au/>
+# Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
 # Description:  NTP metrics as a Nagios check.
 #
@@ -419,10 +418,25 @@ class NTPPeers(object):
 
     @staticmethod
     def query():
+        return NTPPeers.run_process("ntpq -pn")
+
+    @staticmethod
+    def trace():
+        return NTPPeers.run_process("ntptrace -n")
+
+    @staticmethod
+    def run_process(command, use_timeout=True):
         lines = None
         try:
+            timeout = ['timeout', '--kill-after=10', '5']
             null = open("/dev/null", "a")
-            output = subprocess.check_output(["ntpq", "-pn"], stderr=null)
+            if isinstance(command, str) or isinstance(command, basestring):
+                cmd = command.split()
+            else:
+                cmd = command
+            if use_timeout:
+                cmd = timeout + cmd
+            output = subprocess.check_output(cmd, stderr=null)
             if len(output) > 0:
                 lines = output.split("\n")
         except:
