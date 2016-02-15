@@ -523,13 +523,6 @@ def main():
         print "UNKNOWN: Cannot get peers from ntpq.  Please check that an NTP server is installed and running."
         sys.exit(3)
 
-    # Don't report anything other than OK until ntpd has been running for at
-    # least enough time for 8 polling intervals of 64 seconds each.
-    age = NTPProcess().runtime()
-    if age > 0 and age <= args.run_time:
-        print "OK: ntpd still starting up (running %d seconds)" % age
-        sys.exit(0)
-
     # initialise our object with the results of ntpq and our preferred check
     # thresholds
     ntp = NTPPeers(lines, checkntpmon)
@@ -538,6 +531,13 @@ def main():
         print "\n".join(lines)
         checkntpmon.dump()
         ntp.dump()
+
+    # Don't report anything other than OK until ntpd has been running for at
+    # least enough time for 8 polling intervals of 64 seconds each.
+    age = NTPProcess().runtime()
+    if age > 0 and age <= args.run_time:
+        print "OK: ntpd still starting up (running %d seconds)" % age
+        sys.exit(0)
 
     # work out which method to run
     # (methods must be in the same order as methodnames above)
