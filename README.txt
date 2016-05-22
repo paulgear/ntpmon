@@ -1,6 +1,6 @@
 check_ntpmon
 by Paul Gear <github@libertysys.com.au>
-Copyright (c) 2015 Gear Consulting Pty Ltd <http://libertysys.com.au/>
+Copyright (c) 2015-2016 Paul D. Gear <http://libertysys.com.au/>
 
 License
 -------
@@ -30,19 +30,51 @@ collected by NTPmon <https://github.com/paulgear/ntpmon>.
 Metrics
 -------
 
-(TODO)
+check_ntpmon reports on the following metrics of the local NTP server:
+
+sync:
+    Is the clock in sync with one of its peers?  If not, return CRITICAL,
+    otherwise return OK.
+
+peers:
+    Are there more than the minimum number of peers active?  The NTP
+    algorithms require a minimum of 3 peers for accurate clock management; to
+    allow for failure or maintenance of one peer at all times, check_ntpmon
+    returns OK for 4 or more configured peers, CRITICAL for 1 or 0, and
+    WARNING for 2-3.  You can tune these values with --warnpeers and
+    --okpeers, but the defaults should suit most sensibly-configured NTP
+    servers.
+
+reachability:
+    Are the configured peers reliably reachable on the network?  Return
+    CRITICAL for less than 50% total reachability of all configured peers;
+    return OK for greater than 75% total reachability of all configured peers.
+    You can tune these values with --critreach and --warnreach.
+
+offset:
+    Is the clock offset from its sync peer acceptable?  Return CRITICAL for
+    greater than 50 milliseconds difference, WARNING for greater than 10 ms,
+    and OK for anything less.  You can tune these values with --critoffset and
+    --warnoffset.
+
+trace:
+    Is there a sync loop between the local server and the stratum 1 servers?
+    If so, return CRITICAL.  Most public NTP servers do not support tracing,
+    so for anything other than a loop (including a timeout), return OK.
 
 
 Startup delay
 -------------
 
-(TODO)
+By default, until ntpd has been running for 512 seconds (the minimum time for
+8 polls at 64 second intervals), check_ntpmon will return OK (zero return
+code).  This is to prevent false positives on startup or for short-lived VMs.
 
 
 Usage
 -----
 
-check_ntpmon.py [-h] [--check {offset,peers,reachability,sync}]
+check_ntpmon.py [-h] [--check {offset,peers,reachability,sync,trace}]
                 [--debug] [--test] [--critreach CRITREACH]
                 [--warnreach WARNREACH] [--okpeers OKPEERS]
                 [--warnoffset WARNOFFSET] [--warnpeers WARNPEERS]
@@ -50,7 +82,7 @@ check_ntpmon.py [-h] [--check {offset,peers,reachability,sync}]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --check {offset,peers,reachability,sync}
+  --check {offset,peers,reachability,sync,trace}
                         Select check to run; if omitted, run all checks and
                         return the worst result.
   --debug               Include "ntpq -pn" output and internal state dump
@@ -85,4 +117,10 @@ Linux, psutil can be installed by running:
     apt-get install python-psutil
 
 check_ntpmon.py also requires 'timeout' from the GNU coreutils distribution,
-and 'ntpq' and 'ntpmon', from the NTP distribution.
+and 'ntpq' and 'ntptrace' from the NTP distribution.
+
+
+To do
+-----
+
+- Return performance metrics to Nagios for graphing.
