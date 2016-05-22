@@ -14,7 +14,8 @@ runtest()
     FILE="$1"
     shift
     REVERSE="$@"
-    echo "Testing $FILE $REVERSE"
+    echo -n "."
+    #echo "Testing $FILE $REVERSE"
     if ./check_ntpmon.py --test "$@" < $FILE >$TMPFILE 2>&1; then
 	if [ -n "$REVERSE" ]; then
 	    echo "ERROR: $1 should have failed for $@:"
@@ -31,6 +32,8 @@ runtest()
     return 0
 }
 
+echo -n "Running file-based tests"
 for i in testdata/OK/*; do
     runtest $i
 done
+echo "Complete"
