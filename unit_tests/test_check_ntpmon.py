@@ -23,7 +23,7 @@ import argparse
 import unittest
 import sys
 
-from check_ntpmon import CheckNTPMon, CheckNTPMonSilent, NTPPeers
+from check_ntpmon import CheckNTPMon, CheckNTPMonSilent, NTPCheck
 
 testdata = [
     """
@@ -166,6 +166,41 @@ remote refid st t when poll reach delay offset jitter
 """,
 ]
 
+demotrace = [
+    """
+127.0.0.1: stratum 3, offset 0.000079, synch distance 0.005168
+""",
+    """
+127.0.0.1: stratum 2, offset -0.000357, synch distance 0.053750
+193.79.237.14: timed out, nothing received
+***Request timed out
+""",
+]
+
+baddemotrace = [
+    """
+127.0.0.1: stratum 5, offset -0.000047, synch distance 0.027705
+128.199.84.169: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
+""",
+]
+
 
 class TestCheckNTPMon(unittest.TestCase):
 
@@ -211,7 +246,6 @@ class TestCheckNTPMon(unittest.TestCase):
 
     def test_sync(self):
         check = CheckNTPMon()
-
         self.assertEqual(check.sync(''), 2, 'Invalid sync peer not detected')
         self.assertEqual(check.sync('    '), 2, 'Invalid sync peer not detected')
         self.assertEqual(check.sync('!@#$%^&*()'), 2, 'Invalid sync peer not detected')
@@ -221,9 +255,30 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(check.sync('ds002.dedicated'), 0, 'Sync peer not detected')
         self.assertEqual(check.sync('node01.au.serve'), 0, 'Sync peer not detected')
 
+    def test_bad_trace(self):
+        check = CheckNTPMon()
+        self.assertEqual(check.trace(''), 1, 'Invalid trace not detected')
+        self.assertEqual(check.trace('    '), 1, 'Invalid trace not detected')
+        self.assertEqual(check.trace('!@#$%^&*()'), 1, 'Invalid trace not detected')
+        self.assertEqual(check.trace('blah.example.com'), 1, 'Invalid trace not detected')
+
+    def test_trace_demos(self):
+        """Ensure that demo traces are parsed successfully and don't produce exceptions or unknown results."""
+        for d in demotrace:
+            check = CheckNTPMon()
+            self.assertEqual(check.trace(d.split("\n")), 0, 'Error parsing demo trace data')
+
+    def test_bad_trace_demos(self):
+        """Ensure that bad demo traces produce errors."""
+        check = CheckNTPMon()
+#        for d in demodata:
+#            self.assertEqual(check.trace(d.split("\n")), 2, 'Demo data not detected as bad trace')
+        for d in baddemotrace:
+            self.assertEqual(check.trace(d.split("\n")), 2, 'Invalid trace not detected')
+
     def test_NTPPeer0(self):
-        # check the parsing done by NTPPeers
-        ntp = NTPPeers(testdata[0].split("\n"))
+        # check the parsing done by NTPCheck
+        ntp = NTPCheck(testdata[0].split("\n"))
         self.assertEqual(ntp.ntpdata['syncpeer'], '91.189.89.199')
         self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 0.598)
         self.assertEqual(ntp.ntpdata['survivors'], 1)
@@ -252,8 +307,8 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.check_reachability(), 0, 'High reachability non-OK')
 
     def test_NTPPeer1(self):
-        # check the parsing done by NTPPeers
-        ntp = NTPPeers(testdata[1].split("\n"))
+        # check the parsing done by NTPCheck
+        ntp = NTPCheck(testdata[1].split("\n"))
         self.assertEqual(ntp.ntpdata['syncpeer'], '202.60.94.11')
         self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 0.259)
         self.assertEqual(ntp.ntpdata['survivors'], 3)
@@ -282,8 +337,8 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.check_reachability(), 0, 'High reachability non-OK')
 
     def test_NTPPeer2(self):
-        # check the parsing done by NTPPeers
-        ntp = NTPPeers(testdata[2].split("\n"))
+        # check the parsing done by NTPCheck
+        ntp = NTPCheck(testdata[2].split("\n"))
         self.assertEqual(ntp.ntpdata['syncpeer'], '91.189.94.4')
         self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 194.54)
         self.assertEqual(ntp.ntpdata['survivors'], 1)
@@ -312,8 +367,8 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(ntp.check_reachability(), 0, 'High reachability non-OK')
 
     def test_NTPPeer3(self):
-        # check the parsing done by NTPPeers
-        ntp = NTPPeers(testdata[3].split("\n"))
+        # check the parsing done by NTPCheck
+        ntp = NTPCheck(testdata[3].split("\n"))
         self.assertEqual(ntp.ntpdata.get('syncpeer'), None)
         self.assertEqual(ntp.ntpdata.get('offsetsyncpeer'), None)
         self.assertEqual(ntp.ntpdata['survivors'], 0)
@@ -445,7 +500,7 @@ class TestCheckNTPMon(unittest.TestCase):
     def test_demos(self):
         """Ensure that demo data is parsed successfully and doesn't produce exceptions or unknown results"""
         for d in demodata:
-            ntp = NTPPeers(d.split("\n"))
+            ntp = NTPCheck(d.split("\n"))
             ntp.dump()
             methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability,
                        ntp.check_sync, ntp.checks]
@@ -461,7 +516,7 @@ def demo():
     i = 0
     for d in demodata:
         print "Parsing demo data %d: %s" % (i, d)
-        ntp = NTPPeers(d.split("\n"))
+        ntp = NTPCheck(d.split("\n"))
         i += 1
         ntp.dump()
         methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability,
