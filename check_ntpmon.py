@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -19,6 +19,7 @@
 #
 
 import argparse
+import ipaddr
 import psutil
 import re
 import subprocess
@@ -26,20 +27,6 @@ import sys
 import time
 import traceback
 import warnings
-
-
-def ishostnamey(name):
-    """Return true if the passed name is roughly hostnamey.  NTP is rather casual about how it
-    reports hostnames and IP addresses, so we can't be too strict.  This method simply tests
-    that all of the characters in the string are letters, digits, dash, or period."""
-    return re.search(r'^[\w.-]*$', name) is not None and name.find('_') == -1
-
-
-def isipaddressy(name):
-    """Return true if the passed name is roughly IP addressy.  NTP is rather casual about how it
-    reports hostnames and IP addresses, so we can't be too strict.  This method simply tests
-    that all of the characters in the string are hexadecimal digits, period, or colon."""
-    return re.search(r'^[0-9a-f.:]*$', name) is not None
 
 
 class CheckNTPMonSilent(object):
@@ -97,23 +84,35 @@ class CheckNTPMonSilent(object):
             return (0, "OK: Reachability normal (%g%%)" % (percent))
 
     def sync(self, synchost):
-        synced = len(synchost) > 0 and (ishostnamey(synchost) or
-                                        isipaddressy(synchost))
+        synced = len(synchost) > 0 and (
+            CheckNTPMonSilent.ishostnamey(synchost) or
+            CheckNTPMonSilent.isipaddressy(synchost)
+        )
         if synced:
             return (0, "OK: time is in sync with %s" % (synchost))
         else:
             return (2, "CRITICAL: no sync host selected")
 
+    def trace(self, lines):
+        seen = set()
+        for h in CheckNTPMonSilent.get_hosts(lines):
+            if h in seen:
+                return (2, "CRITICAL: trace loop detected for host %s" % h)
+            seen.add(h)
+        if len(seen) == 0:
+            return (1, "WARNING: No hosts detected in trace")
+        return (0, "OK: trace check detected no loops")
+
     def is_silent(self):
         return True
 
     def dump(self):
-        print "warnpeers  = %d" % (self.warnpeers)
-        print "okpeers    = %d" % (self.okpeers)
-        print "warnoffset = %g" % (self.warnoffset)
-        print "critoffset = %g" % (self.critoffset)
-        print "warnreach  = %g" % (self.warnreach)
-        print "critreach  = %g" % (self.critreach)
+        print("warnpeers  = %d" % (self.warnpeers))
+        print("okpeers    = %d" % (self.okpeers))
+        print("warnoffset = %g" % (self.warnoffset))
+        print("critoffset = %g" % (self.critoffset))
+        print("warnreach  = %g" % (self.warnreach))
+        print("critreach  = %g" % (self.critreach))
 
     @classmethod
     def clone(cls, obj):
@@ -128,6 +127,36 @@ class CheckNTPMonSilent(object):
                                      critoffset=obj.critoffset,
                                      warnreach=obj.warnreach,
                                      critreach=obj.critreach)
+
+    @staticmethod
+    def get_hosts(lines):
+        """Pull the list of hosts from the output of an NTP trace."""
+        for l in lines:
+            line = l.split()
+            if len(line) <= 0:
+                continue
+            host = line[0]
+            if not host[-2:] == "::":
+                host = host.rstrip(":")
+            try:
+                ip = ipaddr.IPAddress(host)
+                yield ip
+            except ValueError:
+                pass
+
+    @staticmethod
+    def ishostnamey(name):
+        """Return true if the passed name is roughly hostnamey.  NTP is rather casual about how it
+        reports hostnames and IP addresses, so we can't be too strict.  This method simply tests
+        that all of the characters in the string are letters, digits, dash, or period."""
+        return re.search(r'^[\w.-]*$', name) is not None and name.find('_') == -1
+
+    @staticmethod
+    def isipaddressy(name):
+        """Return true if the passed name is roughly IP addressy.  NTP is rather casual about how it
+        reports hostnames and IP addresses, so we can't be too strict.  This method simply tests
+        that all of the characters in the string are hexadecimal digits, period, or colon."""
+        return re.search(r'^[0-9a-f.:]*$', name) is not None
 
 
 class CheckNTPMon(CheckNTPMonSilent):
@@ -150,7 +179,7 @@ class CheckNTPMon(CheckNTPMonSilent):
         Return 1 if the number of peers is WARNING
         Return 2 if the number of peers is CRITICAL"""
         code, msg = CheckNTPMonSilent.peers(self, n)
-        print msg
+        print(msg)
         return code
 
     def offset(self, offset):
@@ -158,7 +187,7 @@ class CheckNTPMon(CheckNTPMonSilent):
         Return 1 if the offset is WARNING
         Return 2 if the offset is CRITICAL"""
         code, msg = CheckNTPMonSilent.offset(self, offset)
-        print msg
+        print(msg)
         return code
 
     def reachability(self, percent):
@@ -167,41 +196,39 @@ class CheckNTPMon(CheckNTPMonSilent):
         Return 2 if the reachability percentage is critical
         Raise a ValueError if reachability is not a percentage"""
         code, msg = CheckNTPMonSilent.reachability(self, percent)
-        print msg
+        print(msg)
         return code
 
     def sync(self, synchost):
         """Return 0 if the synchost is non-zero in length and is a roughly valid host identifier
         Return 2 otherwise"""
         code, msg = CheckNTPMonSilent.sync(self, synchost)
-        print msg
+        print(msg)
+        return code
+
+    def trace(self, lines):
+        """Return 0 if the trace contains no loops."""
+        code, msg = CheckNTPMonSilent.trace(self, lines)
+        print(msg)
         return code
 
     def is_silent(self):
         return False
 
 
-class NTPPeers(object):
+class NTPQParser(object):
 
     """Turn the peer lines returned by 'ntpq -pn' into a data structure usable for checks."""
 
-    noiselines = [
-        r'remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+',
-        r'^=*$',
-        r'No association ID.s returned',
+    ignorepeers = [
+        '.LOCL.',
+        '.INIT.',
+        '.POOL.',
+        '.XFAC.',
     ]
-    ignorepeers = [".LOCL.", ".INIT.", ".XFAC."]
-
-    def isnoiseline(self, line):
-        for regex in self.noiselines:
-            if re.search(regex, line) is not None:
-                return True
-        return False
 
     def shouldignore(self, fields, l):
         if len(fields) != 10:
-            warnings.warn('Invalid ntpq peer line - there are %d fields: %s' %
-                          (len(fields), l))
             return True
         if fields[1] in self.ignorepeers:
             return True
@@ -239,22 +266,8 @@ class NTPPeers(object):
             return False
         return True
 
-    def __init__(self, peerlines, check=None):
-        self.ntpdata = {
-            'backups': 0,
-            'offsetbackups': 0,
-            'survivors': 0,
-            'offsetsurvivors': 0,
-            'discards': 0,
-            'offsetdiscards': 0,
-            'unknown': 0,
-            'peers': 0,
-            'offsetall': 0,
-            'totalreach': 0,
-        }
-        self.check = check
-
-        for l in peerlines:
+    def parse_lines(self, lines):
+        for l in lines:
             if self.isnoiseline(l):
                 continue
 
@@ -283,8 +296,9 @@ class NTPPeers(object):
             # reachability - this counts the number of bits set in the reachability field
             # (which is displayed in octal in the ntpq output)
             # http://stackoverflow.com/questions/9829578/fast-way-of-counting-bits-in-python
-            self.ntpdata['totalreach'] += bin(int(peerdata['reach'],
-                                                  8)).count("1")
+            self.ntpdata['totalreach'] += bin(int(peerdata['reach'], 8)).count("1")
+
+    def calculate_metrics(self):
 
         # average offsets
         if self.ntpdata['survivors'] > 0:
@@ -306,26 +320,54 @@ class NTPPeers(object):
             self.ntpdata['reachability'] = 0.0
             self.ntpdata['averageoffset'] = float('nan')
 
+    def __init__(self, lines):
+        self.ntpdata = {
+            'backups': 0,
+            'offsetbackups': 0,
+            'survivors': 0,
+            'offsetsurvivors': 0,
+            'discards': 0,
+            'offsetdiscards': 0,
+            'unknown': 0,
+            'peers': 0,
+            'offsetall': 0,
+            'totalreach': 0,
+        }
+        self.parse_lines(lines)
+        self.calculate_metrics()
+
+
+class NTPCheck(object):
+
+    """Run NTP checks."""
+
+    def __init__(self, peerlines, tracelines, trace=True, check=None):
+        parser = NTPQParser(peerlines)
+        self.tracelines = tracelines
+        self.ntpdata = parser.ntpdata
+        self.check = check
+        self.trace = trace
+
     def dumppart(self, peertype, peertypeoffset, displaytype):
         if self.ntpdata[peertype] > 0:
-            print "%d %s peers, average offset %g ms" % (
+            print("%d %s peers, average offset %g ms" % (
                 self.ntpdata[peertype],
                 displaytype,
                 self.ntpdata[peertypeoffset],
-            )
+            ))
 
     def dump(self):
         if self.ntpdata.get('syncpeer'):
-            print "Synced to: %s, offset %g ms" % (
-                self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer'])
+            print("Synced to: %s, offset %g ms" % (
+                self.ntpdata['syncpeer'], self.ntpdata['offsetsyncpeer']))
         else:
-            print "No remote sync peer"
+            print("No remote sync peer")
         self.dumppart('peers', 'averageoffset', 'total')
         self.dumppart('survivors', 'averageoffsetsurvivors', 'good')
         self.dumppart('backups', 'averageoffsetbackups', 'backup')
         self.dumppart('discards', 'averageoffsetdiscards', 'discarded')
-        print "Average reachability of all peers: %d%%" % (
-            self.ntpdata['reachability'])
+        print("Average reachability of all peers: %d%%" % (
+            self.ntpdata['reachability']))
 
     def check_peers(self, check=None):
         """Check the number of usable peers"""
@@ -334,12 +376,12 @@ class NTPPeers(object):
         return check.peers(self.ntpdata['peers'])
 
     def check_offset(self, check=None):
-        """Check the offset from the sync peer, returning critical, warning,
+        """Check the offset from the sync peer, returning CRITICAL, WARNING,
             or OK based on the CheckNTPMon results.
         If there is no sync peer, use the average offset of survivors instead.
         If there are no survivors, use the average offset of discards instead,
-            and return warning as a minimum.
-        If there are no discards, return critical.
+            and return WARNING as a minimum.
+        If there are no discards, return CRITICAL.
         """
         result = 0
         if check is None:
@@ -357,14 +399,14 @@ class NTPPeers(object):
                     msg + " (" + result[1] + ")"
                 ]
             else:
-                print msg
+                print(msg)
                 return 1 if result < 1 else result
         else:
             ret = [2, "CRITICAL: No peers for which to check offset"]
             if check.is_silent():
                 return ret
             else:
-                print ret[1]
+                print(ret[1])
                 return ret[0]
 
     def check_reachability(self, check=None):
@@ -377,14 +419,32 @@ class NTPPeers(object):
         """Check whether host is in sync with a peer"""
         if check is None:
             check = self.check if self.check else CheckNTPMon()
+
+        # fail fast if there's no sync peer
         if self.ntpdata.get('syncpeer') is None:
             ret = [2, "CRITICAL: No sync peer"]
             if check.is_silent():
                 return ret
             else:
-                print ret[1]
+                print(ret[1])
                 return ret[0]
-        return check.sync(self.ntpdata['syncpeer'])
+
+        # run the sync peer check and return if it fails
+        ret = check.sync(self.ntpdata['syncpeer'])
+        if check.is_silent():
+            code = ret[0]
+        else:
+            code = ret
+        if code != 0:
+            return ret
+
+        # if the sync peer check succeeded, run trace and return the results
+        return self.check_trace(check)
+
+    def check_trace(self, check=None):
+        if check is None:
+            check = self.check if self.check else CheckNTPMon()
+        return check.trace(NTPCheck.trace())
 
     def checks(self, methods=None, check=None):
         """Run the specified list of checks (or all of them if none is supplied)
@@ -399,8 +459,13 @@ class NTPPeers(object):
         assert check.is_silent()
 
         if not methods:
-            methods = [self.check_offset, self.check_peers,
-                       self.check_reachability, self.check_sync]
+            methods = [
+                self.check_offset,
+                self.check_peers,
+                self.check_reachability,
+                self.check_sync,
+                self.check_trace,
+            ]
 
         ret = -1
         msg = None
@@ -411,26 +476,36 @@ class NTPPeers(object):
                 msg = result[1]
 
         if msg is None:
-            print "%s returned no results - please report a bug" % (method)
+            print("%s returned no results - please report a bug" % (method))
             return 3
-        print msg
+        print(msg)
         return ret
+
+    def get_check(self, checkobj, silent=False):
+        if checkobj is None:
+            if self.checkobj is not None:
+                return self.checkobj
+            if silent:
+                self.checkobj = CheckNTPMonSilent()
+            else:
+                self.checkobj = CheckNTPMon()
+            return self.checkobj
 
     @staticmethod
     def query():
-        return NTPPeers.run_process("ntpq -pn")
+        return NTPCheck.run_process("ntpq -pn")
 
     @staticmethod
     def trace():
-        return NTPPeers.run_process("ntptrace -n")
+        return NTPCheck.run_process("ntptrace -n")
 
     @staticmethod
     def run_process(command, use_timeout=True):
         lines = None
         try:
-            timeout = ['timeout', '--kill-after=10', '5']
+            timeout = ['timeout', '--kill-after=40', '30']
             null = open("/dev/null", "a")
-            if isinstance(command, str) or isinstance(command, basestring):
+            if isinstance(command, str):
                 cmd = command.split()
             else:
                 cmd = command
@@ -522,6 +597,11 @@ def main():
         '--test',
         action='store_true',
         help='Accept "ntpq -pn" output on standard input instead of running it.')
+    parser.add_argument(
+        '--trace',
+        default=True,
+        action='store_true',
+        help='Run ntptrace to check for sync loops (default true except in test mode).')
     for o in options.keys():
         helptext = options[o][2] + ' (default: %d)' % (options[o][0])
         parser.add_argument('--' + o,
@@ -531,27 +611,32 @@ def main():
     args = parser.parse_args(namespace=checkntpmon)
 
     # run ntpq
-    lines = NTPPeers.query() if not args.test else [x.rstrip() for x in sys.stdin.readlines()]
+    if args.test:
+        lines = [x.rstrip() for x in sys.stdin.readlines()]
+        args.trace = False
+    else:
+        lines = NTPCheck.query()
     if lines is None:
         # Unknown result
-        print "UNKNOWN: Cannot get peers from ntpq.  Please check that an NTP server is installed and running."
+        print("UNKNOWN: Cannot get peers from ntpq.  Please check that an NTP server is installed and running.")
         sys.exit(3)
 
     # initialise our object with the results of ntpq and our preferred check
     # thresholds
-    ntp = NTPPeers(lines, checkntpmon)
+    ntp = NTPCheck(lines, checkntpmon, args.trace)
 
     if args.debug:
-        print "\n".join(lines)
+        print("\n".join(lines))
         checkntpmon.dump()
         ntp.dump()
 
     # Don't report anything other than OK until ntpd has been running for at
     # least enough time for 8 polling intervals of 64 seconds each.
-    age = NTPProcess().runtime()
-    if age > 0 and age <= args.run_time:
-        print "OK: ntpd still starting up (running %d seconds)" % age
-        sys.exit(0)
+    if not args.test:
+        age = NTPProcess().runtime()
+        if age > 0 and age <= args.run_time:
+            print("OK: ntpd still starting up (running %d seconds)" % age)
+            sys.exit(0)
 
     # work out which method to run
     # (methods must be in the same order as methodnames above)
