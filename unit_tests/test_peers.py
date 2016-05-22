@@ -17,7 +17,9 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import math
 import unittest
+
 from peers import NTPPeers
 
 testdata = [
@@ -124,7 +126,7 @@ parsedpeers = {
         'delay': [46.207],
         'jitter': [57.605],
         'offset': [-2.489],
-        'reach': [0o376],
+        'reach': [87.5],
         'stratum': [2],
     },
     'survivor': {
@@ -132,7 +134,23 @@ parsedpeers = {
         'delay': [340.782, 31.430, 349.389, 97.565, 70.775, 56.657, 46.207],
         'jitter': [59.463, 74.185, 53.799, 48.353, 57.820, 96.938, 57.605],
         'offset': [3.735, -16.143, 11.235, -2.926, 7.865, -1.715, -2.489],
-        'reach': [0o377, 0o377, 0o377, 0o377, 0o377, 0o377, 0o376],
+        'reach': [100, 100, 100, 100, 100, 100, 87.5],
+        'stratum': [2, 3, 2, 3, 3, 2, 2],
+    },
+    'unknown': {
+        'address': [],
+        'delay': [],
+        'jitter': [],
+        'offset': [],
+        'reach': [],
+        'stratum': [],
+    },
+    'ALL': {
+        'address': ['91.189.94.4', '223.252.23.219', '91.189.89.199', '103.51.68.133', '150.101.233.118', '202.147.104.60', '54.252.129.186'],
+        'delay': [340.782, 31.430, 349.389, 97.565, 70.775, 56.657, 46.207],
+        'jitter': [59.463, 74.185, 53.799, 48.353, 57.820, 96.938, 57.605],
+        'offset': [3.735, -16.143, 11.235, -2.926, 7.865, -1.715, -2.489],
+        'reach': [100, 100, 100, 100, 100, 100, 87.5],
         'stratum': [2, 3, 2, 3, 3, 2, 2],
     },
 }
@@ -166,14 +184,23 @@ class TestNTPPeers(unittest.TestCase):
             self.assertFalse(NTPPeers.isnoiseline(s))
 
     def test_filternoiselines(self):
+        """
+        Compare the output of alllines filtered by isnoiseline() with the known non-noise lines.
+        """
         nonNoiseLines = [x for x in alllines.split('\n') if not NTPPeers.isnoiseline(x)]
         self.assertEqual(nonNoiseLines, peerlines.split('\n'))
 
     def test_isntvalidpeerline(self):
+        """
+        Ensure the known noise lines aren't valid peer lines.
+        """
         for s in noiselines.split('\n'):
             self.assertFalse(NTPPeers.peerline(s))
 
     def test_peerline(self):
+        """
+        Ensure the known peer lines are valid peer lines.
+        """
         for s in peerlines.split('\n'):
             self.assertTrue(NTPPeers.peerline(s))
 
@@ -194,7 +221,36 @@ class TestNTPPeers(unittest.TestCase):
     def test_parsepeer(self):
         parsed = NTPPeers.parse(alllines)
         self.assertEqual(parsed, parsedpeers)
-        print(parsed)
+
+    def test_noparsepeer(self):
+        """
+        Ensure the result of parsed noise lines is empty
+        """
+        parsed = NTPPeers.parse(noiselines)
+        empty = NTPPeers.newpeerdict()
+        self.assertEqual(parsed, empty)
+
+    def test_noparsestratum99(self):
+        empty = NTPPeers.newpeerdict()
+        parsed = NTPPeers.parse(' 1234 5678 99 u 8 128 377 31.430  -16.143  74.185')
+        self.assertEqual(parsed, empty)
+
+    def test_getmetrics(self):
+        p = NTPPeers(alllines)
+        metrics = p.getmetrics()
+        self.assertEqual(metrics['syncpeer'], 1)
+
+    def test_peersvalid(self):
+        empty = NTPPeers.newpeerdict()
+        p = NTPPeers(alllines)
+        # an empty peer list is valid
+        self.assertTrue(p.ispeerlistvalid(empty))
+        # a peer list with 1 sync peer is valid
+        self.assertTrue(p.ispeerlistvalid())
+
+    def test_rootmeansquare(self):
+        l = [3, 4, 5]
+        self.assertEqual(NTPPeers.rms(l), math.sqrt(50 / 3))
 
 
 if __name__ == "__main__":

@@ -17,23 +17,70 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import math
+import pprint
 import re
-# import statistics
+import statistics
+import sys
+
 from warnings import warn
+
+
+pp = pprint.PrettyPrinter(width=200)
 
 
 class NTPPeers(object):
 
     """
-    Extract metrics from ntpq -pn output.
+    Parse ntpq -pn output and extract metrics and alerts.
     """
+
+    @staticmethod
+    def getmean(l):
+        """
+        Get the mean of the values in l, or NaN if there is none.
+        """
+        if len(l) > 0:
+            return statistics.mean(l)
+        else:
+            return float('nan')
+
+    @staticmethod
+    def getstdev(l, mean):
+        """
+        Get the mean of the values in l, or NaN if there is none.
+        """
+        if len(l) > 0:
+            return statistics.pstdev(l, mean)
+        else:
+            return float('nan')
+
+    @staticmethod
+    def rms(l):
+        """
+        Return the root mean square of the values in the list.
+        """
+        if len(l) > 0:
+            squares = [x ** 2 for x in l]
+            return math.sqrt(statistics.mean(squares))
+        else:
+            return float('nan')
 
     peertypes = {
         'backup': '#',
         'discard': ' .-x',
         'survivor': '+',
         'syncpeer': '*o',
+        'unknown': '',
+        'ALL': '',
     }
+
+    @classmethod
+    def plural(cls, peertype):
+        if peertype in ['ALL', 'syncpeer']:
+            return peertype
+        else:
+            return peertype + 's'
 
     @classmethod
     def tallytotype(cls, s):
@@ -65,7 +112,8 @@ class NTPPeers(object):
     @classmethod
     def peerline(cls, line):
         """
-        Return a peer list if the line is a correctly-formatted peer line.
+        Return a list containing the peer type and the 10 peer fields,
+        if the line is a correctly-formatted peer line.
         """
         if cls.isnoiseline(line):
             return False
@@ -104,7 +152,10 @@ class NTPPeers(object):
 
         # reachability should be octal
         try:
+            # convert to octal
             fields[6] = int(fields[6], 8)
+            # convert to binary, count the # of 1s (maximum 8), convert to a percentage
+            fields[6] = bin(fields[6]).count("1") * 100 / 8
         except ValueError:
             warn('Reachability is not an octal value: %s' % fields[6])
             return False
@@ -162,7 +213,7 @@ class NTPPeers(object):
     @classmethod
     def newpeerdict(cls):
         """
-        Create a peer dict with an empty entry for each type.
+        Create a dict with an empty entry for each peer type and an empty array for each type's metrics.
         """
         peers = {}
         for t in cls.peertypes:
@@ -173,6 +224,9 @@ class NTPPeers(object):
 
     @classmethod
     def parse(cls, lines):
+        """
+        Return a dictionary of peers, parsed from the provided lines.
+        """
         peers = cls.newpeerdict()
         for l in lines.split('\n'):
             peer = cls.peerline(l)
@@ -182,4 +236,62 @@ class NTPPeers(object):
                 if peer[0] == 'syncpeer':
                     peer[0] = 'survivor'
                     cls.appendpeer(peers, peer)
+
+                # also append the line to the all peer type
+                peer[0] = 'ALL'
+                cls.appendpeer(peers, peer)
         return peers
+
+    def ispeerlistvalid(self, peers=None):
+        """
+        FIXME: Expand this to give more information to the user at runtime.
+        """
+        if peers is None:
+            peers = self.peers
+        # more than one sync peer is invalid
+        if len(peers['syncpeer']['address']) > 1:
+            warn('More than one sync peer: %s' % pprint.pformat(peers['syncpeer']))
+            return False
+        # more than zero unknowns is invalid
+        if len(peers['unknown']['address']) > 0:
+            warn('There are unknown peers: %s' % pprint.pformat(peers['unknown']))
+            return False
+        return True
+
+    def getmetrics(self, peers=None):
+        """
+        Return a set of metrics based on the data in peers.
+        If peers is None, use self.peers.
+        """
+        if peers is None:
+            peers = self.peers
+        metrics = {}
+        for t in NTPPeers.peertypes:
+            pt = NTPPeers.plural(t)
+
+            # number of peers of this type
+            metrics[pt] = len(peers[t]['address'])
+
+            # offset of peers of this type
+            metrics[pt + '-offset-mean'] = NTPPeers.getmean(peers[t]['offset'])
+            metrics[pt + '-offset-stdev'] = NTPPeers.getstdev(peers[t]['offset'], metrics[pt + '-offset-mean'])
+            metrics[pt + '-offset-rms'] = NTPPeers.rms(peers[t]['offset'])
+
+            # reachability of peers of this type
+            metrics[pt + '-reach-mean'] = NTPPeers.getmean(peers[t]['reach'])
+            metrics[pt + '-reach-stdev'] = NTPPeers.getstdev(peers[t]['reach'], metrics[pt + '-reach-mean'])
+            # The rms of reachability is not very useful, because it's always positive
+            # (so it should be very close to the mean), but we include it for completeness.
+            metrics[pt + '-reach-rms'] = NTPPeers.rms(peers[t]['reach'])
+
+        return metrics
+
+    def __init__(self, lines):
+        self.peers = self.parse(lines)
+
+
+if __name__ == "__main__":
+    p = NTPPeers(sys.stdin.read())
+    pp.pprint(p.peers)
+    m = p.getmetrics()
+    pp.pprint(m)
