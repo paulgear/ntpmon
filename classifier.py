@@ -24,13 +24,13 @@ Create metric definitions like this:
     metricdefs = {
         'offset': ('mid', -50, -10, 10, 50),
         'peers': ('high', 3, 2),
-        'reach': ('high', 75, 50),
+        'reach': ('high', 0.75, 0.50),
     }
 
 Create a MetricClassifier:
     mc = MetricClassifier(metricdefs)
 
-Gather your metrics:
+Gather metrics:
     metrics = {
         'offset': -3.467,
         'peers': 3,
@@ -44,10 +44,10 @@ Ask MetricClassifier to classify them:
         'reach': 'CRITICAL',
     }
 
-MetricClassifier can pick the worst classification, and create a return code for Nagios checks:
+MetricClassifier can pick the worst classification, create a return code for Nagios checks, and produce human-readable messages:
     mc.worst_classification() == 'CRITICAL'
     mc.return_code() == 2
-
+    mc.message('reach', 'reachability', '%') == "CRITICAL: reachability is too low (48.457%) - must be greater than 75%
 """
 
 
@@ -196,3 +196,64 @@ class MetricClassifier(object):
     def return_code(self, unknown_as_critical=False):
         return return_code_for_classification(self.worst_classification(unknown_as_critical))
 
+    _formats = {
+        'low': '%s: %s is too high (%s) - %s be less than %s',
+        'mid': '%s: %s is out of range (%s) - %s be between %s',
+        'high': '%s: %s is too low (%s) - %s be greater than %s',
+    }
+
+    _must_should = {
+        'CRITICAL': 'must',
+        'WARNING': 'should',
+    }
+
+    def message(self, metric, descr=None, fmt='g'):
+        # use base metric name if no long description provided
+        if descr is None:
+            descr = metric
+
+        # limit fmt to known list of format chars
+        if fmt not in 'bcdeEfFgGnoxXs%':
+            fmt = 's'
+
+        result = self.results[metric]
+        fmtstr = '%' + fmt
+
+        if result in MetricClassifier._must_should:
+            # WARNING or CRITICAL
+            metrictype = self.metricdefs[metric][0]
+            if metrictype not in MetricClassifier._formats:
+                raise ValueError('Unknown metric type %s' % metrictype)
+            fmtargs = (
+                result,
+                descr,
+                fmtstr % self.values[metric],
+                MetricClassifier._must_should[result],
+                self.limits(metrictype, metric, result, fmtstr),
+            )
+            return MetricClassifier._formats[metrictype] % fmtargs
+        else:
+            # OK or UNKNOWN
+            return '%s: %s is %s' % (
+                result,
+                descr,
+                fmtstr % self.values[metric],
+            )
+
+    def limits(self, metrictype, metric, result, fmtstr):
+        if metrictype == 'mid':
+            # mid - WARNING is middle two values, CRITICAL is first & last
+            if result == 'CRITICAL':
+                low = fmtstr % self.metricdefs[metric][2]
+                high = fmtstr % self.metricdefs[metric][3]
+            else:
+                low = fmtstr % self.metricdefs[metric][1]
+                high = fmtstr % self.metricdefs[metric][4]
+            return '%s and %s' % (low, high)
+        else:
+            # high or low - WARNING is first value, CRITICAL second
+            if result == 'CRITICAL':
+                limit = fmtstr % self.metricdefs[metric][3]
+            else:
+                limit = fmtstr % self.metricdefs[metric][2]
+            return '%s' % limit
