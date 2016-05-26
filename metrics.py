@@ -52,15 +52,3 @@ def addaliases(metrics, aliases):
     """
     for a in aliases:
         _find_alias(metrics, a, aliases[a])
-
-
-def filter(metrics, names):
-    """
-    Return a new hash containing only the metrics in the list of names.
-    This could just be a lambda.
-    """
-    filtered = {}
-    for n in names:
-        if n in metrics:
-            filtered[n] = metrics[n]
-    return filtered
