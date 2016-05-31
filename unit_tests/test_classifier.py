@@ -33,6 +33,7 @@ goodmetricdefs = {
     'a': ('low', 0, 10),
     'b': ('high', 10, 5),
     'c': ('mid', -10, -5, 5, 10),
+    'd': ('high', 0, 0),
 }
 
 okmetrics = (
@@ -47,6 +48,10 @@ okmetrics = (
     ('b', float('inf')),
     ('b', 1000),
     ('b', 10.000000001),
+    ('d', 1000),
+    ('d', 10),
+    ('d', 1),
+    ('d', 0.000000001),
 
     # mid metric
     ('c', 0),
@@ -54,6 +59,7 @@ okmetrics = (
     ('c', -1),
     ('c', -4.999999999),
     ('c', 4.999999999),
+
 )
 
 warnmetrics = (
@@ -68,6 +74,7 @@ warnmetrics = (
     ('b', 10),
     ('b', 9.9999999999),
     ('b', 5.0000000001),
+    # no warn level for 'd' - only OK and CRITICAL
 
     # mid metric
     ('c', -5),
@@ -99,6 +106,10 @@ criticalmetrics = (
     ('b', -1),
     ('b', -100),
     ('b', -100000),
+    ('d', 0),
+    ('d', -0.0000000001),
+    ('d', -1),
+    ('d', -100),
 
     # mid metric
     ('c', 10),
@@ -255,10 +266,9 @@ class TestNTPPeers(unittest.TestCase):
     def test_classify_process(self):
         mc = MetricClassifier(goodmetricdefs)
         self.assertEqual(mc.classify_metrics(samplemetrics), samplemetricresults)
-        self.assertEqual(mc.worst_classification(), 'UNKNOWN')
-        self.assertEqual(mc.worst_classification(unknown_as_critical=True), 'CRITICAL')
-        self.assertEqual(mc.return_code(), 3)
-        self.assertEqual(mc.return_code(unknown_as_critical=True), 2)
+        self.assertEqual(mc.worst_metric(samplemetrics), ('d', 3))
+        self.assertEqual(mc.return_code(samplemetrics), 3)
+        self.assertEqual(mc.return_code(samplemetrics, unknown_as_critical=True), 2)
 
 
 if __name__ == "__main__":
