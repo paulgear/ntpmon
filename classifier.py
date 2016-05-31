@@ -24,7 +24,7 @@ Create metric definitions like this:
     metricdefs = {
         'offset': ('mid', -50, -10, 10, 50),
         'peers': ('high', 3, 2),
-        'reach': ('high', 0.75, 0.50),
+        'reach': ('high', 75, 50),
     }
 
 Create a MetricClassifier:
@@ -213,11 +213,14 @@ class MetricClassifier(object):
             descr = metric
 
         # limit fmt to known list of format chars
-        if fmt not in 'bcdeEfFgGnoxXs%':
-            fmt = 's'
+        if fmt == '%':
+            fmtstr = '%.2f%%'
+        elif fmt in 'bcdeEfFgGnoxX':
+            fmtstr = '%' + fmt
+        else:
+            fmtstr = '%s'
 
         result = self.results[metric]
-        fmtstr = '%' + fmt
 
         if result in MetricClassifier._must_should:
             # WARNING or CRITICAL
