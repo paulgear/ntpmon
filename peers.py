@@ -228,7 +228,9 @@ class NTPPeers(object):
         Return a dictionary of peers, parsed from the provided lines.
         """
         peers = cls.newpeerdict()
-        for l in lines.split('\n'):
+        if isinstance(lines, str):
+            lines = lines.split('\n')
+        for l in lines:
             peer = cls.peerline(l)
             if peer and cls.validpeer(peer):
                 cls.appendpeer(peers, peer)
