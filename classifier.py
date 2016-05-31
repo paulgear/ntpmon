@@ -253,16 +253,16 @@ class MetricClassifier(object):
         if metrictype == 'mid':
             # mid - WARNING is middle two values, CRITICAL is first & last
             if result == 'CRITICAL':
-                low = fmtstr % self.metricdefs[metric][2]
-                high = fmtstr % self.metricdefs[metric][3]
-            else:
                 low = fmtstr % self.metricdefs[metric][1]
                 high = fmtstr % self.metricdefs[metric][4]
+            else:
+                low = fmtstr % self.metricdefs[metric][2]
+                high = fmtstr % self.metricdefs[metric][3]
             return '%s and %s' % (low, high)
         else:
             # high or low - WARNING is first value, CRITICAL second
             if result == 'CRITICAL':
-                limit = fmtstr % self.metricdefs[metric][3]
-            else:
                 limit = fmtstr % self.metricdefs[metric][2]
+            else:
+                limit = fmtstr % self.metricdefs[metric][1]
             return '%s' % limit
