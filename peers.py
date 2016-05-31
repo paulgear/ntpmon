@@ -17,8 +17,11 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""
+Parse 'ntpq -pn' output and extract metrics.
+"""
+
 import math
-import pprint
 import re
 import statistics
 import sys
@@ -26,14 +29,7 @@ import sys
 from warnings import warn
 
 
-pp = pprint.PrettyPrinter(width=200)
-
-
 class NTPPeers(object):
-
-    """
-    Parse ntpq -pn output and extract metrics and alerts.
-    """
 
     @staticmethod
     def getmean(l):
@@ -66,6 +62,20 @@ class NTPPeers(object):
         else:
             return float('nan')
 
+    @classmethod
+    def plural(cls, peertype):
+        if peertype in ['ALL', 'syncpeer']:
+            return peertype
+        else:
+            return peertype + 's'
+
+    """
+    List of peer types by tally code
+    For more information, see:
+     - http://www.eecis.udel.edu/~mills/ntp/html/decode.html#peer
+     - http://www.eecis.udel.edu/~mills/ntp/html/ntpq.html#pe
+     - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP#Section_9.4.
+    """
     peertypes = {
         'backup': '#',
         'discard': ' .-x',
@@ -74,13 +84,6 @@ class NTPPeers(object):
         'unknown': '',
         'ALL': '',
     }
-
-    @classmethod
-    def plural(cls, peertype):
-        if peertype in ['ALL', 'syncpeer']:
-            return peertype
-        else:
-            return peertype + 's'
 
     @classmethod
     def tallytotype(cls, s):
@@ -93,11 +96,11 @@ class NTPPeers(object):
                 return peertype
         return 'unknown'
 
-    noiselines = [
+    noiselines = (
         r'remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+',
         r'^=*$',
         r'No association ID.s returned',
-    ]
+    )
 
     @classmethod
     def isnoiseline(cls, line):
@@ -170,12 +173,12 @@ class NTPPeers(object):
 
         return [peertype] + fields
 
-    ignorerefids = [
+    ignorerefids = (
         '.LOCL.',
         '.INIT.',
         '.POOL.',
         '.XFAC.',
-    ]
+    )
 
     @classmethod
     def validpeer(cls, peer):
@@ -277,6 +280,8 @@ class NTPPeers(object):
 
 
 if __name__ == "__main__":
+    import pprint
+    pp = pprint.PrettyPrinter(width=200)
     p = NTPPeers(sys.stdin.read())
     pp.pprint(p.peers)
     m = p.getmetrics()
