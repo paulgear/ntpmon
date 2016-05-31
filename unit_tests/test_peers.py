@@ -240,14 +240,6 @@ class TestNTPPeers(unittest.TestCase):
         metrics = p.getmetrics()
         self.assertEqual(metrics['syncpeer'], 1)
 
-    def test_peersvalid(self):
-        empty = NTPPeers.newpeerdict()
-        p = NTPPeers(alllines)
-        # an empty peer list is valid
-        self.assertTrue(p.ispeerlistvalid(empty))
-        # a peer list with 1 sync peer is valid
-        self.assertTrue(p.ispeerlistvalid())
-
     def test_rootmeansquare(self):
         l = [3, 4, 5]
         self.assertEqual(NTPPeers.rms(l), math.sqrt(50 / 3))

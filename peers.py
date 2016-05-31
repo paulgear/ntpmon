@@ -244,22 +244,6 @@ class NTPPeers(object):
                 cls.appendpeer(peers, peer)
         return peers
 
-    def ispeerlistvalid(self, peers=None):
-        """
-        FIXME: Expand this to give more information to the user at runtime.
-        """
-        if peers is None:
-            peers = self.peers
-        # more than one sync peer is invalid
-        if len(peers['syncpeer']['address']) > 1:
-            warn('More than one sync peer: %s' % pprint.pformat(peers['syncpeer']))
-            return False
-        # more than zero unknowns is invalid
-        if len(peers['unknown']['address']) > 0:
-            warn('There are unknown peers: %s' % pprint.pformat(peers['unknown']))
-            return False
-        return True
-
     def getmetrics(self, peers=None):
         """
         Return a set of metrics based on the data in peers.
