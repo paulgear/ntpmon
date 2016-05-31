@@ -44,11 +44,12 @@ Ask MetricClassifier to classify them:
         'reach': 'CRITICAL',
     }
 
-MetricClassifier can pick the worst classification, create a return code for Nagios checks, and produce human-readable messages:
-    mc.worst_classification() == 'CRITICAL'
-    mc.return_code() == 2
-    mc.message('reach', 'reachability', '%') == "CRITICAL: reachability is too low (48.457%) - must be greater than 75%
+MetricClassifier can pick the worst metric and provide a return code for Nagios checks, and produce human-readable messages:
+    mc.worst_metric() == ('reach', 2)
+    mc.message('reach', 'reachability', '%') == "CRITICAL: reachability is too low (48.46%) - must be greater than 75%
 """
+
+import warnings
 
 
 def _is_list_numeric(numbers):
@@ -179,22 +180,27 @@ class MetricClassifier(object):
         self.results = results
         return results
 
-    def worst_classification(self, unknown_as_critical=False):
-        result = 'UNKNOWN'
-        if self.results is not None:
-            worst = 0
-            for r in self.results:
-                rc = return_code_for_classification(self.results[r])
+    def worst_metric(self, metrics):
+        metric = None
+        worst = -1
+        try:
+            for m in metrics:
+                rc = return_code_for_classification(self.results[m])
                 if rc > worst:
                     worst = rc
-                    result = self.results[r]
-        if unknown_as_critical and result == 'UNKNOWN':
-            return 'CRITICAL'
-        else:
-            return result
+                    metric = m
+        except Exception as e:
+            warnings.warn(e)
+            metric = "Unknown"
+            worst = 3
+        return (metric, worst)
 
-    def return_code(self, unknown_as_critical=False):
-        return return_code_for_classification(self.worst_classification(unknown_as_critical))
+    def return_code(self, metrics, unknown_as_critical=False):
+        (metric, rc) = self.worst_metric(metrics)
+        if unknown_as_critical and rc == 3:
+            return 2
+        else:
+            return rc
 
     _formats = {
         'low': '%s: %s is too high (%s) - %s be less than %s',
