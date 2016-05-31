@@ -275,6 +275,12 @@ class NTPPeers(object):
 
         return metrics
 
+    def syncpeer(self):
+        try:
+            return self.peers['syncpeer']['address'][0]
+        except Exception:
+            return None
+
     def __init__(self, lines):
         self.peers = self.parse(lines)
 
