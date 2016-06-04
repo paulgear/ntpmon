@@ -43,6 +43,15 @@ _aliases = {
     'tracehosts': None,
     # runtime metric
     'runtime': None,
+    # readvar metrics
+    'frequency': None,
+    'rootdelay': None,
+    'rootdisp': None,
+    'stratum': None,
+    'sysjitter': 'sys_jitter',
+    'sysoffset': 'offset',
+    # return code
+    'result': None,
 }
 
 """
@@ -56,6 +65,13 @@ _formats = {
     'trace': None,
     'tracehosts': (None, 'd'),
     'runtime': (None, 'd'),
+    'frequency': (None, 'g'),
+    'rootdelay': (None, 'g'),
+    'rootdisp': (None, 'g'),
+    'stratum': (None, 'd'),
+    'sysjitter': (None, 'g'),
+    'sysoffset': (None, 'g'),
+    'result': (None, 'd'),
 }
 
 

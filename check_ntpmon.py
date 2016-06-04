@@ -50,7 +50,7 @@ def get_args(checks):
 
 
 def main():
-    checks = ['offset', 'peers', 'reach', 'sync', 'trace']
+    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'trace', 'vars']
     args = get_args(checks)
     if args.check is None or len(args.check) < 1:
         args.check = checks

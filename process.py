@@ -25,6 +25,7 @@ import psutil
 
 from peers import NTPPeers
 from trace import NTPTrace
+from readvar import NTPVars
 
 
 _progs = {
@@ -98,8 +99,9 @@ def ntpchecks(checks, debug):
                 and 'trace' not in objs):
             objs['trace'] = NTPTrace(execute('trace', debug=debug))
 
-        if ((debug or check == 'trace') and trace is None):
-            trace = NTPTrace(execute('trace', debug=debug))
+        if ((debug or check == 'vars')
+                and 'vars' not in objs):
+            objs['vars'] = NTPVars(execute('vars', debug=debug))
 
         if ((debug or check == 'proc')
                 and 'proc' not in objs):
