@@ -82,7 +82,7 @@ behaviour of check_ntpmon are:
   https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/perfdata.html
 
 - Removed support for changing thresholds; if the one person on the Internet
-  who actually uses this really wants it, I'll probably add it back. :-)
+  who actually uses this really wants it, I might add it back. :-)
 
 
 Startup delay
@@ -108,7 +108,7 @@ modules from the standard python library, and also requires the psutil
 library, which is available from pypi or your operating system repositories.
 NTPmon also requires 'ntpq' and 'ntptrace' from the NTP distribution.
 
-On Debian, Ubuntu, and other Debian-based Linux distributions, you can
+On Ubuntu (and probably other Debian-based Linux distributions), you can
 install all the prerequisites by running:
 
     sudo apt-get install ntp python3-psutil
