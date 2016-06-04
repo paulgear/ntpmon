@@ -156,6 +156,15 @@ class MetricClassifier(object):
             else:
                 raise ValueError('Invalid metric definition for %s: %s' % (m, metricdefs[m]))
 
+    @staticmethod
+    def fmtstr(fmt):
+        if fmt == '%':
+            return '%.2f%%'
+        elif fmt in 'bcdeEfFgGnoxX':
+            return '%' + fmt
+        else:
+            return '%s'
+
     def classify(self, metric, value):
         """
         Classify the value of a single metric according to the existing definitions.
@@ -219,12 +228,7 @@ class MetricClassifier(object):
             descr = metric
 
         # limit fmt to known list of format chars
-        if fmt == '%':
-            fmtstr = '%.2f%%'
-        elif fmt in 'bcdeEfFgGnoxX':
-            fmtstr = '%' + fmt
-        else:
-            fmtstr = '%s'
+        fmtstr = MetricClassifier.fmtstr(fmt)
 
         result = self.results[metric]
 
