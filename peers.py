@@ -141,7 +141,10 @@ class NTPPeers(object):
         # when should be an integer or '-'
         try:
             if fields[4] != '-':
-                fields[4] = int(fields[4])
+                if fields[4][-1:] == 'm':
+                    fields[4] = int(fields[4][:-2]) * 60
+                else:
+                    fields[4] = int(fields[4])
         except ValueError:
             warn('Last poll time is not an integer: %s' % fields[4])
             return False
