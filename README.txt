@@ -24,8 +24,11 @@ Introduction
 
 NTPmon is a program which is designed to report on essential health metrics
 for NTP.  It provides a Nagios check which can be used with many alerting
-systems, including support for performance data.  It may also be used as an
-exec plugin for collectd or prometheus.
+systems, including support for performance data.  It will eventually be
+usable as an exec plugin for collectd, prometheus, and/or telegraf.
+
+Code is currently alpha quality, as the rewrite from check_ntpmon has only
+recently been completed.
 
 
 Metrics
