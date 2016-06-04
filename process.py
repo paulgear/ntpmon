@@ -35,6 +35,9 @@ _progs = {
 
 
 def execute(prog, timeout=30, debug=False, errfatal=False):
+    """
+    Execute a predefined external command.
+    """
     if prog not in _progs:
         return None
     failmessage = '%s produced no output.  Please check that an NTP server is installed and running.'
@@ -81,20 +84,28 @@ def fatal(msg):
 
 def ntpchecks(checks, debug):
     """
-    Run all of the checks required by the argument list.
+    Run all of the checks required by the argument list
+    and return the resulting objects in a hash.
     """
-    peers = None
-    trace = None
+    objs = {}
 
     for check in checks:
         if ((debug or check in ['offset', 'peers', 'reach', 'sync'])
-                and peers is None):
-            peers = NTPPeers(execute('peers', debug=debug))
+                and 'peers' not in objs):
+            objs['peers'] = NTPPeers(execute('peers', debug=debug))
+
+        if ((debug or check == 'trace')
+                and 'trace' not in objs):
+            objs['trace'] = NTPTrace(execute('trace', debug=debug))
 
         if ((debug or check == 'trace') and trace is None):
             trace = NTPTrace(execute('trace', debug=debug))
 
-    return (peers, trace)
+        if ((debug or check == 'proc')
+                and 'proc' not in objs):
+            objs['proc'] = NTPProcess()
+
+    return objs
 
 
 class NTPProcess(object):
@@ -122,9 +133,11 @@ class NTPProcess(object):
                 pass
         return None
 
-    def runtime(self):
-        """Return the length of time in seconds that the process has been running.
-        If ntpd is not running or any error occurs, return -1."""
+    def getruntime(self):
+        """
+        Return the length of time in seconds that the process has been running.
+        If ntpd is not running or any error occurs, return -1.
+        """
         proc = self.getprocess()
         if proc is None:
             return -1
@@ -137,36 +150,12 @@ class NTPProcess(object):
             return -1
 
     def getmetrics(self):
-        return {'runtime': self.runtime()}
-
-    def check_runtime(self, run_time, debug=False):
-        """
-        Return -1 if ntpd is not running.
-        Return 0 if we should skip further checks because ntpd has been
-            running for less than run_time.
-        Return 1 if debug mode was specified.
-        Return the run time if ntpd has been running for at least run_time.
-        """
-        # FIXME: This should be in the alert module
-        age = self.runtime()
-        if age < 0:
-            print("CRITICAL: No NTP process could be found.  Please check that an NTP server is installed and running.")
-            if debug:
-                return 1
-            return -1
-        elif age < run_time:
-            print("OK: %s has only been running %d seconds" % (self.name, age))
-            if debug:
-                return 1
-            return 0
-        else:
-            if debug:
-                print("%s has been running %d seconds" % (self.name, age))
-            return age
+        return {'runtime': self.getruntime()}
 
 
 def main():
-    NTPProcess().check_runtime(512, debug=True)
+    import pprint
+    pprint.pprint(NTPProcess().getmetrics())
 
 
 if __name__ == "__main__":

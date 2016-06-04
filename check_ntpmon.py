@@ -22,7 +22,7 @@ import sys
 
 from alert import NTPAlerter
 from peers import NTPPeers
-from process import ntpchecks, NTPProcess
+from process import ntpchecks
 
 
 def get_args(checks):
@@ -31,7 +31,7 @@ def get_args(checks):
         '--check',
         action='append',
         choices=checks,
-        help='Select check(s) to run; if omitted, run all checks.')
+        help='Select check to run. May be specified multiple times; if omitted, run all checks.')
     parser.add_argument(
         '--debug',
         action='store_true',
@@ -57,25 +57,15 @@ def main():
 
     if args.test:
         # read in ntpq output in test mode
-        ntppeers = NTPPeers([x.rstrip() for x in sys.stdin.readlines()])
-        ntptrace = None
-        ntpproc = None
+        checkobjs = {
+            'peers': NTPPeers([x.rstrip() for x in sys.stdin.readlines()]),
+        }
     else:
-        # Don't report anything other than OK until ntpd has been running for at
-        # least enough time for 8 polling intervals of 64 seconds each.  This
-        # prevents false positives due to ntpd restarts or short-lived VMs.
-        ntpproc = NTPProcess()
-        runtime = ntpproc.check_runtime(args.run_time, debug=args.debug)
-        if runtime == 0:
-            sys.exit(0)
-        elif runtime < 0:
-            sys.exit(2)
-
         # run the checks
-        (ntppeers, ntptrace) = ntpchecks(args.check, args.debug)
+        checkobjs = ntpchecks(args.check, args.debug)
 
     # alert on what we've collected
-    alerter = NTPAlerter(args.check, ntppeers, ntptrace, ntpproc)
+    alerter = NTPAlerter(args.check, checkobjs)
     alerter.alert(args.debug)
     sys.exit(alerter.return_code())
 
