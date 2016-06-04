@@ -194,10 +194,11 @@ class MetricClassifier(object):
         worst = -1
         try:
             for m in metrics:
-                rc = return_code_for_classification(self.results[m])
-                if rc > worst:
-                    worst = rc
-                    metric = m
+                if m in self.results:
+                    rc = return_code_for_classification(self.results[m])
+                    if rc > worst:
+                        worst = rc
+                        metric = m
         except Exception as e:
             warnings.warn(e)
             metric = "Unknown"
