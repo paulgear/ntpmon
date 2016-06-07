@@ -38,11 +38,12 @@ reach:
     return OK for greater than 75% total reachability of all configured peers.
 
 offset:
-    Is the clock offset from its sync peer acceptable?  Return CRITICAL for
-    50 milliseconds or more average difference, WARNING for 10 ms or more
-    average difference, and OK for anything less.
+    Is the clock offset from its sync peer (or other peers, if the sync peer
+    is not available) acceptable?  Return CRITICAL for 50 milliseconds or more
+    average difference, WARNING for 10 ms or more average difference, and OK
+    for anything less.
 
-trace:
+traceloop:
     Is there a sync loop between the local server and the stratum 1 servers?
     If so, return CRITICAL.  Most public NTP servers do not support tracing,
     so for anything other than a loop (including a timeout), return OK.
@@ -102,3 +103,11 @@ install all the prerequisites by running:
 
     sudo apt-get install ntp python3-psutil
 
+
+To do
+-----
+
+- Better/more documentation.
+- Expand unit tests.
+- Create installer to eliminate busy work for enabling the trace check.
+- Create telegraf/prometheus plugin.
