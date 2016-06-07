@@ -513,7 +513,7 @@ def demo():
     """Duplicate of test_demos which shows full output"""
     i = 0
     for d in demodata:
-        print "Parsing demo data %d: %s" % (i, d)
+        print("Parsing demo data %d: %s" % (i, d))
         ntp = NTPCheck(d.split("\n"))
         i += 1
         ntp.dump()
@@ -522,7 +522,7 @@ def demo():
         for method in methods:
             ret = method()
             if ret not in [0, 1, 2]:
-                print "Method %s returned invalid result parsing demo data:\n%s" % (method, d)
+                print("Method %s returned invalid result parsing demo data:\n%s" % (method, d))
                 sys.exit(3)
 
 
