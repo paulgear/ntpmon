@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright:    (c) 2016 Paul D. Gear
+# Copyright:    (c) 2015-2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
 #
 # This program is free software: you can redistribute it and/or modify it under
