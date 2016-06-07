@@ -38,9 +38,9 @@ _aliases = {
     'peers': 'ALL',
     'reach': 'ALL-reach-mean',
     'sync': 'syncpeer',
-    # trace metric
-    'trace': 'tracerepeats',
+    # trace metrics
     'tracehosts': None,
+    'traceloops': None,
     # runtime metric
     'runtime': None,
     # readvar metrics
@@ -62,8 +62,8 @@ _formats = {
     'peers': ('Number of peers', 'd'),
     'reach': ('reachability', '%'),
     'sync': None,
-    'trace': None,
     'tracehosts': (None, 'd'),
+    'traceloops': (None, 'd'),
     'runtime': (None, 'd'),
     'frequency': (None, 'g'),
     'rootdelay': (None, 'g'),
@@ -83,11 +83,11 @@ _metricdefs = {
     'offset': ('mid', -50, -10, 10, 50),
     'peers': ('high', 3, 1),
     'reach': ('high', 75, 50),
-    # sync & trace are only 0 or 1, but set to less
-    # than 1 just in case we ever encounter rounding.
+    # sync & trace metrics are integral, but are set to floats
+    # in case we ever encounter rounding.
     'sync': ('high', 0.9, 0.9),
-    'trace': ('low', 0.9, 0.9),
     'tracehosts': ('high', 0.1, -0.1),
+    'traceloops': ('low', 0.9, 0.9),
     # readvar metrics are reported only, not alerted
 }
 
@@ -115,10 +115,10 @@ class NTPAlerter(object):
             return self.custom_message_runtime(result)
         elif metric == 'sync':
             return self.custom_message_sync(result)
-        elif metric == 'trace':
-            return self.custom_message_trace(result)
         elif metric == 'tracehosts':
             return self.custom_message_tracehosts(result)
+        elif metric == 'traceloops':
+            return self.custom_message_traceloops(result)
         return None
 
     def custom_message_runtime(self, result):
@@ -138,9 +138,9 @@ class NTPAlerter(object):
             return '%s: Time is in sync with %s' % (result, self.objs['peers'].syncpeer())
         return None
 
-    def custom_message_trace(self, result):
+    def custom_message_traceloops(self, result):
         if result == 'CRITICAL':
-            return '%s: Trace loop detected at host %s' % (result, self.objs['trace'].loophost)
+            return '%s: Trace loop detected at host %s' % (result, self.objs['traceloops'].loophost)
         elif result == 'OK':
             return '%s: Trace detected no loops' % (result,)
         return None
@@ -157,8 +157,8 @@ class NTPAlerter(object):
         self.collectmetrics(debug)
         results = self.mc.classify_metrics(self.metrics)
         if 'trace' in self.checks:
-            # trace implies tracehosts
             self.checks.append('tracehosts')
+            self.checks.append('traceloops')
         msgs = {}
         for metric in self.checks:
             if metric in results:

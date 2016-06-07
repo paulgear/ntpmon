@@ -43,7 +43,7 @@ class NTPTrace(object):
     def trace(self, lines):
         results = {
             'tracehosts': 0,
-            'tracerepeats': 0,
+            'traceloops': 0,
         }
         seen = set()
         self.loophost = None
@@ -52,7 +52,7 @@ class NTPTrace(object):
             if h in seen:
                 if self.loophost is None:
                     self.loophost = h
-                results['tracerepeats'] += 1
+                results['traceloops'] += 1
             else:
                 self.hostlist.append(h)
             seen.add(h)
