@@ -31,7 +31,7 @@ def get_args(checks):
         '--check',
         action='append',
         choices=checks,
-        help='Select check to run. May be specified multiple times; if omitted, run all checks.')
+        help='Select check to run. May be specified multiple times; if omitted, run all checks except trace.')
     parser.add_argument(
         '--debug',
         action='store_true',
@@ -50,7 +50,7 @@ def get_args(checks):
 
 
 def main():
-    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'trace', 'vars']
+    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
     args = get_args(checks)
     if args.check is None or len(args.check) < 1:
         args.check = checks
