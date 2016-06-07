@@ -41,6 +41,9 @@ def get_hosts(lines):
 class NTPTrace(object):
 
     def trace(self, lines):
+        """
+        FIXME: explain
+        """
         results = {
             'tracehosts': 0,
             'traceloops': 0,

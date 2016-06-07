@@ -154,6 +154,9 @@ class NTPAlerter(object):
         )
 
     def alert(self, debug):
+        """
+        FIXME: explain
+        """
         self.collectmetrics(debug)
         results = self.mc.classify_metrics(self.metrics)
         if 'trace' in self.checks:
@@ -174,6 +177,9 @@ class NTPAlerter(object):
             print("%s | %s" % (msgs[m], self.report()))
 
     def report(self):
+        """
+        FIXME: explain
+        """
         items = []
         for m in sorted(_aliases.keys()):
             if m in self.metrics:
@@ -188,9 +194,11 @@ class NTPAlerter(object):
         return " ".join(items)
 
     def return_code(self):
-        # Don't return anything other than OK until ntpd has been running for
-        # at least enough time for 8 polling intervals of 64 seconds each.  This
-        # prevents false positives due to ntpd restarts or short-lived VMs.
+        """
+        Don't return anything other than OK until ntpd has been running for
+        at least enough time for 8 polling intervals of 64 seconds each.  This
+        prevents false positives due to ntpd restarts or short-lived VMs.
+        """
         if 'runtime' in self.mc.results and self.mc.results['runtime'] == 'WARNING':
             return 0
         else:

@@ -113,7 +113,9 @@ def ntpchecks(checks, debug):
 class NTPProcess(object):
 
     def __init__(self, names=None):
-        """Look for ntpd or xntpd in the process table and save its process object."""
+        """
+        Save which process names we're looking for, and the version of psutil.
+        """
         if names is None:
             self.names = ["ntpd", "xntpd"]
         else:
