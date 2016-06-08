@@ -63,10 +63,14 @@ https://www.eecis.udel.edu/~mills/ntp/html/ntpq.html#system
 Changes from previous version
 -----------------------------
 
-NTPmon has been rewritten from the check_ntpmon codebase.  Changes from the
-behaviour of check_ntpmon are:
+NTPmon has been rewritten from version 1.0.0 of check_ntpmon.  Changes from
+check_ntpmon are:
 
-- Added support for detecting ntptrace loops
+- Now requires python 3.
+
+- Removed dependency on GNU coreutils.
+
+- Added support for detecting ntptrace loops.
 
 - Added support for Nagios performance data:
   https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/perfdata.html
