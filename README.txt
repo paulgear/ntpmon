@@ -75,6 +75,8 @@ check_ntpmon are:
 - Added support for Nagios performance data:
   https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/perfdata.html
 
+- Added collectd exec plugin.
+
 - Removed support for changing thresholds; if the one person on the Internet
   who actually uses this really wants it, I might add it back. :-)
 
