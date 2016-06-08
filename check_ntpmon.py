@@ -66,7 +66,7 @@ def main():
 
     # alert on what we've collected
     alerter = NTPAlerter(args.check, checkobjs)
-    alerter.alert(args.debug)
+    alerter.alert_nagios(args.debug)
     sys.exit(alerter.return_code())
 
 

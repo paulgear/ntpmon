@@ -26,8 +26,10 @@ special cases which require knowledge of the rest of the application.
 
 import metrics
 import pprint
+import sys
 
 from classifier import MetricClassifier
+
 
 """
 Aliases for all metrics
@@ -92,6 +94,26 @@ _metricdefs = {
 }
 
 
+"""
+Metric types for collectd
+"""
+_collectdtypes = {
+    'peers': 'count',
+    'stratum': 'count',
+    'sync': 'count',
+    'tracehosts': 'count',
+    'traceloops': 'count',
+    'rootdelay': 'duration',
+    'runtime': 'duration',
+    'sysjitter': 'duration',
+    'frequency': 'frequency',
+    'reach': 'percent',
+    'offset': 'time_offset',
+    'rootdisp': 'time_offset',
+    'sysoffset': 'time_offset',
+}
+
+
 class NTPAlerter(object):
  
     def __init__(self, checks, objs):
@@ -100,12 +122,18 @@ class NTPAlerter(object):
         self.mc = MetricClassifier(_metricdefs)
 
     def collectmetrics(self, debug):
+        """
+        Get metrics from each registered metric source and add all relevant aliases.
+        """
         self.metrics = {}
         for o in self.objs:
             self.metrics.update(self.objs[o].getmetrics())
         if debug:
             pprint.pprint(self.metrics)
         metrics.addaliases(self.metrics, _aliases)
+        if 'trace' in self.checks:
+            self.checks.append('tracehosts')
+            self.checks.append('traceloops')
 
     def custom_message(self, metric, result):
         """
@@ -153,15 +181,32 @@ class NTPAlerter(object):
             ", ".join(trace.hostlist)
         )
 
-    def alert(self, debug):
+    def alert_collectd(self, hostname, interval):
         """
-        FIXME: explain
+        Produce collectd output for the metrics
+        """
+        self.collectmetrics(False)
+        self.mc.classify_metrics(self.metrics)
+        (m, rc) = self.mc.worst_metric(self.checks)
+        self.metrics['result'] = self.return_code()
+        for metric in sorted(_collectdtypes.keys()):
+            if metric in _collectdtypes:
+                print('PUTVAL "%s/ntpmon-%s/%s" interval=%d N:%g"' % (
+                    hostname,
+                    metric,
+                    _collectdtypes[metric],
+                    interval,
+                    self.metrics[metric],
+                ))
+        # flush standard output to ensure metrics are sent to collectd immediately
+        sys.stdout.flush()
+
+    def alert_nagios(self, debug):
+        """
+        Produce nagios output for the metrics
         """
         self.collectmetrics(debug)
         results = self.mc.classify_metrics(self.metrics)
-        if 'trace' in self.checks:
-            self.checks.append('tracehosts')
-            self.checks.append('traceloops')
         msgs = {}
         for metric in self.checks:
             if metric in results:
