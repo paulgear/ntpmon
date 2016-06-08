@@ -64,7 +64,7 @@ class NTPPeers(object):
 
     @classmethod
     def plural(cls, peertype):
-        if peertype in ['ALL', 'syncpeer']:
+        if peertype in ['all', 'syncpeer']:
             return peertype
         else:
             return peertype + 's'
@@ -82,7 +82,7 @@ class NTPPeers(object):
         'survivor': '+',
         'syncpeer': '*o',
         'unknown': '',
-        'ALL': '',
+        'all': '',
     }
 
     @classmethod
@@ -246,7 +246,7 @@ class NTPPeers(object):
                     cls.appendpeer(peers, peer)
 
                 # also append the line to the all peer type
-                peer[0] = 'ALL'
+                peer[0] = 'all'
                 cls.appendpeer(peers, peer)
         return peers
 
