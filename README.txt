@@ -10,11 +10,25 @@ Introduction
 
 NTPmon is a program which is designed to report on essential health metrics
 for NTP.  It provides a Nagios check which can be used with many alerting
-systems, including support for performance data.  It will eventually be
-usable as an exec plugin for collectd, prometheus, and/or telegraf.
+systems, including support for performance data, and a collectd plugin.
+It will eventually be usable as a plugin for prometheus and/or telegraf.
 
-Code is currently alpha quality, as the rewrite from check_ntpmon has only
-recently been completed.
+Code is currently beta quality, as a rewrite has only recently been
+completed.
+
+
+Prerequisites
+-------------
+
+NTPmon is written in python, and requires python 3.3 or later.  It uses
+modules from the standard python library, and also requires the psutil
+library, which is available from pypi or your operating system repositories.
+NTPmon also requires 'ntpq' and 'ntptrace' from the NTP distribution.
+
+On Ubuntu (and probably other Debian-based Linux distributions), you can
+install all the prerequisites by running:
+
+    sudo apt-get install ntp python3-psutil
 
 
 Metrics
@@ -94,20 +108,6 @@ Usage
 -----
 
 (To do)
-
-
-Prerequisites
--------------
-
-NTPmon is written in python, and requires python 3.3 or later.  It uses
-modules from the standard python library, and also requires the psutil
-library, which is available from pypi or your operating system repositories.
-NTPmon also requires 'ntpq' and 'ntptrace' from the NTP distribution.
-
-On Ubuntu (and probably other Debian-based Linux distributions), you can
-install all the prerequisites by running:
-
-    sudo apt-get install ntp python3-psutil
 
 
 To do
