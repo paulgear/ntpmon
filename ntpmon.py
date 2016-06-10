@@ -35,11 +35,6 @@ def get_args():
         type=str,
         help='Collectd is the default if collectd environment variables are detected.')
     parser.add_argument(
-        '--debug',
-        action='store_true',
-        default=False,
-        help='Run in debug mode. This produces a large number of metrics and should be used with extreme caution on all production systems.')
-    parser.add_argument(
         '--interval',
         default=60,
         type=int,
