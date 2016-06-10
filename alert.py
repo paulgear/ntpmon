@@ -82,7 +82,7 @@ Classifications for all metrics
 """
 _metricdefs = {
     'runtime': ('high', 512, 0),
-    'offset': ('mid', -50, -10, 10, 50),
+    'offset': ('mid', -0.05, -0.01, 0.01, 0.05),
     'peers': ('high', 3, 1),
     'reach': ('high', 75, 50),
     # sync & trace metrics are integral, but are set to floats

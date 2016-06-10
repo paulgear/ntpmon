@@ -22,7 +22,7 @@ Classify metrics into OK, WARNING, or CRITICAL ranges.
 
 Create metric definitions like this:
     metricdefs = {
-        'offset': ('mid', -50, -10, 10, 50),
+        'offset': ('mid', -0.05, -0.01, 0.01, 0.05),
         'peers': ('high', 3, 2),
         'reach': ('high', 75, 50),
     }
@@ -32,7 +32,7 @@ Create a MetricClassifier:
 
 Gather metrics:
     metrics = {
-        'offset': -3.467,
+        'offset': -0.003467,
         'peers': 3,
         'reach': 48.457,
     }

@@ -174,6 +174,12 @@ class NTPPeers(object):
                 warn('Field %d is not numeric: %s' % (i, fields[i]))
                 return False
 
+        # convert offset & jitter to seconds
+        fields[8] /= 1000.0
+        fields[9] /= 1000.0
+        fields[8] = round(fields[8], 6)
+        fields[9] = round(fields[9], 6)
+
         return [peertype] + fields
 
     ignorerefids = (

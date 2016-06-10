@@ -38,7 +38,11 @@ class NTPVars(object):
             nameval = v.split('=')
             if len(nameval) == 2:
                 try:
-                    self.metrics[nameval[0]] = float(nameval[1])
+                    if nameval[0] in ['rootdelay', 'rootdisp', 'sysoffset']:
+                        # convert from milliseconds to seconds
+                        self.metrics[nameval[0]] = round(float(nameval[1]) / 1000.0, 6)
+                    else:
+                        self.metrics[nameval[0]] = float(nameval[1])
                 except ValueError:
                     # ignore non-numeric values
                     pass
