@@ -223,7 +223,7 @@ class NTPAlerter(object):
 
     def report(self):
         """
-        FIXME: explain
+        Report metric values.
         """
         items = []
         for m in sorted(_aliases.keys()):

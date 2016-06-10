@@ -38,7 +38,7 @@ def get_args():
         '--interval',
         default=60,
         type=int,
-        help='How often to report statistics (default: 60 seconds).')
+        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, or 60 seconds if COLLECTD_INTERVAL is not set).')
     args = parser.parse_args()
     return args
 

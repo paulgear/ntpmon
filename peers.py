@@ -34,7 +34,7 @@ class NTPPeers(object):
     @staticmethod
     def getmean(l):
         """
-        Get the mean of the values in l, or NaN if there is none.
+        Get the mean of the values in the list, or NaN if there is none.
         """
         if len(l) > 0:
             return statistics.mean(l)
@@ -44,7 +44,7 @@ class NTPPeers(object):
     @staticmethod
     def getstdev(l, mean):
         """
-        Get the mean of the values in l, or NaN if there is none.
+        Get the mean of the values in the list, or NaN if there is none.
         """
         if len(l) > 0:
             return statistics.pstdev(l, mean)
@@ -54,7 +54,7 @@ class NTPPeers(object):
     @staticmethod
     def rms(l):
         """
-        Return the root mean square of the values in the list.
+        Return the root mean square of the values in the list, or NaN if there is none.
         """
         if len(l) > 0:
             squares = [x ** 2 for x in l]
