@@ -91,21 +91,19 @@ def ntpchecks(checks, debug):
     objs = {}
 
     for check in checks:
-        if ((debug or check in ['offset', 'peers', 'reach', 'sync'])
+        if ((check in ['offset', 'peers', 'reach', 'sync'])
                 and 'peers' not in objs):
             objs['peers'] = NTPPeers(execute('peers', debug=debug))
+            break
 
-        if ((debug or check == 'trace')
-                and 'trace' not in objs):
-            objs['trace'] = NTPTrace(execute('trace', debug=debug))
+    if 'proc' in checks:
+        objs['proc'] = NTPProcess()
 
-        if ((debug or check == 'vars')
-                and 'vars' not in objs):
-            objs['vars'] = NTPVars(execute('vars', debug=debug))
+    if 'trace' in checks:
+        objs['trace'] = NTPTrace(execute('trace', debug=debug))
 
-        if ((debug or check == 'proc')
-                and 'proc' not in objs):
-            objs['proc'] = NTPProcess()
+    if 'vars' in checks:
+        objs['vars'] = NTPVars(execute('vars', debug=debug))
 
     return objs
 
