@@ -50,10 +50,10 @@ def get_args(checks):
 
 
 def main():
-    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
+    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'trace', 'vars']
     args = get_args(checks)
     if args.check is None or len(args.check) < 1:
-        args.check = checks
+        args.check = set(checks) - 'trace'
 
     if args.test:
         # read in ntpq output in test mode
