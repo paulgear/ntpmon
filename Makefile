@@ -3,10 +3,13 @@
 test: pytest datatest
 
 pytest:
-	python -m unittest -b test_check_ntpmon
+	python3 -m unittest -b test_check_ntpmon
 
 datatest:
 	./testdata.sh
 
 push:	pytest
 	git push
+
+clean:
+	find . -type f -name '*.pyc' -print0 | xargs --null rm -f
