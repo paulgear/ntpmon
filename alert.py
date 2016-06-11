@@ -168,7 +168,7 @@ class NTPAlerter(object):
 
     def custom_message_traceloops(self, result):
         if result == 'CRITICAL':
-            return '%s: Trace loop detected at host %s' % (result, self.objs['traceloops'].loophost)
+            return '%s: Trace loop detected at host %s' % (result, self.objs['trace'].loophost)
         elif result == 'OK':
             return '%s: Trace detected no loops' % (result,)
         return None
