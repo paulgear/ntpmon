@@ -36,7 +36,6 @@ def get_args():
         help='Collectd is the default if collectd environment variables are detected.')
     parser.add_argument(
         '--interval',
-        default=60,
         type=int,
         help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, or 60 seconds if COLLECTD_INTERVAL is not set).')
     args = parser.parse_args()
@@ -63,7 +62,10 @@ def main():
     if 'COLLECTD_INTERVAL' in os.environ:
         args.mode = 'collectd'
         if args.interval is None:
-            args.interval = os.environ['COLLECTD_INTERVAL']
+            args.interval = int(os.environ['COLLECTD_INTERVAL'])
+
+    if args.interval is None:
+        args.interval = 60
 
     if args.mode != 'collectd':
         warnings.warn('Only collectd mode is currently supported')
