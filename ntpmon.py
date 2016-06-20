@@ -62,7 +62,7 @@ def main():
     if 'COLLECTD_INTERVAL' in os.environ:
         args.mode = 'collectd'
         if args.interval is None:
-            args.interval = int(os.environ['COLLECTD_INTERVAL'])
+            args.interval = float(os.environ['COLLECTD_INTERVAL'])
 
     if args.interval is None:
         args.interval = 60
