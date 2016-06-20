@@ -190,7 +190,7 @@ class NTPAlerter(object):
         (m, rc) = self.mc.worst_metric(self.checks)
         self.metrics['result'] = self.return_code()
         for metric in sorted(_collectdtypes.keys()):
-            if metric in _collectdtypes:
+            if metric in _collectdtypes and metric in self.metrics:
                 print('PUTVAL "%s/ntpmon/%s" interval=%d N:%g' % (
                     hostname,
                     _collectdtypes[metric],
