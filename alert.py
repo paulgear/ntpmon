@@ -98,19 +98,19 @@ _metricdefs = {
 Metric types for collectd
 """
 _collectdtypes = {
-    'peers': 'count-peers',
-    'stratum': 'count-stratum',
-    'sync': 'count-sync',
-    'tracehosts': 'count-tracehosts',
-    'traceloops': 'count-traceloops',
-    'rootdelay': 'duration-rootdelay',
-    'runtime': 'duration-runtime',
-    'sysjitter': 'duration-jitter',
-    'frequency': 'frequency-error',
-    'reach': 'percent-reachability',
-    'offset': 'time_offset-offset',
-    'rootdisp': 'time_offset-rootdisp',
-    'sysoffset': 'time_offset-sysoffset',
+    'frequency': 'frequency/frequency_offset',
+    'offset': 'offset/time_offset',
+    'peers': 'peers/count',
+    'reach': 'reachability/percent',
+    'rootdelay': 'rootdelay/time_offset',
+    'rootdisp': 'rootdisp/time_offset',
+    'runtime': 'runtime/duration',
+    'stratum': 'stratum/count',
+    'sync': 'syncpeers/count',
+    'sysjitter': 'sysjitter/time_offset',
+    'sysoffset': 'sysoffset/time_offset',
+    'tracehosts': 'tracehosts/count',
+    'traceloops': 'traceloops/count',
 }
 
 
@@ -191,7 +191,7 @@ class NTPAlerter(object):
         self.metrics['result'] = self.return_code()
         for metric in sorted(_collectdtypes.keys()):
             if metric in _collectdtypes and metric in self.metrics:
-                print('PUTVAL "%s/ntpmon/%s" interval=%d N:%g' % (
+                print('PUTVAL "%s/ntpmon-%s" interval=%d N:%g' % (
                     hostname,
                     _collectdtypes[metric],
                     interval,
