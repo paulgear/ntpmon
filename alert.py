@@ -50,8 +50,9 @@ _aliases = {
     'rootdelay': None,
     'rootdisp': None,
     'stratum': None,
-    'sysjitter': 'sys_jitter',
-    'sysoffset': 'offset',
+    # these are aliased within the readvar module to prevent clashes
+    'sysjitter': None,
+    'sysoffset': None,
     # return code
     'result': None,
 }

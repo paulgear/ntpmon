@@ -22,6 +22,13 @@ Parse 'ntpq -nc readvar' output and extract metrics.
 """
 
 
+# This is lame; these are in exactly the opposite order as in alert.py
+_aliases = {
+    'offset': 'sysoffset',
+    'sys_jitter': 'sysjitter',
+}
+
+
 class NTPVars(object):
 
     def __init__(self, lines=None):
@@ -38,9 +45,12 @@ class NTPVars(object):
             nameval = v.split('=')
             if len(nameval) == 2:
                 try:
-                    if nameval[0] in ['rootdelay', 'rootdisp', 'sysoffset']:
+                    if nameval[0] in ['rootdelay', 'rootdisp']:
                         # convert from milliseconds to seconds
-                        self.metrics[nameval[0]] = round(float(nameval[1]) / 1000.0, 6)
+                        self.metrics[nameval[0]] = round(float(nameval[1]) / 1000.0, 9)
+                    elif nameval[0] in _aliases:
+                        # convert from milliseconds to seconds, alias
+                        self.metrics[_aliases[nameval[0]]] = round(float(nameval[1]) / 1000.0, 9)
                     else:
                         self.metrics[nameval[0]] = float(nameval[1])
                 except ValueError:
