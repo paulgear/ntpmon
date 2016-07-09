@@ -198,7 +198,10 @@ class NTPAlerter(object):
                     self.metrics[metric],
                 ))
         # flush standard output to ensure metrics are sent to collectd immediately
-        sys.stdout.flush()
+        if sys.stdout.isatty():
+            print('')
+        else:
+            sys.stdout.flush()
 
     def alert_nagios(self, debug):
         """
