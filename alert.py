@@ -61,19 +61,19 @@ _aliases = {
 Display formats for all metrics
 """
 _formats = {
-    'offset': (None, 'g'),
+    'offset': (None, 'f'),
     'peers': ('Number of peers', 'd'),
     'reach': ('reachability', '%'),
     'sync': None,
     'tracehosts': (None, 'd'),
     'traceloops': (None, 'd'),
     'runtime': (None, 'd'),
-    'frequency': (None, 'g'),
-    'rootdelay': (None, 'g'),
-    'rootdisp': (None, 'g'),
+    'frequency': (None, 'f'),
+    'rootdelay': (None, 'f'),
+    'rootdisp': (None, 'f'),
     'stratum': (None, 'd'),
-    'sysjitter': (None, 'g'),
-    'sysoffset': (None, 'g'),
+    'sysjitter': (None, 'f'),
+    'sysoffset': (None, 'f'),
     'result': (None, 'd'),
 }
 
@@ -234,7 +234,7 @@ class NTPAlerter(object):
                 if _formats[m] is None:
                     fmt = 'g'
                 else:
-                    fmt = _formats[m][1] if _formats[m][1] != '%' else 'g'
+                    fmt = _formats[m][1] if _formats[m][1] != '%' else 'f'
                 val = self.mc.fmtstr(fmt) % self.metrics[m]
                 items.append("%s=%s" % (m, val))
             else:
