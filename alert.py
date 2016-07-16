@@ -192,7 +192,7 @@ class NTPAlerter(object):
         self.metrics['result'] = self.return_code()
         for metric in sorted(_collectdtypes.keys()):
             if metric in _collectdtypes and metric in self.metrics:
-                print('PUTVAL "%s/ntpmon-%s" interval=%d N:%f' % (
+                print('PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f' % (
                     hostname,
                     _collectdtypes[metric],
                     interval,
