@@ -159,10 +159,16 @@ class MetricClassifier(object):
     @staticmethod
     def fmtstr(fmt):
         if fmt == '%':
+            # a percentage
             return '%.2f%%'
         elif fmt in 'bcdeEfFgGnoxX':
+            # usual python formatter
+            return '%' + fmt
+        elif len(fmt) > 1 and fmt[0] in '.0123456789':
+            # assume we've been given a valid format string with precision
             return '%' + fmt
         else:
+            # force string otherwise
             return '%s'
 
     def classify(self, metric, value):
