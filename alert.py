@@ -72,8 +72,8 @@ _formats = {
     'rootdelay': (None, 'f'),
     'rootdisp': (None, 'f'),
     'stratum': (None, 'd'),
-    'sysjitter': (None, 'f'),
-    'sysoffset': (None, 'f'),
+    'sysjitter': (None, '.9f'),
+    'sysoffset': (None, '.9f'),
     'result': (None, 'd'),
 }
 
@@ -198,10 +198,11 @@ class NTPAlerter(object):
                     interval,
                     self.metrics[metric],
                 ))
-        # flush standard output to ensure metrics are sent to collectd immediately
         if sys.stdout.isatty():
+            # we're outputting to a terminal; must be test mode
             print('')
         else:
+            # flush standard output to ensure metrics are sent to collectd immediately
             sys.stdout.flush()
 
     def alert_nagios(self, debug):
