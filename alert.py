@@ -91,7 +91,9 @@ _metricdefs = {
     'sync': ('high', 0.9, 0.9),
     'tracehosts': ('high', 0.1, -0.1),
     'traceloops': ('low', 0.9, 0.9),
-    # readvar metrics are reported only, not alerted
+    # readvar metrics are normally reported only, not alerted
+    # however, if only vars is checked, we report on sysoffset
+    'sysoffset': ('mid', -0.05, -0.01, 0.01, 0.05),
 }
 
 
@@ -132,9 +134,13 @@ class NTPAlerter(object):
         if debug:
             pprint.pprint(self.metrics)
         metrics.addaliases(self.metrics, _aliases)
+        if 'proc' in self.checks:
+            self.checks.append('runtime')
         if 'trace' in self.checks:
             self.checks.append('tracehosts')
             self.checks.append('traceloops')
+        if 'vars' in self.checks and 'offset' not in self.checks:
+            self.checks.append('sysoffset')
 
     def custom_message(self, metric, result):
         """
