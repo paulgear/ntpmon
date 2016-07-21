@@ -29,9 +29,9 @@ def get_args(checks):
     parser = argparse.ArgumentParser(description='NTPmon - Nagios check')
     parser.add_argument(
         '--check',
-        action='append',
         choices=checks,
-        help='Select check to run. May be specified multiple times; if omitted, run all checks except trace.')
+        nargs='*',
+        help='Select checks to run; if omitted, run all checks except trace.')
     parser.add_argument(
         '--debug',
         action='store_true',
