@@ -50,11 +50,11 @@ def get_args(checks):
 
 
 def main():
-    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'trace', 'vars']
-    args = get_args(checks)
+    validchecks = ['proc', 'offset', 'peers', 'reach', 'sync', 'trace', 'vars']
+    defaultchecks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
+    args = get_args(validchecks)
     if args.check is None or len(args.check) < 1:
-        args.check = checks[:-2]
-        args.check.append(checks[-1])
+        args.check = defaultchecks
 
     if args.test:
         # read in ntpq output in test mode
