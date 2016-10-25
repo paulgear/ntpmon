@@ -44,9 +44,15 @@ def get_args():
 
 def sleep_until(interval):
     """
-    FIXME: only sleep until the end of the interval
+    sleep until the end of the interval
     """
-    time.sleep(interval)
+    now = time.time()
+    s = interval - now % interval
+    if sys.stdout.isatty():
+        print("Sleeping %g seconds" % (s,))
+    time.sleep(s)
+    if sys.stdout.isatty():
+        print(time.asctime())
 
 
 def main():
