@@ -142,9 +142,9 @@ class NTPPeers(object):
         try:
             if fields[4] != '-':
                 if fields[4][-1:] == 'h':
-                    fields[4] = int(fields[4][:-2]) * 3600
+                    fields[4] = int(fields[4][:-1]) * 3600
                 elif fields[4][-1:] == 'm':
-                    fields[4] = int(fields[4][:-2]) * 60
+                    fields[4] = int(fields[4][:-1]) * 60
                 else:
                     fields[4] = int(fields[4])
         except ValueError:
