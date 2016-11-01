@@ -36,10 +36,10 @@ Aliases for all metrics
 """
 _aliases = {
     # peer metrics
-    'offset': ('survivors-offset-mean', 'backups-offset-mean', 'discards-offset-mean', 'all-offset-mean'),
+    'offset': ('survivor-offset-mean', 'outlier-offset-mean', 'backup-offset-mean', 'all-offset-mean'),
     'peers': 'all',
     'reach': 'all-reach-mean',
-    'sync': 'syncpeer',
+    'sync': None,
     # trace metrics
     'tracehosts': None,
     'traceloops': None,
@@ -103,13 +103,13 @@ Metric types for collectd
 _collectdtypes = {
     'frequency': 'frequency/frequency_offset',
     'offset': 'offset/time_offset',
-    'peers': 'peers/count',
+    'peers': 'peers/all-count',
     'reach': 'reachability/percent',
     'rootdelay': 'rootdelay/time_offset',
     'rootdisp': 'rootdisp/time_offset',
     'runtime': 'runtime/duration',
     'stratum': 'stratum/count',
-    'sync': 'syncpeers/count',
+    'sync': 'peers/sync-count',
     'sysjitter': 'sysjitter/time_offset',
     'sysoffset': 'sysoffset/time_offset',
     'tracehosts': 'tracehosts/count',

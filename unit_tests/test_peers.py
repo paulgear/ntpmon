@@ -113,7 +113,7 @@ parsedpeers = {
         'reach': [],
         'stratum': [],
     },
-    'discard': {
+    'excess': {
         'address': [],
         'delay': [],
         'jitter': [],
@@ -121,7 +121,39 @@ parsedpeers = {
         'reach': [],
         'stratum': [],
     },
-    'syncpeer': {
+    'false': {
+        'address': [],
+        'delay': [],
+        'jitter': [],
+        'offset': [],
+        'reach': [],
+        'stratum': [],
+    },
+    'invalid': {
+        'address': [],
+        'delay': [],
+        'jitter': [],
+        'offset': [],
+        'reach': [],
+        'stratum': [],
+    },
+    'outlier': {
+        'address': [],
+        'delay': [],
+        'jitter': [],
+        'offset': [],
+        'reach': [],
+        'stratum': [],
+    },
+    'pps': {
+        'address': [],
+        'delay': [],
+        'jitter': [],
+        'offset': [],
+        'reach': [],
+        'stratum': [],
+    },
+    'sync': {
         'address': ['54.252.129.186'],
         'delay': [46.207],
         'jitter': [0.057605],
@@ -161,16 +193,21 @@ class TestNTPPeers(unittest.TestCase):
     Test NTPPeers
     """
 
+    types = {
+        'invalid': ' ',
+        'false': 'x',
+        'excess': '.',
+        'backup': '#',
+        'outlier': '-',
+        'survivor': '+',
+        'sync': '*',
+        'pps': 'o',
+    }
+
     def test_tallytotype(self):
-        for i in '*o':
-            self.assertEqual(NTPPeers.tallytotype(i), 'syncpeer')
-        for i in '+':
-            self.assertEqual(NTPPeers.tallytotype(i), 'survivor')
-        for i in '#':
-            self.assertEqual(NTPPeers.tallytotype(i), 'backup')
-        for i in ' .-x':
-            self.assertEqual(NTPPeers.tallytotype(i), 'discard')
-        for i in ' .-+ox#*':
+        for t in TestNTPPeers.types:
+            self.assertEqual(NTPPeers.tallytotype(TestNTPPeers.types[t]), t)
+        for i in ' .x-#+*o':
             self.assertNotEqual(NTPPeers.tallytotype(i), 'unknown')
         for i in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnpqrstuvwyz~!@$%^&()_':
             self.assertEqual(NTPPeers.tallytotype(i), 'unknown')
@@ -238,7 +275,7 @@ class TestNTPPeers(unittest.TestCase):
     def test_getmetrics(self):
         p = NTPPeers(alllines)
         metrics = p.getmetrics()
-        self.assertEqual(metrics['syncpeer'], 1)
+        self.assertEqual(metrics['sync'], 1)
 
     def test_rootmeansquare(self):
         l = [3, 4, 5]

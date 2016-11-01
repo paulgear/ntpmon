@@ -76,13 +76,6 @@ class NTPPeers(object):
         else:
             return float('nan')
 
-    @classmethod
-    def plural(cls, peertype):
-        if peertype in ['all', 'syncpeer']:
-            return peertype
-        else:
-            return peertype + 's'
-
     """
     List of peer types by tally code
     For more information, see:
@@ -91,10 +84,14 @@ class NTPPeers(object):
      - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP#Section_9.4.
     """
     peertypes = {
+        'invalid': ' ',
+        'false': 'x',
+        'excess': '.',
         'backup': '#',
-        'discard': ' .-x',
+        'outlier': '-',
         'survivor': '+',
-        'syncpeer': '*o',
+        'sync': '*',
+        'pps': 'o',
         'unknown': '',
         'all': '',
     }
@@ -257,8 +254,8 @@ class NTPPeers(object):
             peer = cls.peerline(l)
             if peer and cls.validpeer(peer):
                 cls.appendpeer(peers, peer)
-                # the sync peer is also a survivor
-                if peer[0] == 'syncpeer':
+                # the sync & pps peers are also survivors
+                if peer[0] == 'sync' or peer[0] == 'pps':
                     peer[0] = 'survivor'
                     cls.appendpeer(peers, peer)
 
@@ -276,28 +273,26 @@ class NTPPeers(object):
             peers = self.peers
         metrics = {}
         for t in NTPPeers.peertypes:
-            pt = NTPPeers.plural(t)
-
             # number of peers of this type
-            metrics[pt] = len(peers[t]['address'])
+            metrics[t] = len(peers[t]['address'])
 
             # offset of peers of this type
-            metrics[pt + '-offset-mean'] = NTPPeers.getmean(peers[t]['offset'])
-            metrics[pt + '-offset-stdev'] = NTPPeers.getstdev(peers[t]['offset'], metrics[pt + '-offset-mean'])
-            metrics[pt + '-offset-rms'] = NTPPeers.rms(peers[t]['offset'])
+            metrics[t + '-offset-mean'] = NTPPeers.getmean(peers[t]['offset'])
+            metrics[t + '-offset-stdev'] = NTPPeers.getstdev(peers[t]['offset'], metrics[t + '-offset-mean'])
+            metrics[t + '-offset-rms'] = NTPPeers.rms(peers[t]['offset'])
 
             # reachability of peers of this type
-            metrics[pt + '-reach-mean'] = NTPPeers.getmean(peers[t]['reach'])
-            metrics[pt + '-reach-stdev'] = NTPPeers.getstdev(peers[t]['reach'], metrics[pt + '-reach-mean'])
+            metrics[t + '-reach-mean'] = NTPPeers.getmean(peers[t]['reach'])
+            metrics[t + '-reach-stdev'] = NTPPeers.getstdev(peers[t]['reach'], metrics[t + '-reach-mean'])
             # The rms of reachability is not very useful, because it's always positive
             # (so it should be very close to the mean), but we include it for completeness.
-            metrics[pt + '-reach-rms'] = NTPPeers.rms(peers[t]['reach'])
+            metrics[t + '-reach-rms'] = NTPPeers.rms(peers[t]['reach'])
 
         return metrics
 
     def syncpeer(self):
         try:
-            return self.peers['syncpeer']['address'][0]
+            return self.peers['sync']['address'][0]
         except Exception:
             return None
 
