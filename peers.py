@@ -52,6 +52,20 @@ class NTPPeers(object):
             return float('nan')
 
     @staticmethod
+    def time2seconds(t):
+        """
+        Return the number of seconds represented by the time string.
+        """
+        if t[-1:] == 'd':
+            return int(t[:-1]) * 86400
+        elif t[-1:] == 'h':
+            return int(t[:-1]) * 3600
+        elif t[-1:] == 'm':
+            return int(t[:-1]) * 60
+        else:
+            return int(t)
+
+    @staticmethod
     def rms(l):
         """
         Return the root mean square of the values in the list, or NaN if there is none.
@@ -141,12 +155,7 @@ class NTPPeers(object):
         # when should be an integer or '-'
         try:
             if fields[4] != '-':
-                if fields[4][-1:] == 'h':
-                    fields[4] = int(fields[4][:-1]) * 3600
-                elif fields[4][-1:] == 'm':
-                    fields[4] = int(fields[4][:-1]) * 60
-                else:
-                    fields[4] = int(fields[4])
+                fields[4] = NTPPeers.time2seconds(fields[4])
         except ValueError:
             warn('Last poll time is not an integer: %s' % fields[4])
             return False
