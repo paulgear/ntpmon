@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# Visualise the intersection algorithm by converting
+# ntpq output into a gnuplot candlestick graph.
+
+# Author: Paul Gear
+# License: GPLv3 or later
+
+demodata='     remote           refid      st t when poll reach   delay   offset  jitter
+==============================================================================
+-10.55.61.54     17.253.34.125    2 s  659 1024  377    0.720    0.512   0.104
+-138.96.64.10    .GPS.            1 u   17 1024  377   26.289   -0.833   0.165
+-145.238.203.14  .MRS.            1 u 1006 1024  377    9.997   -0.362   0.099
++193.79.237.14   .PPS.            1 u  100 1024  377    8.922    0.330  10.296
+-192.53.103.108  .PTB.            1 u  581 1024  377   27.023    3.287   0.046
+-131.188.3.220   .GPS.            1 u  819 1024  377   27.155    4.807   0.059
+-140.203.204.77  .GPS.            1 u  858 1024  377   21.232    2.776   0.117
+#193.204.114.232 .CTD.            1 u  743 1024  377   31.473    5.403   0.067
+#192.36.133.17   .PPS.            1 u  693 1024  377   41.578   -3.091   0.131
++192.36.143.153  .PPS.            1 u  963 1024  377   27.950    0.346   0.200
++193.6.176.59    .GPS.            1 u  527 1024  377   32.983    0.295   0.534
+*17.253.34.253   .GPSs.           1 u 1061 1024  377    1.750    0.355   0.139
+#132.246.11.231  .PPS.            1 u  525 1024  377   77.370   -0.311   0.137
+#132.163.4.101   .ACTS.           1 u 1006 1024  377  111.321   -2.189  12.168
+#149.20.64.28    .SHM.            1 u  762 1024  357  137.070    0.320   0.156'
+
+# Adjust these to your preference
+FORMAT=png
+HEIGHT=$(xwininfo -root | awk '/Height:/ {print $2}')
+(( WIDTH=HEIGHT/9*16 ))
+(( TITLESIZE=WIDTH/90 ))
+(( KEYSIZE=WIDTH/140 ))
+VIEWER=gthumb
+    # set VIEWER to empty string to just keep output file
+    # otherwise, viewer is invoked, and data file deleted after the viewer exits
+#ANONYMOUS="unset xtic"
+    # uncomment the above to have anonymous graphs (no X axis label)
+
+DATAFILE=$(mktemp)
+PLOTFILE=$(mktemp)
+OUTFILE=$(mktemp).$FORMAT
+
+# Capture ntpq data
+if [ -t 0 ]; then
+    # use demo input
+    echo "$demodata"
+else
+    cat
+fi | sed -re '/remote.*refid/d; / *0( *0\.000){3} *$/d; /^=*$/d' > $DATAFILE
+
+# get the number of lines in the output
+LC=$(wc -l $DATAFILE|awk '{print $1}')
+(( FONTSIZE=WIDTH/LC/11 ))
+
+# Explanation of the gnuplot options
+# - xrange adds an extra empty column to the left & right so we can see all the columns
+# - xtics are turned off because they're not relevant
+# - minor ytics are turned on
+# - grid is on for ytics & minor ytics
+# - the boxes are 40% of the width available to each column
+# - # is used as a tally code in NTP, so we change the comment character to % which isn't a tally code
+# - key & title font size are set independently
+# - terminal format sets the font size of the x axis labels
+# - there are 3 plots:
+#   1. the data file entry indicating the delay (half of it below the offset and half above)
+#   2. the data file entry indicating the offset (mid point of the above candlesticks)
+#   3. the value 0 which is the Y axis
+
+# Here be shell quoting dragons:
+# - the first part needs shell variable expansion, so is double quoted
+# - in the second part $ and " need to have their meanings within gnuplot, so it is single quoted
+echo "
+set xrange [-1:$LC]
+set xtic scale 0
+set mytics
+set grid ytics mytics
+set boxwidth 0.4
+set datafile commentschars '%'
+set output '$OUTFILE'
+set terminal $FORMAT size $WIDTH,$HEIGHT enhanced font ',$FONTSIZE'
+set key font ',$KEYSIZE'
+$ANONYMOUS
+set title 'NTP intersection algorithm visualisation' font ',$TITLESIZE'
+plot '$DATAFILE'"' using 0:(($9-$8/2)/1000):(($9-$8/2)/1000):(($9+$8/2)/1000):(($9+$8/2)/1000):xtic(1) with candlesticks linewidth 3 title "Delay (seconds)", \
+     ""            using 0:($9/1000):($9/1000):($9/1000):($9/1000)                                     with candlesticks linewidth 3 linetype -1 title "Offset (seconds)", \
+     0                                                                                                                               linetype -1 title ""
+' | gnuplot
+echo $OUTFILE ${WIDTH}x$HEIGHT $FORMAT
+if [ -n "$VIEWER" ]; then
+    $VIEWER $OUTFILE
+    rm $OUTFILE
+fi
+rm -f $DATAFILE $PLOTFILE
