@@ -46,11 +46,14 @@ if [ -t 0 ]; then
     echo "$demodata"
 else
     cat
-fi | sed -re '/remote.*refid/d; / *0( *0\.000){3} *$/d; /^=*$/d' > $DATAFILE
+fi | sed -re '/remote.*refid/d; / *0( *0\.00[01]){3} *$/d; /^=*$/d' > $DATAFILE
 
 # get the number of lines in the output
 LC=$(wc -l $DATAFILE|awk '{print $1}')
 (( FONTSIZE=WIDTH/LC/11 ))
+if [ $FONTSIZE -gt $KEYSIZE ]; then
+    FONTSIZE=$KEYSIZE
+fi
 
 # Explanation of the gnuplot options
 # - xrange adds an extra empty column to the left & right so we can see all the columns
