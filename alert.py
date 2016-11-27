@@ -101,19 +101,27 @@ _metricdefs = {
 Metric types for collectd
 """
 _collectdtypes = {
+
+    'backup': 'peers/count-backup',
+    'excess': 'peers/count-excess',
+    'false': 'peers/count-false',
     'frequency': 'frequency/frequency_offset',
+    'invalid': 'peers/count-invalid',
     'offset': 'offset/time_offset',
-    'peers': 'peers/all-count',
+    'outlier': 'peers/count-outlier',
+    'pps': 'peers/count-pps',
     'reach': 'reachability/percent',
     'rootdelay': 'rootdelay/time_offset',
     'rootdisp': 'rootdisp/time_offset',
     'runtime': 'runtime/duration',
     'stratum': 'stratum/count',
-    'sync': 'peers/sync-count',
+    'survivor': 'peers/count-survivor',
+    'sync': 'peers/count-sync',
     'sysjitter': 'sysjitter/time_offset',
     'sysoffset': 'sysoffset/time_offset',
     'tracehosts': 'tracehosts/count',
     'traceloops': 'traceloops/count',
+
 }
 
 
