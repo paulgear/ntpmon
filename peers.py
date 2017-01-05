@@ -254,8 +254,13 @@ class NTPPeers(object):
             peer = cls.peerline(l)
             if peer and cls.validpeer(peer):
                 cls.appendpeer(peers, peer)
+                # the pps peer is also a sync peer
+                if peer[0] == 'pps':
+                    peer[0] = 'sync'
+                    cls.appendpeer(peers, peer)
+
                 # the sync & pps peers are also survivors
-                if peer[0] == 'sync' or peer[0] == 'pps':
+                if peer[0] == 'sync':
                     peer[0] = 'survivor'
                     cls.appendpeer(peers, peer)
 
