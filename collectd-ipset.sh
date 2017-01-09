@@ -32,7 +32,7 @@ while :; do
 		NEWEST=0;
 	}
 	/^Header: /		{OLDEST=$9}
-	/^Size in memory: /	{print "memory " $4; next}
+	/^Size in memory: /	{print "count-memory " $4; next}
 	/packets/ {
 		COUNT++
 		PACKETS+=$5
