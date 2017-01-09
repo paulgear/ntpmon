@@ -9,7 +9,7 @@
 # requires ipset output to be in /var/lib/collectd/ipset-NAME.txt
 #
 # Create /etc/cron.d/collectd-ipset with the following contents:
-#    */5 * * * root ipset list NAME > /var/lib/collectd/ipset-NAME.txt
+#    */5 * * * * root /sbin/ipset list NAME > /var/lib/collectd/ipset-NAME.txt
 # Where NAME is the name of the ipset you wish to monitor.
 #
 # Bugs:
