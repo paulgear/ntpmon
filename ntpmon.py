@@ -86,7 +86,7 @@ def main():
         port = int(port)
         s = socket.socket()
         s.connect((host, port))
-        sys.stdout = s
+        sys.stdout = s.makefile(mode='w')
 
     alerter = NTPAlerter(checks)
     while True:
