@@ -102,21 +102,13 @@ Metric types for collectd
 """
 _collectdtypes = {
 
-    'backup': 'peers/count-backup',
-    'excess': 'peers/count-excess',
-    'false': 'peers/count-false',
     'frequency': 'frequency/frequency_offset',
-    'invalid': 'peers/count-invalid',
     'offset': 'offset/time_offset',
-    'outlier': 'peers/count-outlier',
-    'pps': 'peers/count-pps',
     'reach': 'reachability/percent',
     'rootdelay': 'rootdelay/time_offset',
     'rootdisp': 'rootdisp/time_offset',
     'runtime': 'runtime/duration',
     'stratum': 'stratum/count',
-    'survivor': 'peers/count-survivor',
-    'sync': 'peers/count-sync',
     'sysjitter': 'sysjitter/time_offset',
     'sysoffset': 'sysoffset/time_offset',
     'tracehosts': 'tracehosts/count',
@@ -125,18 +117,56 @@ _collectdtypes = {
 }
 
 
+"""
+Peer metric types, used by both collectd & telegraf
+"""
+_peer_types = {
+
+    'backup': 'peers/count-backup',
+    'excess': 'peers/count-excess',
+    'false': 'peers/count-false',
+    'invalid': 'peers/count-invalid',
+    'outlier': 'peers/count-outlier',
+    'pps': 'peers/count-pps',
+    'survivor': 'peers/count-survivor',
+    'sync': 'peers/count-sync',
+
+}
+
+"""
+Metric types for telegraf
+"""
+_telegraf_types = {
+
+    'frequency': None,
+    'offset': None,
+    'reach': None,
+    'rootdelay': None,
+    'rootdisp': None,
+    'runtime': None,
+    'stratum': 'i',
+    'sysjitter': None,
+    'sysoffset': None,
+    'tracehosts': 'i',
+    'traceloops': 'i',
+
+}
+
+
 class NTPAlerter(object):
  
-    def __init__(self, checks, objs):
+    def __init__(self, checks):
         self.checks = checks
-        self.objs = objs
         self.mc = MetricClassifier(_metricdefs)
+        self.metrics = {}
+        self.objs = {}
 
-    def collectmetrics(self, debug):
+    def collectmetrics(self, checkobjs, debug):
         """
         Get metrics from each registered metric source and add all relevant aliases.
         """
         self.metrics = {}
+        self.objs = checkobjs
         for o in self.objs:
             self.metrics.update(self.objs[o].getmetrics())
         if debug:
@@ -196,34 +226,74 @@ class NTPAlerter(object):
             ", ".join(trace.hostlist)
         )
 
+    def alert(self, checkobjs, hostname, interval, format):
+        """
+        Produce the metrics
+        """
+        self.collectmetrics(checkobjs=checkobjs, debug=False)
+        self.mc.classify_metrics(self.metrics)
+        (m, rc) = self.mc.worst_metric(self.checks)
+        self.metrics['result'] = self.return_code()
+        if format == 'collectd':
+            self.alert_collectd(hostname, interval)
+        elif format == 'telegraf':
+            self.alert_telegraf()
+        self.alert_peers(hostname, interval, format)
+        self.finished_output()
+
     def alert_collectd(self, hostname, interval):
         """
         Produce collectd output for the metrics
         """
-        self.collectmetrics(False)
-        self.mc.classify_metrics(self.metrics)
-        (m, rc) = self.mc.worst_metric(self.checks)
-        self.metrics['result'] = self.return_code()
         for metric in sorted(_collectdtypes.keys()):
-            if metric in _collectdtypes and metric in self.metrics:
+            if metric in self.metrics:
                 print('PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f' % (
                     hostname,
                     _collectdtypes[metric],
                     interval,
                     self.metrics[metric],
                 ))
+
+    def alert_telegraf(self):
+        print('ntpmon ', end='')
+        telegraf_metrics = []
+        for metric in sorted(_telegraf_types.keys()):
+            if metric in self.metrics:
+                s = metric + '='
+                if _telegraf_types[metric] == 'i':
+                    s += str(int(self.metrics[metric])) + 'i'
+                else:
+                    s += str(self.metrics[metric])
+                telegraf_metrics.append(s)
+        print(','.join(telegraf_metrics))
+
+    def alert_peers(self, hostname, interval, format):
+        for metric in _peer_types:
+            value = self.metrics.get(metric)
+            if format == 'collectd':
+                print('PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f' % (
+                    hostname,
+                    _peer_types[metric],
+                    interval,
+                    value,
+                ))
+            elif format == 'telegraf':
+                print('ntpmon_peers,peertype=' + metric + ' count=' + str(int(value)) + 'i')
+
+    @staticmethod
+    def finished_output():
         if sys.stdout.isatty():
             # we're outputting to a terminal; must be test mode
             print('')
         else:
-            # flush standard output to ensure metrics are sent to collectd immediately
+            # flush standard output to ensure metrics are sent immediately
             sys.stdout.flush()
 
-    def alert_nagios(self, debug):
+    def alert_nagios(self, checkobjs, debug):
         """
         Produce nagios output for the metrics
         """
-        self.collectmetrics(debug)
+        self.collectmetrics(checkobjs=checkobjs, debug=debug)
         results = self.mc.classify_metrics(self.metrics)
         msgs = {}
         for metric in self.checks:

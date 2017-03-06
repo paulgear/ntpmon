@@ -66,8 +66,8 @@ def main():
         checkobjs = ntpchecks(args.check, args.debug)
 
     # alert on what we've collected
-    alerter = NTPAlerter(args.check, checkobjs)
-    alerter.alert_nagios(args.debug)
+    alerter = NTPAlerter(args.check)
+    alerter.alert_nagios(checkobjs=checkobjs, debug=args.debug)
     sys.exit(alerter.return_code())
 
 

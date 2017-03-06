@@ -22,7 +22,6 @@ import os
 import socket
 import sys
 import time
-import warnings
 
 from alert import NTPAlerter
 from process import ntpchecks
@@ -33,6 +32,7 @@ def get_args():
     parser.add_argument(
         '--mode',
         type=str,
+        choices=['collectd', 'telegraf'],
         help='Collectd is the default if collectd environment variables are detected.')
     parser.add_argument(
         '--interval',
@@ -73,17 +73,13 @@ def main():
     if args.interval is None:
         args.interval = 60
 
-    if args.mode != 'collectd':
-        warnings.warn('Only collectd mode is currently supported')
-        sys.exit(1)
-
+    alerter = NTPAlerter(checks)
     while True:
         # run the checks
         checkobjs = ntpchecks(checks, debug=False)
 
         # alert on what we've collected
-        alerter = NTPAlerter(checks, checkobjs)
-        alerter.alert_collectd(hostname, args.interval)
+        alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode)
         sleep_until(args.interval)
 
 
