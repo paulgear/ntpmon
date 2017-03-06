@@ -33,11 +33,19 @@ def get_args():
         '--mode',
         type=str,
         choices=['collectd', 'telegraf'],
-        help='Collectd is the default if collectd environment variables are detected.')
+        help='Collectd is the default if collectd environment variables are detected.',
+    )
+    parser.add_argument(
+        '--connect',
+        type=str,
+        help='Connect string (in host:port format) to use when sending data to telegraf (default: 127.0.0.1:8094)',
+        default='127.0.0.1:8094',
+    )
     parser.add_argument(
         '--interval',
         type=int,
-        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, or 60 seconds if COLLECTD_INTERVAL is not set).')
+        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, or 60 seconds if COLLECTD_INTERVAL is not set).',
+    )
     args = parser.parse_args()
     return args
 
@@ -72,6 +80,13 @@ def main():
 
     if args.interval is None:
         args.interval = 60
+
+    if args.mode == 'telegraf':
+        (host, port) = args.connect.split(':')
+        port = int(port)
+        s = socket.socket()
+        s.connect((host, port))
+        sys.stdout = s
 
     alerter = NTPAlerter(checks)
     while True:
