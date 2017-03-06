@@ -292,7 +292,8 @@ class NTPAlerter(object):
             print('')
         else:
             # flush standard output to ensure metrics are sent immediately
-            sys.stdout.flush()
+            if hasattr(sys.stdout, 'flush'):
+                sys.stdout.flush()
 
     def alert_nagios(self, checkobjs, debug):
         """
