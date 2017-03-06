@@ -37,7 +37,7 @@ _progs = {
 
 def execute(prog, timeout=30, debug=False, errfatal=False):
     """
-    Execute a predefined external command.
+    Execute a predefined external command.  Return the output and the runtime in seconds.
     """
     if prog not in _progs:
         return None
@@ -45,6 +45,7 @@ def execute(prog, timeout=30, debug=False, errfatal=False):
 
     output = None
     cmd = _progs[prog].split()
+    start = time.time()
     try:
         output = subprocess.check_output(
             cmd,
@@ -65,17 +66,19 @@ def execute(prog, timeout=30, debug=False, errfatal=False):
         if debug:
             print(te)
         output = te.output
+    runtime = time.time() - start
 
     if output is None or output == "":
         if errfatal:
             # FIXME: should be a metric rather than fatal error
             fatal(failmessage % _progs[prog])
         else:
-            return []
+            return [[], runtime]
     else:
         if debug:
             print(output)
-        return output.split('\n')
+            print('runtime: %.3f seconds' % (runtime,))
+        return [output.split('\n'), runtime]
 
 
 def fatal(msg):
@@ -93,17 +96,20 @@ def ntpchecks(checks, debug):
     for check in checks:
         if ((check in ['offset', 'peers', 'reach', 'sync'])
                 and 'peers' not in objs):
-            objs['peers'] = NTPPeers(execute('peers', debug=debug))
+            (output, runtime) = execute('peers', debug=debug)
+            objs['peers'] = NTPPeers(output, runtime)
             break
 
     if 'proc' in checks:
         objs['proc'] = NTPProcess()
 
     if 'trace' in checks:
-        objs['trace'] = NTPTrace(execute('trace', debug=debug))
+        (output, runtime) = execute('trace', debug=debug)
+        objs['trace'] = NTPTrace(output, runtime)
 
     if 'vars' in checks:
-        objs['vars'] = NTPVars(execute('vars', debug=debug))
+        (output, runtime) = execute('vars', debug=debug)
+        objs['vars'] = NTPVars(output, runtime)
 
     return objs
 

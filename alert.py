@@ -43,6 +43,7 @@ _aliases = {
     # trace metrics
     'tracehosts': None,
     'traceloops': None,
+    'tracetime': None,
     # runtime metric
     'runtime': None,
     # readvar metrics
@@ -67,6 +68,7 @@ _formats = {
     'sync': None,
     'tracehosts': (None, 'd'),
     'traceloops': (None, 'd'),
+    'tracetime': (None, 'f'),
     'runtime': (None, 'd'),
     'frequency': (None, 'f'),
     'rootdelay': (None, 'f'),
@@ -113,6 +115,7 @@ _collectdtypes = {
     'sysoffset': 'sysoffset/time_offset',
     'tracehosts': 'tracehosts/count',
     'traceloops': 'traceloops/count',
+    'tracetime': 'runtime/duration',
 
 }
 
@@ -149,6 +152,7 @@ _telegraf_types = {
     'sysoffset': None,
     'tracehosts': 'i',
     'traceloops': 'i',
+    'tracetime': None,
 
 }
 
@@ -177,6 +181,7 @@ class NTPAlerter(object):
         if 'trace' in self.checks:
             self.checks.append('tracehosts')
             self.checks.append('traceloops')
+            self.checks.append('tracetime')
         if 'vars' in self.checks and 'offset' not in self.checks:
             self.checks.append('sysoffset')
 

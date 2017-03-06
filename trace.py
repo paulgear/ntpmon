@@ -63,8 +63,9 @@ class NTPTrace(object):
         self.results = results
         return results
 
-    def __init__(self, lines):
+    def __init__(self, lines, runtime):
         self.trace(lines)
+        self.results['tracetime'] = runtime
 
     def getmetrics(self):
         return self.results.copy()

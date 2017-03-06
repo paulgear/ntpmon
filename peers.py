@@ -301,8 +301,9 @@ class NTPPeers(object):
         except Exception:
             return None
 
-    def __init__(self, lines):
+    def __init__(self, lines, runtime):
         self.peers = self.parse(lines)
+        self.runtime = runtime
 
 
 if __name__ == "__main__":

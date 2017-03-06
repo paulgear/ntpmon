@@ -31,7 +31,7 @@ _aliases = {
 
 class NTPVars(object):
 
-    def __init__(self, lines=None):
+    def __init__(self, lines=None, runtime=0):
         if not isinstance(lines, str):
             # multiple lines - join them
             lines = " ".join(lines)
@@ -40,7 +40,9 @@ class NTPVars(object):
         rv = [v.strip() for v in lines.split(',')]
 
         # split each string into metric name + value
-        self.metrics = {}
+        self.metrics = {
+            'readvartime': runtime
+        }
         for v in rv:
             nameval = v.split('=')
             if len(nameval) == 2:
