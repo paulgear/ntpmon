@@ -261,9 +261,9 @@ class NTPAlerter(object):
             if metric in self.metrics:
                 s = metric + '='
                 if _telegraf_types[metric] == 'i':
-                    s += str(int(self.metrics[metric])) + 'i'
+                    s += '%di' % (self.metrics[metric],)
                 else:
-                    s += str(self.metrics[metric])
+                    s += '%.9f' % (self.metrics[metric],)
                 telegraf_metrics.append(s)
         print(','.join(telegraf_metrics))
 
@@ -278,7 +278,7 @@ class NTPAlerter(object):
                     value,
                 ))
             elif format == 'telegraf':
-                print('ntpmon_peers,peertype=' + metric + ' count=' + str(int(value)) + 'i')
+                print('ntpmon_peers,peertype=%s count=%di' % (metric, value))
 
     @staticmethod
     def finished_output():
