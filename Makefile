@@ -1,9 +1,9 @@
-# This file is part of check_ntpmon - see COPYING.txt for license.
+# This file is part of ntpmon - see COPYING.txt for license.
 
 test: pytest datatest
 
 pytest:
-	python3 -m unittest -b test_check_ntpmon
+	python3 -m unittest -b unit_tests
 
 datatest:
 	./testdata.sh
