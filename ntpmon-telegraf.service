@@ -1,0 +1,14 @@
+[Unit]
+Description=NTP statistics monitor
+Documentation=https://github.com/paulgear/ntpmon
+After=network.target ntp.service telegraf.service
+Wants=ntp.service telegraf.service
+
+[Service]
+ExecStart=/opt/ntpmon/ntpmon.py --interval 60 --mode telegraf
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+
+[Install]
+WantedBy=multi-user.target
