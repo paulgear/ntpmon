@@ -59,7 +59,7 @@ def main():
     if args.test:
         # read in ntpq output in test mode
         checkobjs = {
-            'peers': NTPPeers([x.rstrip() for x in sys.stdin.readlines()]),
+            'peers': NTPPeers([x.rstrip() for x in sys.stdin.readlines()], runtime=0),
         }
     else:
         # run the checks

@@ -6,7 +6,7 @@ pytest:
 	python3 -m unittest -b unit_tests/test_classifier.py unit_tests/test_peers.py
 
 datatest:
-	./testdata.sh
+	./testdata/testdata.sh
 
 push:
 	git push github

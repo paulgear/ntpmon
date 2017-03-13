@@ -16,7 +16,7 @@ runtest()
     REVERSE="$@"
     echo -n "."
     #echo "Testing $FILE $REVERSE"
-    if ./check_ntpmon.py --test "$@" < $FILE >$TMPFILE 2>&1; then
+    if ./src/check_ntpmon.py --test < $FILE >$TMPFILE 2>&1; then
 	if [ -n "$REVERSE" ]; then
 	    echo "ERROR: $1 should have failed for $@:"
 	    cat $TMPFILE
