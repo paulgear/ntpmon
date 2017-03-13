@@ -1,6 +1,6 @@
 NTPmon
 by Paul Gear <github@libertysys.com.au>
-Copyright (c) 2015-2016 Paul D. Gear <http://libertysys.com.au/>
+Copyright (c) 2015-2017 Paul D. Gear <http://libertysys.com.au/>
 
 License: GPLv3 - see COPYING.txt for details
 
@@ -10,11 +10,8 @@ Introduction
 
 NTPmon is a program which is designed to report on essential health metrics
 for NTP.  It provides a Nagios check which can be used with many alerting
-systems, including support for performance data, and a collectd plugin.
-It will eventually be usable as a plugin for prometheus and/or telegraf.
-
-Code is currently beta quality, as a rewrite has only recently been
-completed.
+systems, including support for Nagios performance data.  NTPmon can also run
+as a daemon for sending metrics to collectd or telegraf.
 
 
 Prerequisites
@@ -89,7 +86,9 @@ check_ntpmon are:
 - Added support for Nagios performance data:
   https://assets.nagios.com/downloads/nagioscore/docs/nagioscore/3/en/perfdata.html
 
-- Added collectd exec plugin.
+- Added collectd daemon.
+
+- Added telegraf daemon.
 
 - Removed support for changing thresholds; if the one person on the Internet
   who actually uses this really wants it, I might add it back. :-)
@@ -99,7 +98,7 @@ Startup delay
 -------------
 
 By default, until ntpd has been running for 512 seconds (the minimum time for
-8 polls at 64-second intervals), NTPmon will return OK (zero return code).
+8 polls at 64-second intervals), check_ntpmon will return OK (zero return code).
 This is to prevent false positives on startup or for short-lived VMs.  To
 ignore this safety precaution, use --run-time with a low number (e.g. 1 sec).
 
@@ -115,5 +114,4 @@ To do
 
 - Better/more documentation.
 - Expand unit tests.
-- Create installer to eliminate busy work for enabling the trace check.
-- Create telegraf/prometheus plugin.
+- Create installer.
