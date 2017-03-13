@@ -1,0 +1,2 @@
+includes: ['layer:basic']
+repo:  git+ssh://git.launchpad.net/ntpmon
