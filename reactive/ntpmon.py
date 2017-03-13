@@ -66,10 +66,9 @@ def install_ntpmon():
         hookenv.log('installing ntpmon systemd configuration')
         host.rsync('src/' + service_name + '.systemd', systemd_config)
         subprocess.call(['systemd', 'daemon-reload'])
-        host.service('enable', service_name)
     else:
         hookenv.log('installing ntpmon upstart configuration')
-        host.rsync('src/ntpmon-telegraf.upstart', upstart_config)
+        host.rsync('src/' + service_name + '.upstart', upstart_config)
     set_state('ntpmon.installed')
     remove_state('ntpmon.configured')
 
@@ -92,14 +91,12 @@ def start_ntpmon():
     Start the ntpmon daemon process.
     If ntp is not installed, do nothing.
     """
-    hookenv.log('starting ntpmon')
     if os.path.exists(ntp_conf):
-        if host.service_running(service_name):
-            host.service_restart(service_name)
-        else:
-            host.service_start(service_name)
+        hookenv.log(ntp_conf + ' present; enabling and starting ntpmon')
+        host.service_resume(service_name)
     else:
-        hookenv.log('ntp not configured; not starting ntpmon')
+        hookenv.log(ntp_conf + ' not present; disabling ntpmon')
+        host.service_pause(service_name)
     set_state('ntpmon.started')
 
 
