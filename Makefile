@@ -10,7 +10,6 @@ datatest:
 
 push:
 	git push github
-	git push launchpad
 
 clean:
 	find . -type f -name '*.pyc' -print0 | xargs --null rm -f
