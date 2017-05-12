@@ -1,13 +1,12 @@
 # ntpmon-telegraf - gather NTP statistics and send to telegraf TCP listener
 
-description "NTPmon telegraf collector (UNTESTED under upstart)"
+description "NTPmon telegraf collector"
 
 start on started telegraf
 start on started ntp
 
 stop on runlevel [06]
 
-expect stop
 respawn
 
 # FIXME: make this configurable
