@@ -21,30 +21,39 @@ VIEWER=''
 DATAFILE=$(mktemp)
 OUTFILE=$(mktemp).$FORMAT
 
+if [ "$1" == "--delay" ]; then
+    FIELD=Delay
+    LCFIELD=delay
+else
+    FIELD=Offset
+    LCFIELD=offset
+fi
+
 if [ -t 0 ]; then
     cat /var/log/ntpstats/peerstats
 else
     cat -
-fi | TZ=UTC awk '
+fi | TZ=UTC awk -v FIELD=$FIELD '
 
 # From https://wiki.polaire.nl/doku.php?id=mjd_convert_modified_julian_date
 function mjd2utc(day, time) {
     return strftime("%F %T", (day-40587)*86400 + time)
 }
 
-# save the time & offset for each peer separately; only include
-# sync, survivor, and pps peers
-$4 ~ /^[^0][467]/ { offset[$3][mjd2utc($1, $2)]=$5 }
+# save the time & offset/delay field for each peer separately;
+# only include sync, survivor, and pps peers
+$4 ~ /^[^0][467]/ && FIELD == "Offset" { field[$3][mjd2utc($1, $2)]=$5 }
+$4 ~ /^[^0][467]/ && FIELD == "Delay" { field[$3][mjd2utc($1, $2)]=$6 }
 
 # Print each peer in a separate block.  Unfortunately, this unsorts the data,
 # but because we are using a dot plot we do not care.
 END {
-    for (peer in offset) {
+    for (peer in field) {
 	print "";
 	print "";
 	print peer;
-	for (time in offset[peer]) {
-	    print time, offset[peer][time];
+	for (time in field[peer]) {
+	    print time, field[peer][time];
 	}
     }
 }' > $DATAFILE
@@ -57,12 +66,12 @@ set xdata time
 set timefmt '%Y-%m-%d %H:%M:%S'
 set format x '%H:%M'
 set xlabel 'Time'
-set ylabel 'Offset (seconds)'
+set ylabel '$FIELD (seconds)'
 set grid ytics mytics
 set output '$OUTFILE'
 set terminal $FORMAT size $WIDTH,$HEIGHT enhanced font ',$FONTSIZE'
 set key font ',$KEYSIZE' box
-set title 'NTP peer offsets' font ',$TITLESIZE'
+set title 'NTP peer $LCFIELD' font ',$TITLESIZE'
 plot for [i=0:999] '$DATAFILE' index i using 1:3 title columnheader(1) with points pointsize 1 pointtype 7, \
     0 linetype -1 title ''
 " | gnuplot 2>&1 | grep -ve 'line 0: warning: Skipping data file with no valid points'
