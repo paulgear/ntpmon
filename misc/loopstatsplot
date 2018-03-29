@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# Convert ntp loopstats into a gnuplot scatter plot.
+
+# Author: Paul Gear
+# License: GPLv3 or later
+
+# Adjust these to your preference
+FORMAT=png
+#HEIGHT=$(xwininfo -root | awk '/Height:/ {print $2}')
+#(( HEIGHT=HEIGHT*6/7 ))
+HEIGHT=1024
+(( WIDTH=HEIGHT/9*16 ))
+(( TITLESIZE=WIDTH/90 ))
+(( KEYSIZE=WIDTH/140 ))
+VIEWER=gthumb
+#VIEWER=''
+    # set VIEWER to empty string to just keep output file
+    # otherwise, viewer is invoked, and data file deleted after the viewer exits
+
+DATAFILE=$(mktemp)
+OUTFILE=$(mktemp).$FORMAT
+
+if [ -t 0 ]; then
+    cat /var/log/ntpstats/loopstats
+else
+    cat -
+fi > $DATAFILE
+
+STARTOFTODAY=$(date +%s --utc -d "today 0:00")
+
+# Here be shell quoting dragons: watch out for literal $ or " in the gnuplot config!
+
+echo "
+set xdata time
+set timefmt '%s'
+set format x '%T'
+set ytics nomirror
+set y2tics nomirror
+set xlabel 'Time'
+set ylabel 'Offset (seconds)'
+set y2label 'Frequency error (ppm)'
+set grid ytics mytics 
+set output '$OUTFILE'
+set terminal $FORMAT size $WIDTH,$HEIGHT enhanced font ',$FONTSIZE'
+set key font ',$KEYSIZE' box
+set title 'NTP loop statistics' font ',$TITLESIZE'
+plot '$DATAFILE' \
+    using (\$2+$STARTOFTODAY):3 with lines linewidth 2 title 'Offset (seconds)', \
+    '' using (\$2+$STARTOFTODAY):4 with lines axes x1y2 linewidth 2 title 'Frequency error (ppm)', \
+    0 linetype -1 title '', \
+    0 linetype -1 title '' axes x1y2
+" | gnuplot
+echo $OUTFILE ${WIDTH}x$HEIGHT $FORMAT
+if [ -n "$VIEWER" ]; then
+    $VIEWER $OUTFILE
+    #rm $OUTFILE
+fi
+rm -f $DATAFILE
