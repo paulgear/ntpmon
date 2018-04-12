@@ -25,31 +25,37 @@ if [ -t 0 ]; then
     cat /var/log/ntpstats/loopstats
 else
     cat -
-fi > $DATAFILE
+fi | TZ=UTC awk '
+# This prints just the data we are interested in: date + time, offset, frequency
 
-STARTOFTODAY=$(date +%s --utc -d "today 0:00")
+# From https://wiki.polaire.nl/doku.php?id=mjd_convert_modified_julian_date
+function mjd2utc(day, time) {
+    return strftime("%F %T", (day-40587)*86400 + time)
+}
+{ print mjd2utc($1, $2), $3, $4 }
+' | tee $DATAFILE
 
-# Here be shell quoting dragons: watch out for literal $ or " in the gnuplot config!
+
+# Here be shell quoting dragons: watch out for $ or " in the gnuplot config!
 
 echo "
 set xdata time
-set timefmt '%s'
-set format x '%T'
+set timefmt '%Y-%m-%d %H:%M:%S'
+set format x '%H:%M:%S'
 set ytics nomirror
 set y2tics nomirror
 set xlabel 'Time'
 set ylabel 'Offset (seconds)'
-set y2label 'Frequency error (ppm)'
+set y2label 'Frequency Error (ppm)'
 set grid ytics mytics 
 set output '$OUTFILE'
 set terminal $FORMAT size $WIDTH,$HEIGHT enhanced font ',$FONTSIZE'
 set key font ',$KEYSIZE' box
 set title 'NTP loop statistics' font ',$TITLESIZE'
 plot '$DATAFILE' \
-    using (\$2+$STARTOFTODAY):3 with lines linewidth 2 title 'Offset (seconds)', \
-    '' using (\$2+$STARTOFTODAY):4 with lines axes x1y2 linewidth 2 title 'Frequency error (ppm)', \
-    0 linetype -1 title '', \
-    0 linetype -1 title '' axes x1y2
+       using 1:3 with points pointsize 1 pointtype 7 axes x1y1 title 'Offset', \
+    '' using 1:4 with lines linewidth 2 axes x1y2 title 'Frequency', \
+    0 linetype -1 title '' axes x1y1
 " | gnuplot
 echo $OUTFILE ${WIDTH}x$HEIGHT $FORMAT
 if [ -n "$VIEWER" ]; then

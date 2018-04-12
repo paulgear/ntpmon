@@ -9,12 +9,12 @@
 FORMAT=png
 #HEIGHT=$(xwininfo -root | awk '/Height:/ {print $2}')
 #(( HEIGHT=HEIGHT*6/7 ))
-HEIGHT=900
+HEIGHT=1024
 (( WIDTH=HEIGHT/9*16 ))
 (( TITLESIZE=WIDTH/90 ))
 (( KEYSIZE=WIDTH/140 ))
-#VIEWER=gthumb
-VIEWER=''
+VIEWER=gthumb
+#VIEWER=''
     # set VIEWER to empty string to just keep output file
     # otherwise, viewer is invoked, and data file deleted after the viewer exits
 
@@ -78,6 +78,6 @@ plot for [i=0:999] '$DATAFILE' index i using 1:3 title columnheader(1) with poin
 echo $OUTFILE ${WIDTH}x$HEIGHT $FORMAT
 if [ -n "$VIEWER" ]; then
     $VIEWER $OUTFILE
-    rm $OUTFILE
+    #rm $OUTFILE
 fi
 rm -f $DATAFILE
