@@ -5,10 +5,12 @@ After=network.target ntp.service telegraf.service
 Wants=ntp.service telegraf.service
 
 [Service]
-ExecStart=/opt/ntpmon/ntpmon.py --interval 60 --mode telegraf
+ExecStart={{ install_dir }}/ntpmon.py --interval 60 --mode telegraf --implementation {{ implementation }}
 KillMode=process
 Restart=on-failure
 RestartSec=42s
+User={{ user }}
+Group={{ group }}
 
 [Install]
 WantedBy=multi-user.target

@@ -29,23 +29,19 @@ from readvar import NTPVars
 
 
 _progs = {
-    'peers': 'ntpq -pn',
-    'trace': 'ntptrace -n',
-    'vars': 'ntpq -nc readvar',
+    'chronyd': {
+        'peers': 'chronyc -c sources',
+        'vars': 'chronyc -c tracking',
+    },
+    'ntpd': {
+        'peers': 'ntpq -pn',
+        'trace': 'ntptrace -n',
+        'vars': 'ntpq -nc readvar',
+    },
 }
 
 
-def execute(prog, timeout=30, debug=False, errfatal=False):
-    """
-    Execute a predefined external command.  Return the output and the runtime in seconds.
-    """
-    if prog not in _progs:
-        return None
-    failmessage = '%s produced no output.  Please check that an NTP server is installed and running.'
-
-    output = None
-    cmd = _progs[prog].split()
-    start = time.time()
+def execute_subprocess(cmd, timeout, debug, errfatal):
     try:
         output = subprocess.check_output(
             cmd,
@@ -66,6 +62,22 @@ def execute(prog, timeout=30, debug=False, errfatal=False):
         if debug:
             print(te)
         output = te.output
+    return output
+
+
+def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
+    """
+    Execute a predefined external command.  Return the output and the runtime in seconds.
+    """
+    if implementation in _progs:
+        if prog not in _progs[implementation]:
+            return None
+    failmessage = '%s produced no output.  Please check that an NTP server is installed and running.'
+
+    output = None
+    cmd = _progs[prog].split()
+    start = time.time()
+    output = execute_subprocess(cmd, timeout=timeout, debug=debug, errfatal=errfatal)
     runtime = time.time() - start
 
     if output is None or output == "":
@@ -86,7 +98,7 @@ def fatal(msg):
     sys.exit(3)
 
 
-def ntpchecks(checks, debug):
+def ntpchecks(checks, debug, implementation):
     """
     Run all of the checks required by the argument list
     and return the resulting objects in a hash.

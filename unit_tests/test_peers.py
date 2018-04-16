@@ -88,13 +88,15 @@ noiselines = """
 ==============================================================================
 """
 
-peerlines = """ ntp.ubuntu.com  .POOL.          16 p    -   64    0    0.000    0.000   0.000
+inactivepeerlines = """ ntp.ubuntu.com  .POOL.          16 p    -   64    0    0.000    0.000   0.000
  0.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
  1.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
  2.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
  3.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
  127.127.1.0     .LOCL.          15 l    -   64    0    0.000    0.000   0.000
-+91.189.94.4     193.79.237.14    2 u    5  128  377  340.782    3.735  59.463
+"""
+
+peerlines = """+91.189.94.4     193.79.237.14    2 u    5  128  377  340.782    3.735  59.463
 +223.252.23.219  202.127.210.36   3 u    8  128  377   31.430  -16.143  74.185
 +91.189.89.199   193.79.237.14    2 u    1  128  377  349.389   11.235  53.799
 +103.51.68.133   192.189.54.33    3 u    1  128  377   97.565   -2.926  48.353
@@ -102,13 +104,15 @@ peerlines = """ ntp.ubuntu.com  .POOL.          16 p    -   64    0    0.000    
 +202.147.104.60  202.6.131.118    2 u  132  128  377   56.657   -1.715  96.938
 *54.252.129.186  202.6.131.118    2 u  205  128  376   46.207   -2.489  57.605"""
 
-alllines = noiselines + peerlines + '\n'
+alllines = noiselines + inactivepeerlines + peerlines + '\n'
 
 parsedpeers = {
     'backup': {
         'address': [],
         'delay': [],
+        'error': [],
         'jitter': [],
+        'moffset': [],
         'offset': [],
         'reach': [],
         'stratum': [],
@@ -116,7 +120,9 @@ parsedpeers = {
     'excess': {
         'address': [],
         'delay': [],
+        'error': [],
         'jitter': [],
+        'moffset': [],
         'offset': [],
         'reach': [],
         'stratum': [],
@@ -124,7 +130,9 @@ parsedpeers = {
     'false': {
         'address': [],
         'delay': [],
+        'error': [],
         'jitter': [],
+        'moffset': [],
         'offset': [],
         'reach': [],
         'stratum': [],
@@ -132,7 +140,9 @@ parsedpeers = {
     'invalid': {
         'address': [],
         'delay': [],
+        'error': [],
         'jitter': [],
+        'moffset': [],
         'offset': [],
         'reach': [],
         'stratum': [],
@@ -140,7 +150,9 @@ parsedpeers = {
     'outlier': {
         'address': [],
         'delay': [],
+        'error': [],
         'jitter': [],
+        'moffset': [],
         'offset': [],
         'reach': [],
         'stratum': [],
@@ -148,41 +160,55 @@ parsedpeers = {
     'pps': {
         'address': [],
         'delay': [],
+        'error': [],
         'jitter': [],
+        'moffset': [],
         'offset': [],
         'reach': [],
         'stratum': [],
     },
     'sync': {
         'address': ['54.252.129.186'],
-        'delay': [46.207],
+        'delay': [0.046207],
+        'error': [],
         'jitter': [0.057605],
+        'moffset': [],
         'offset': [-0.002489],
         'reach': [87.5],
         'stratum': [2],
     },
     'survivor': {
-        'address': ['91.189.94.4', '223.252.23.219', '91.189.89.199', '103.51.68.133', '150.101.233.118', '202.147.104.60', '54.252.129.186'],
-        'delay': [340.782, 31.430, 349.389, 97.565, 70.775, 56.657, 46.207],
+        'address': [
+            '91.189.94.4', '223.252.23.219', '91.189.89.199', '103.51.68.133',
+            '150.101.233.118', '202.147.104.60', '54.252.129.186'],
+        'delay': [0.340782, 0.031430, 0.349389, 0.097565, 0.070775, 0.056657, 0.046207],
+        'error': [],
         'jitter': [0.059463, 0.074185, 0.053799, 0.048353, 0.057820, 0.096938, 0.057605],
+        'moffset': [],
         'offset': [0.003735, -0.016143, 0.011235, -0.002926, 0.007865, -0.001715, -0.002489],
-        'reach': [100, 100, 100, 100, 100, 100, 87.5],
+        'reach': [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 87.5],
         'stratum': [2, 3, 2, 3, 3, 2, 2],
     },
     'unknown': {
         'address': [],
         'delay': [],
+        'error': [],
         'jitter': [],
+        'moffset': [],
         'offset': [],
         'reach': [],
         'stratum': [],
     },
     'all': {
-        'address': ['91.189.94.4', '223.252.23.219', '91.189.89.199', '103.51.68.133', '150.101.233.118', '202.147.104.60', '54.252.129.186'],
-        'delay': [340.782, 31.430, 349.389, 97.565, 70.775, 56.657, 46.207],
+        'address': [
+            '91.189.94.4', '223.252.23.219', '91.189.89.199', '103.51.68.133',
+            '150.101.233.118', '202.147.104.60', '54.252.129.186'],
+        'delay': [0.340782, 0.031430, 0.349389, 0.097565, 0.070775, 0.056657, 0.046207],
+        'error': [],
         'jitter': [0.059463, 0.074185, 0.053799, 0.048353, 0.057820, 0.096938, 0.057605],
+        'moffset': [],
         'offset': [0.003735, -0.016143, 0.011235, -0.002926, 0.007865, -0.001715, -0.002489],
-        'reach': [100, 100, 100, 100, 100, 100, 87.5],
+        'reach': [100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 87.5],
         'stratum': [2, 3, 2, 3, 3, 2, 2],
     },
 }
@@ -192,6 +218,9 @@ class TestNTPPeers(unittest.TestCase):
     """
     Test NTPPeers
     """
+
+    def setUp(self):
+        self.maxDiff = None
 
     types = {
         'invalid': ' ',
@@ -209,14 +238,18 @@ class TestNTPPeers(unittest.TestCase):
             self.assertEqual(NTPPeers.tallytotype(TestNTPPeers.types[t]), t)
         for i in ' .x-#+*o':
             self.assertNotEqual(NTPPeers.tallytotype(i), 'unknown')
-        for i in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnpqrstuvwyz~!@$%^&()_':
+        for i in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnpqrstuvwyz!@$%^&()_':
             self.assertEqual(NTPPeers.tallytotype(i), 'unknown')
 
     def test_isnoiseline(self):
         for s in noiselines.split('\n'):
             self.assertTrue(NTPPeers.isnoiseline(s))
 
-    def test_isntnoiseline(self):
+    def test_inactivepeerisntnoise(self):
+        for s in inactivepeerlines.split('\n'):
+            self.assertFalse(NTPPeers.isnoiseline(s))
+
+    def test_peerisntnoise(self):
         for s in peerlines.split('\n'):
             self.assertFalse(NTPPeers.isnoiseline(s))
 

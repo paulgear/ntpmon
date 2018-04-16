@@ -23,8 +23,8 @@ import socket
 import sys
 import time
 
-from alert import NTPAlerter
-from process import ntpchecks
+import alert
+import process
 
 
 def get_args():
@@ -44,7 +44,15 @@ def get_args():
     parser.add_argument(
         '--interval',
         type=int,
-        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, or 60 seconds if COLLECTD_INTERVAL is not set).',
+        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, '
+             'or 60 seconds if COLLECTD_INTERVAL is not set).',
+    )
+    parser.add_argument(
+        '--implementation',
+        type=str,
+        choices=['auto', 'chronyd', 'ntpd'],
+        default='auto',
+        help='Which NTP implementation to use (default: auto-detect).',
     )
     args = parser.parse_args()
     return args
@@ -64,7 +72,7 @@ def sleep_until(interval):
 
 
 def main():
-    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars', 'trace']
+    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
     args = get_args()
 
     if 'COLLECTD_HOSTNAME' in os.environ:
@@ -88,10 +96,10 @@ def main():
         s.connect((host, port))
         sys.stdout = s.makefile(mode='w')
 
-    alerter = NTPAlerter(checks)
+    alerter = alert.NTPAlerter(checks)
     while True:
         # run the checks
-        checkobjs = ntpchecks(checks, debug=False)
+        checkobjs = process.ntpchecks(checks, debug=False, implementation=args.implementation)
 
         # alert on what we've collected
         alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode)

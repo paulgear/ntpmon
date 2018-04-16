@@ -40,11 +40,11 @@ def get_args(checks):
         '--run-time',
         default=512,
         type=int,
-        help='Time in seconds (default: 512) for which to always return OK after ntpd startup.')
+        help='Time in seconds (default: 512) for which to always return OK after NTP daemon startup.')
     parser.add_argument(
         '--test',
         action='store_true',
-        help='Accept "ntpq -pn" output on standard input instead of running it.')
+        help='Obtain peer stats on standard input instead of from running daemon.')
     args = parser.parse_args()
     return args
 
@@ -63,7 +63,7 @@ def main():
         }
     else:
         # run the checks
-        checkobjs = ntpchecks(args.check, args.debug)
+        checkobjs = ntpchecks(args.check, debug=args.debug, implementation=args.implementation)
 
     # alert on what we've collected
     alerter = NTPAlerter(args.check)
