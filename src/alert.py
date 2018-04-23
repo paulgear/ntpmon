@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -327,10 +327,10 @@ class NTPAlerter(object):
                 else:
                     fmt = _formats[m][1] if _formats[m][1] != '%' else 'f'
                 val = self.mc.fmtstr(fmt) % self.metrics[m]
-                items.append("%s=%s" % (m, val))
+                items.append('%s=%s' % (m, val))
             else:
-                items.append("%s=" % (m,))
-        return " ".join(items)
+                items.append('%s=' % (m,))
+        return ' '.join(items)
 
     def return_code(self):
         """
@@ -342,4 +342,3 @@ class NTPAlerter(object):
             return 0
         else:
             return self.mc.return_code(self.checks)
-

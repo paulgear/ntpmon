@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -266,6 +266,8 @@ class NTPPeers():
                         fields[i] = float(fields[i]) / 1000.0
                     else:
                         fields[i] = float(fields[i])
+                    # TODO: Do we really want to limit to microsecond accuracy?
+                    # ISTR this was only here to work around python float limitations in the test suite.
                     fields[i] = round(fields[i], 6)
             except ValueError:
                 warn('Field %d is not numeric: %s' % (i, fields[i]))
