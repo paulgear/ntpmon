@@ -32,7 +32,7 @@ ntp_conf = '/etc/ntp.conf'
 ntpmon_options = layer.options('ntpmon')
 
 
-def ntpmon_conf(option):
+def get_config(option):
     if option in ntpmon_options:
         value = ntpmon_options[option]
         if value is not None and len(value) > 0:
@@ -72,14 +72,14 @@ def install_ntpmon():
     """
     Install package dependencies, source files, and startup configuration.
     """
-    ntpmon_dir = ntpmon_conf('install-dir')
-    if ntpmon_dir:
+    install_dir = get_config('install-dir')
+    if install_dir:
         log('installing ntpmon')
-        host.rsync('src/', ntpmon_dir)
+        host.rsync('src/', install_dir)
 
-    service_name = ntpmon_conf('service-name')
+    service_name = get_config('service-name')
     using_systemd = host.init_is_systemd()
-    if ntpmon_dir and service_name:
+    if install_dir and service_name:
         if using_systemd:
             systemd_config = '/etc/systemd/system/' + service_name + '.service'
             log('installing systemd service: {}'.format(service_name))

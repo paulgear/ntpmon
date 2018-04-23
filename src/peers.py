@@ -258,11 +258,11 @@ class NTPPeers():
         return True
 
     @classmethod
-    def validate_floats(cls, fields, milliseconds):
+    def validate_floats(cls, fields, convert_to_seconds):
         for i in ['offset', 'moffset', 'delay', 'jitter', 'error']:
             try:
                 if i in fields:
-                    if milliseconds:
+                    if convert_to_seconds:
                         fields[i] = float(fields[i]) / 1000.0
                     else:
                         fields[i] = float(fields[i])
@@ -273,9 +273,9 @@ class NTPPeers():
         return True
 
     @classmethod
-    def validate_peerfields(cls, fields, milliseconds):
-        """Validate the supplied peer fields; if milliseconds is True, convert offset, delay,
-        moffset, error, and jitter from milliseconds to seconds."""
+    def validate_peerfields(cls, fields, convert_to_seconds):
+        """Validate the supplied peer fields; if convert_to_seconds is True, convert
+        offset, delay, moffset, error, and jitter from milliseconds to seconds."""
         if not cls.validate_tally(fields):
             return None
         if not cls.validate_stratum(fields):
@@ -286,7 +286,7 @@ class NTPPeers():
             return None
         if not cls.validate_reach(fields):
             return None
-        if not cls.validate_floats(fields, milliseconds):
+        if not cls.validate_floats(fields, convert_to_seconds):
             return None
         return fields
 
