@@ -65,7 +65,7 @@ def sleep_until(interval):
     now = time.time()
     s = interval - now % interval
     if sys.stdout.isatty():
-        print("Sleeping %g seconds" % (s,))
+        print('Sleeping %g seconds' % (s,))
     time.sleep(s)
     if sys.stdout.isatty():
         print(time.asctime())
@@ -106,6 +106,6 @@ def main():
         sleep_until(args.interval)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 

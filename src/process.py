@@ -80,7 +80,7 @@ def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
     output = execute_subprocess(cmd, timeout=timeout, debug=debug, errfatal=errfatal)
     runtime = time.time() - start
 
-    if output is None or output == "":
+    if output is None or len(output) == 0:
         if errfatal:
             # FIXME: should be a metric rather than fatal error
             fatal(failmessage % _progs[prog])
@@ -133,7 +133,7 @@ class NTPProcess(object):
         Save which process names we're looking for, and the version of psutil.
         """
         if names is None:
-            self.names = ["ntpd", "xntpd"]
+            self.names = ['chronyd', 'ntpd', 'xntpd']
         else:
             self.names = names
         # Check for old psutil per http://grodola.blogspot.com.au/2014/01/psutil-20-porting.html
@@ -178,5 +178,5 @@ def main():
     pprint.pprint(NTPProcess().getmetrics())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

@@ -251,7 +251,7 @@ class NTPPeers():
             # convert to octal
             fields['reach'] = int(fields['reach'], 8)
             # convert to binary, count the # of 1s (maximum 8), convert to a percentage
-            fields['reach'] = bin(fields['reach']).count("1") * 100 / 8
+            fields['reach'] = bin(fields['reach']).count('1') * 100 / 8
         except ValueError:
             warn('Reachability is not an octal value: %s' % fields['reach'])
             return False
@@ -388,7 +388,7 @@ class NTPPeers():
         self.runtime = runtime
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     import pprint
     pp = pprint.PrettyPrinter(width=200)
     stdin = sys.stdin.read()

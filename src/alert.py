@@ -202,7 +202,8 @@ class NTPAlerter(object):
     def custom_message_runtime(self, result):
         proc = self.objs['proc']
         if result == 'CRITICAL':
-            return '%s: No NTP process could be found.  Please check that an NTP server is installed and running.' % (result,)
+            return ('%s: No NTP process could be found.'
+                    '  Please check that an NTP server is installed and running.') % (result,)
         elif result == 'WARNING':
             return 'OK: %s has only been running %d seconds' % (proc.name, proc.getruntime())
         elif result == 'OK':
@@ -228,7 +229,7 @@ class NTPAlerter(object):
         return '%s: %d hosts detected in trace: %s' % (
             result,
             trace.results['tracehosts'],
-            ", ".join(trace.hostlist)
+            ', '.join(trace.hostlist)
         )
 
     def alert(self, checkobjs, hostname, interval, format):
@@ -312,7 +313,7 @@ class NTPAlerter(object):
         else:
             (m, rc) = self.mc.worst_metric(self.checks)
             self.metrics['result'] = self.return_code()
-            print("%s | %s" % (msgs[m], self.report()))
+            print('%s | %s' % (msgs[m], self.report()))
 
     def report(self):
         """
