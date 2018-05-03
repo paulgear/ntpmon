@@ -156,6 +156,8 @@ class NTPPeers():
     @classmethod
     def chrony_peerline(cls, fields):
         """Convert chrony peer line to named fields"""
+        if len(fields) != 10:
+            return None
         return {
             'mode': fields[0],
             'tally': fields[1],
@@ -179,8 +181,11 @@ class NTPPeers():
 
     @classmethod
     def ntpd_peerline(cls, tally, fields):
+        """Convert ntpd peer line to named fields"""
+        if len(fields) != 10:
+            return None
         if fields[1] in cls.ignorerefids:
-            return False
+            return None
         return {
             'tally': tally,
             'address': fields[0],
