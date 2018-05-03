@@ -22,7 +22,7 @@ import unittest
 
 from peers import NTPPeers
 
-testdata = [
+testdata = {
     """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
@@ -35,7 +35,7 @@ testdata = [
  129.250.35.250  .STEP.          16 u    - 1024    0    0.000    0.000   0.000
  27.54.95.11     .STEP.          16 u    - 1024    0    0.000    0.000   0.000
  54.252.129.186  .STEP.          16 u    - 1024    0    0.000    0.000   0.000
-""",
+""": 1,
     """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
@@ -46,12 +46,12 @@ testdata = [
 -192.168.1.2     203.23.237.200   3 u  788 1024  377    0.627   -0.605   0.162
 -192.168.1.1     203.23.237.200   3 u  123 1024  377    0.299   -0.941   0.329
  192.168.1.21    .INIT.          16 u    - 1024    0    0.000    0.000   0.000
-""",
+""": 6,
     """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
 *91.189.94.4     131.188.3.220    2 u  338 1024  377    1.600  -194.54 171.548
-""",
+""": 1,
     """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
@@ -63,7 +63,7 @@ testdata = [
  192.189.54.33   .INIT.          16 u    -   64    0    0.000    0.000   0.000
  129.250.35.250  .INIT.          16 u    -   64    0    0.000    0.000   0.000
  54.252.165.245  .INIT.          16 u    -   64    0    0.000    0.000   0.000
-""",
+""": 1,
     """
      remote           refid      st t when poll reach   delay   offset  jitter
 ==============================================================================
@@ -80,21 +80,18 @@ testdata = [
 +150.101.233.118 192.189.54.17    3 u    3  128  377   70.775    7.865  57.820
 +202.147.104.60  202.6.131.118    2 u  132  128  377   56.657   -1.715  96.938
 *54.252.129.186  202.6.131.118    2 u  205  128  376   46.207   -2.489  57.605
-""",
-]
+""": 7,
+}
 
-noiselines = """
-     remote           refid      st t when poll reach   delay   offset  jitter
-==============================================================================
-"""
+noiselines = """     remote           refid      st t when poll reach   delay   offset  jitter
+=============================================================================="""
 
 inactivepeerlines = """ ntp.ubuntu.com  .POOL.          16 p    -   64    0    0.000    0.000   0.000
  0.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
  1.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
  2.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
  3.au.pool.ntp.o .POOL.          16 p    -   64    0    0.000    0.000   0.000
- 127.127.1.0     .LOCL.          15 l    -   64    0    0.000    0.000   0.000
-"""
+ 127.127.1.0     .LOCL.          15 l    -   64    0    0.000    0.000   0.000"""
 
 peerlines = """+91.189.94.4     193.79.237.14    2 u    5  128  377  340.782    3.735  59.463
 +223.252.23.219  202.127.210.36   3 u    8  128  377   31.430  -16.143  74.185
@@ -104,7 +101,7 @@ peerlines = """+91.189.94.4     193.79.237.14    2 u    5  128  377  340.782    
 +202.147.104.60  202.6.131.118    2 u  132  128  377   56.657   -1.715  96.938
 *54.252.129.186  202.6.131.118    2 u  205  128  376   46.207   -2.489  57.605"""
 
-alllines = noiselines + inactivepeerlines + peerlines + '\n'
+alllines = noiselines + '\n' + inactivepeerlines + '\n' + peerlines + '\n'
 
 parsedpeers = {
     'backup': {
@@ -222,97 +219,103 @@ class TestNTPPeers(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-    types = {
-        'invalid': ' ',
-        'false': 'x',
-        'excess': '.',
-        'backup': '#',
-        'outlier': '-',
-        'survivor': '+',
-        'sync': '*',
-        'pps': 'o',
+    codes = {
+
+        '#': 'backup',
+        '.': 'excess',
+        '~': 'invalid',
+        ' ': 'invalid',
+        '?': 'invalid',
+        'o': 'pps',
+        '-': 'outlier',
+        '+': 'survivor',
+        '*': 'sync',
+        'x': 'false',
+
     }
 
-    def test_tallytotype(self):
-        for t in TestNTPPeers.types:
-            self.assertEqual(NTPPeers.tallytotype(TestNTPPeers.types[t]), t)
-        for i in ' .x-#+*o':
-            self.assertNotEqual(NTPPeers.tallytotype(i), 'unknown')
-        for i in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnpqrstuvwyz!@$%^&()_':
-            self.assertEqual(NTPPeers.tallytotype(i), 'unknown')
+    def test_tallytotype_known(self):
+        """Ensure known codes are valid tally types and that they correctly match their type."""
+        for t in TestNTPPeers.codes:
+            self.assertEqual(NTPPeers.tallytotype(t), TestNTPPeers.codes[t])
+
+    def test_tallytotype_unknown(self):
+        """Ensure most printables are not valid tally types."""
+        for t in '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnpqrstuvwyz!@$%^&()_=[]{}|:;"<>,/\\\'':
+            self.assertEqual(NTPPeers.tallytotype(t), 'unknown')
 
     def test_isnoiseline(self):
+        """Ensure noise lines are classified as such."""
         for s in noiselines.split('\n'):
             self.assertTrue(NTPPeers.isnoiseline(s))
 
     def test_inactivepeerisntnoise(self):
+        """Ensure inactive peer lines aren't classified as noise."""
         for s in inactivepeerlines.split('\n'):
             self.assertFalse(NTPPeers.isnoiseline(s))
 
     def test_peerisntnoise(self):
+        """Ensure valid peer lines aren't classified as noise."""
         for s in peerlines.split('\n'):
             self.assertFalse(NTPPeers.isnoiseline(s))
 
     def test_filternoiselines(self):
-        """
-        Compare the output of alllines filtered by isnoiseline() with the known non-noise lines.
-        """
+        """Compare the output of alllines filtered by isnoiseline() with the known non-noise lines."""
         nonNoiseLines = [x for x in alllines.split('\n') if not NTPPeers.isnoiseline(x)]
-        self.assertEqual(nonNoiseLines, peerlines.split('\n'))
+        self.assertEqual(nonNoiseLines, inactivepeerlines.split('\n') + peerlines.split('\n'))
 
     def test_isntvalidpeerline(self):
-        """
-        Ensure the known noise lines aren't valid peer lines.
-        """
+        """Ensure the known noise lines aren't valid peer lines."""
         for s in noiselines.split('\n'):
-            self.assertFalse(NTPPeers.peerline(s))
+            self.assertIsNone(NTPPeers.peerline(s))
+
+    def test_inactivepeerline(self):
+        """Ensure the inactive peer lines aren't valid peer lines."""
+        for s in inactivepeerlines.split('\n'):
+            self.assertIsNone(NTPPeers.peerline(s))
 
     def test_peerline(self):
-        """
-        Ensure the known peer lines are valid peer lines.
-        """
+        """Ensure the known peer lines are valid peer lines."""
         for s in peerlines.split('\n'):
-            self.assertTrue(NTPPeers.peerline(s))
-
-    def test_ignorepeer(self):
-        """
-        The first 6 peer lines in the test data should be ignored
-        """
-        for s in peerlines.split('\n')[0:5]:
-            self.assertFalse(NTPPeers.validpeer(NTPPeers.peerline(s)))
-
-    def test_dontignorepeer(self):
-        """
-        The remaining peer lines in the test data shouldn't be ignored
-        """
-        for s in peerlines.split('\n')[6:]:
-            self.assertTrue(NTPPeers.validpeer(NTPPeers.peerline(s)))
-
-    def test_parsepeer(self):
-        parsed = NTPPeers.parse(alllines)
-        self.assertEqual(parsed, parsedpeers)
+            self.assertIsNotNone(NTPPeers.peerline(s))
 
     def test_noparsepeer(self):
-        """
-        Ensure the result of parsed noise lines is empty
-        """
+        """Ensure the result of parsed noise lines is empty."""
         parsed = NTPPeers.parse(noiselines)
         empty = NTPPeers.newpeerdict()
         self.assertEqual(parsed, empty)
 
     def test_noparsestratum99(self):
+        """Ensure the result of parsed incorrect peer line is empty."""
         empty = NTPPeers.newpeerdict()
         parsed = NTPPeers.parse(' 1234 5678 99 u 8 128 377 31.430  -16.143  74.185')
         self.assertEqual(parsed, empty)
 
+    def test_parsepeer(self):
+        """Ensure the parsed peer lines matches the expected values."""
+        parsed = NTPPeers.parse(alllines)
+        self.assertEqual(parsed, parsedpeers)
+
     def test_getmetrics(self):
+        """Ensure the sync metric for parsed peer lines matches the expected values."""
         p = NTPPeers(alllines)
         metrics = p.getmetrics()
         self.assertEqual(metrics['sync'], 1)
 
+    def test_parsetestdata(self):
+        """Ensure the test data matches the expected number of valid peers."""
+        for t in testdata:
+            parsed = NTPPeers.parse(t)
+            print(parsed['all'])
+            self.assertEqual(len(parsed['all']['address']), testdata[t])
+
     def test_rootmeansquare(self):
-        l = [3, 4, 5]
-        self.assertEqual(NTPPeers.rms(l), math.sqrt(50 / 3))
+        """Test root mean square function."""
+        self.assertTrue(math.isnan(NTPPeers.rms([])))
+        self.assertEqual(NTPPeers.rms([3]), 3)
+        self.assertEqual(NTPPeers.rms([3, 4]), math.sqrt((9 + 16) / 2))
+        self.assertEqual(NTPPeers.rms([3, 4, 5]), math.sqrt((9 + 16 + 25) / 3))
+        self.assertEqual(NTPPeers.rms([3, 4, 5, 6]), math.sqrt((9 + 16 + 25 + 36) / 4))
 
 
 if __name__ == "__main__":
