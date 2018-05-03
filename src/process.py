@@ -156,7 +156,7 @@ class NTPProcess(object):
     def getruntime(self):
         """
         Return the length of time in seconds that the process has been running.
-        If ntpd is not running or any error occurs, return -1.
+        If process is not running or any error occurs, return -1.
         """
         proc = self.getprocess()
         if proc is None:

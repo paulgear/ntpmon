@@ -123,27 +123,33 @@ def configure_ntpmon():
 def start_ntpmon():
     """
     Start the ntpmon daemon process.
-    If ntp is not installed, do nothing.
+    If no NTP server is installed, do nothing.
     """
-    service_name = ntpmon_conf('service-name')
-    if os.path.exists(ntp_conf):
-        log('{} present; enabling and starting ntpmon'.format(ntp_conf))
-        host.service_resume(service_name)
-    else:
-        log('{} not present; disabling ntpmon'.format(ntp_conf))
-        host.service_pause(service_name)
+    service_name = get_config('service-name')
+    started = False
+    if service_name is not None and len(service_name):
+        for f in (chrony_conf, ntp_conf):
+            # TODO: set ntpmon mode based on config file presence?
+            if os.path.exists(f):
+                log('{} present; enabling and starting ntpmon'.format(f))
+                host.service_resume(service_name)
+                started = True
+                break
+        if not started:
+            log('No supported NTP service present; disabling ntpmon')
+            host.service_pause(service_name)
     set_state('ntpmon.started')
 
 
 @when_file_changed([chrony_conf], hash_type='sha256')
 def chrony_conf_updated():
-    # TODO: set ntpmon mode based on chrony.conf presence?
+    log('{} changed - checking if ntpmon needs starting'.format(chrony_conf))
     remove_state('ntpmon.started')
 
 
 @when_file_changed([ntp_conf], hash_type='sha256')
 def ntp_conf_updated():
-    # TODO: set ntpmon mode based on ntp.conf presence?
+    log('{} changed - checking if ntpmon needs starting'.format(ntp_conf))
     remove_state('ntpmon.started')
 
 

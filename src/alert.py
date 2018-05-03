@@ -334,9 +334,9 @@ class NTPAlerter(object):
 
     def return_code(self):
         """
-        Don't return anything other than OK until ntpd has been running for
-        at least enough time for 8 polling intervals of 64 seconds each.  This
-        prevents false positives due to ntpd restarts or short-lived VMs.
+        Don't return anything other than OK until the NTP daemon has been running
+        for at least enough time for 8 polling intervals of 64 seconds each.  This
+        prevents false positives due to restarts or short-lived VMs.
         """
         if 'runtime' in self.mc.results and self.mc.results['runtime'] == 'WARNING':
             return 0
