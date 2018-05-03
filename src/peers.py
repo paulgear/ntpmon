@@ -26,8 +26,6 @@ import re
 import statistics
 import sys
 
-from warnings import warn
-
 
 class NTPPeers():
 
@@ -110,8 +108,8 @@ class NTPPeers():
         return 'unknown'
 
     noiselines = (
+        r'^=*$',    # matches blank lines as well as headers
         r'remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+',
-        r'^=*$',
         r'No association ID.s returned',
     )
 
@@ -134,6 +132,7 @@ class NTPPeers():
         if cls.isnoiseline(line):
             return None
 
+        # 10 comma-separated fields are chronyc
         fields = line.split(',')
         if len(fields) == 10:
             fields = cls.chrony_peerline(fields)
@@ -142,6 +141,7 @@ class NTPPeers():
             else:
                 return None
 
+        # 10 space-separated fields are ntpq
         fields = line[1:].split()
         if len(fields) == 10:
             fields = cls.ntpd_peerline(line[0], fields)
@@ -150,7 +150,7 @@ class NTPPeers():
             else:
                 return None
 
-        warn('Unable to parse peer line: %s' % line)
+        # Anything else is an error
         return None
 
     @classmethod
@@ -199,7 +199,7 @@ class NTPPeers():
     def validate_tally(cls, fields):
         peertype = cls.tallytotype(fields['tally'])
         if peertype == 'unknown':
-            warn('Unknown peer tally code: %s' % fields['tally'])
+            # Unknown peer tally code
             return False
         else:
             fields['tally'] = peertype
@@ -211,10 +211,10 @@ class NTPPeers():
         try:
             fields['stratum'] = int(fields['stratum'])
             if fields['stratum'] < 0 or fields['stratum'] > 15:
-                warn('Stratum out of bounds: %s' % fields['stratum'])
+                # stratum out of bounds
                 return False
         except ValueError:
-            warn('Stratum is not an integer: %s' % fields['stratum'])
+            # stratum not an integer
             return False
         return True
 
@@ -225,7 +225,7 @@ class NTPPeers():
             if fields['when'] != '-':
                 fields['when'] = NTPPeers.time2seconds(fields['when'])
         except ValueError:
-            warn('Last poll time is not an integer: %s' % fields['when'])
+            # last poll time not an integer
             return False
         return True
 
@@ -236,12 +236,12 @@ class NTPPeers():
             try:
                 fields['poll'] = 2 ** int(fields['poll_pow2'])
             except ValueError:
-                warn('Poll interval is not an integer: %s' % fields['poll_pow2'])
+                # poll interval not an integer
                 return False
         try:
             fields['poll'] = int(fields['poll'])
         except ValueError:
-            warn('Poll interval is not an integer: %s' % fields['poll'])
+            # poll interval not an integer
             return False
         return True
 
@@ -254,7 +254,7 @@ class NTPPeers():
             # convert to binary, count the # of 1s (maximum 8), convert to a percentage
             fields['reach'] = bin(fields['reach']).count('1') * 100 / 8
         except ValueError:
-            warn('Reachability is not an octal value: %s' % fields['reach'])
+            # reachability not an octal value
             return False
         return True
 
@@ -271,7 +271,7 @@ class NTPPeers():
                     # ISTR this was only here to work around python float limitations in the test suite.
                     fields[i] = round(fields[i], 6)
             except ValueError:
-                warn('Field %d is not numeric: %s' % (i, fields[i]))
+                # not numeric
                 return False
         return True
 
