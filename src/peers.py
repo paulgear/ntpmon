@@ -170,9 +170,10 @@ class NTPPeers():
         }
 
     ignorerefids = (
-        '.LOCL.',
         '.INIT.',
+        '.LOCL.',
         '.POOL.',
+        '.STEP.',
         '.XFAC.',
     )
 
@@ -385,7 +386,7 @@ class NTPPeers():
         except Exception:
             return None
 
-    def __init__(self, lines, runtime):
+    def __init__(self, lines, runtime=None):
         self.peers = self.parse(lines)
         self.runtime = runtime
 
@@ -394,7 +395,7 @@ if __name__ == '__main__':
     import pprint
     pp = pprint.PrettyPrinter(width=200)
     stdin = sys.stdin.read()
-    p = NTPPeers(stdin, 0)
+    p = NTPPeers(stdin)
     pp.pprint(p.peers)
     m = p.getmetrics()
     pp.pprint(m)
