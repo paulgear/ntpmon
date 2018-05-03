@@ -1,8 +1,9 @@
 [Unit]
 Description=NTP statistics monitor
 Documentation=https://github.com/paulgear/ntpmon
-After=network.target ntp.service telegraf.service
-Wants=ntp.service telegraf.service
+After=chrony.service ntp.service telegraf.service
+Wants=chrony.service ntp.service
+Requires=telegraf.service
 
 [Service]
 ExecStart={{ install_dir }}/ntpmon.py --interval 60 --mode telegraf --implementation {{ implementation }}

@@ -18,6 +18,7 @@ from charms.reactive.decorators import (
     when_not,
 )
 
+import charmhelpers.contrib.templating.jinja as templating
 import os
 import subprocess
 import sys
@@ -83,14 +84,14 @@ def install_ntpmon():
         if using_systemd:
             systemd_config = '/etc/systemd/system/' + service_name + '.service'
             log('installing systemd service: {}'.format(service_name))
-            # FIXME: change to template
-            host.rsync('src/' + service_name + '.systemd', systemd_config)
+            with open(systemd_config, 'w') as conffile:
+                conffile.write(templating.render('src/' + service_name + '.systemd', ntpmon_options))
             subprocess.call(['systemd', 'daemon-reload'])
         else:
             upstart_config = '/etc/init/' + service_name + '.conf'
             log('installing upstart service: {}'.format(service_name))
-            # FIXME: change to template
-            host.rsync('src/' + service_name + '.upstart', upstart_config)
+            with open(upstart_config, 'w') as conffile:
+                conffile.write(templating.render('src/' + service_name + '.upstart', ntpmon_options))
     else:
         if using_systemd:
             systemd_config = '/etc/systemd/system/' + service_name + '.service'
