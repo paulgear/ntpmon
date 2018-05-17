@@ -67,7 +67,7 @@ def execute_subprocess(cmd, timeout, debug, errfatal):
 
 def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
     """
-    Execute a predefined external command.  Return the output and the runtime in seconds.
+    Execute a predefined external command.  Return the output and the elapsed time in seconds.
     """
     if implementation in _progs:
         if prog not in _progs[implementation]:
@@ -78,19 +78,19 @@ def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
     cmd = _progs[prog].split()
     start = time.time()
     output = execute_subprocess(cmd, timeout=timeout, debug=debug, errfatal=errfatal)
-    runtime = time.time() - start
+    elapsed = time.time() - start
 
     if output is None or len(output) == 0:
         if errfatal:
             # FIXME: should be a metric rather than fatal error
             fatal(failmessage % _progs[prog])
         else:
-            return [[], runtime]
+            return [[], elapsed]
     else:
         if debug:
             print(output)
-            print('runtime: %.3f seconds' % (runtime,))
-        return [output.split('\n'), runtime]
+            print('elapsed time: %.3f seconds' % (elapsed,))
+        return [output.split('\n'), elapsed]
 
 
 def fatal(msg):
@@ -108,20 +108,20 @@ def ntpchecks(checks, debug, implementation):
     for check in checks:
         if ((check in ['offset', 'peers', 'reach', 'sync'])
                 and 'peers' not in objs):
-            (output, runtime) = execute('peers', debug=debug)
-            objs['peers'] = NTPPeers(output, runtime)
+            (output, elapsed) = execute('peers', debug=debug, implementation=implementation)
+            objs['peers'] = NTPPeers(output, elapsed)
             break
 
     if 'proc' in checks:
         objs['proc'] = NTPProcess()
 
     if 'trace' in checks:
-        (output, runtime) = execute('trace', debug=debug)
-        objs['trace'] = NTPTrace(output, runtime)
+        (output, elapsed) = execute('trace', debug=debug, implementation=implementation)
+        objs['trace'] = NTPTrace(output, elapsed)
 
     if 'vars' in checks:
-        (output, runtime) = execute('vars', debug=debug)
-        objs['vars'] = NTPVars(output, runtime)
+        (output, elapsed) = execute('vars', debug=debug, implementation=implementation)
+        objs['vars'] = NTPVars(output, elapsed)
 
     return objs
 

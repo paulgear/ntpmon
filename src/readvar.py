@@ -31,7 +31,7 @@ _aliases = {
 
 class NTPVars(object):
 
-    def __init__(self, lines=None, runtime=0):
+    def __init__(self, lines=None, elapsed=0):
         if not isinstance(lines, str):
             # multiple lines - join them
             lines = " ".join(lines)
@@ -66,6 +66,7 @@ class NTPVars(object):
 if __name__ == "__main__":
     import pprint
     import process
-    nv = NTPVars(process.execute('vars'))
+    lines, elapsed = process.execute('vars', debug=False)
+    nv = NTPVars(lines, elapsed)
     v = nv.getmetrics()
     pprint.pprint(v)

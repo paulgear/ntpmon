@@ -391,9 +391,9 @@ class NTPPeers():
         except Exception:
             return None
 
-    def __init__(self, lines, runtime=None):
+    def __init__(self, lines, elapsed=0):
         self.peers = self.parse(lines)
-        self.runtime = runtime
+        self.elapsed = elapsed      # unused at present
 
 
 if __name__ == '__main__':

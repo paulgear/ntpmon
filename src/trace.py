@@ -63,9 +63,9 @@ class NTPTrace(object):
         self.results = results
         return results
 
-    def __init__(self, lines, runtime):
+    def __init__(self, lines, elapsed):
         self.trace(lines)
-        self.results['tracetime'] = runtime
+        self.results['tracetime'] = elapsed
 
     def getmetrics(self):
         return self.results.copy()
