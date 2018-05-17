@@ -18,7 +18,7 @@
 #
 
 """
-Parse 'ntpq -nc readvar' output and extract metrics.
+Parse 'chronyc -c tracking' or 'ntpq -nc readvar' output and extract metrics.
 """
 
 
@@ -27,6 +27,43 @@ _aliases = {
     'offset': 'sysoffset',
     'sys_jitter': 'sysjitter',
 }
+
+
+def parse_chronyd_vars(vars):
+    """Turn a list of values from chronyc into metrics."""
+    metrics = {}
+    metrics['stratum'] = int(vars[2])
+    metrics['systime'] = float(vars[3])
+    metrics['sysoffset'] = float(vars[4])
+    metrics['lastoffset'] = float(vars[5])
+    metrics['rmsoffset'] = float(vars[6])
+    metrics['frequency'] = float(vars[7])
+    metrics['residualfreq'] = float(vars[8])
+    metrics['skew'] = float(vars[9])
+    metrics['rootdelay'] = float(vars[10])
+    metrics['rootdisp'] = float(vars[11])
+    return metrics
+
+
+def parse_ntpd_vars(vars):
+    """Turn a list of name/value pairs separated by equals signs from ntpq into metrics."""
+    metrics = {}
+    for v in vars:
+        nameval = v.split('=')
+        if len(nameval) == 2:
+            try:
+                if nameval[0] in ['rootdelay', 'rootdisp']:
+                    # convert from milliseconds to seconds
+                    metrics[nameval[0]] = round(float(nameval[1]) / 1000.0, 9)
+                elif nameval[0] in _aliases:
+                    # convert from milliseconds to seconds, alias
+                    metrics[_aliases[nameval[0]]] = round(float(nameval[1]) / 1000.0, 9)
+                else:
+                    metrics[nameval[0]] = float(nameval[1])
+            except ValueError:
+                # ignore non-numeric values
+                pass
+    return metrics
 
 
 class NTPVars(object):
@@ -40,24 +77,13 @@ class NTPVars(object):
         rv = [v.strip() for v in lines.split(',')]
 
         # split each string into metric name + value
-        self.metrics = {
-            'readvartime': runtime
-        }
-        for v in rv:
-            nameval = v.split('=')
-            if len(nameval) == 2:
-                try:
-                    if nameval[0] in ['rootdelay', 'rootdisp']:
-                        # convert from milliseconds to seconds
-                        self.metrics[nameval[0]] = round(float(nameval[1]) / 1000.0, 9)
-                    elif nameval[0] in _aliases:
-                        # convert from milliseconds to seconds, alias
-                        self.metrics[_aliases[nameval[0]]] = round(float(nameval[1]) / 1000.0, 9)
-                    else:
-                        self.metrics[nameval[0]] = float(nameval[1])
-                except ValueError:
-                    # ignore non-numeric values
-                    pass
+        if lines.count('\n') <= 1 and len(rv) >= 12:
+            # chronyd uses single-line of output
+            self.metrics = parse_chronyd_vars(rv)
+        else:
+            # otherwise assume ntpd
+            self.metrics = parse_ntpd_vars(rv)
+        self.metrics['varstime'] = elapsed
 
     def getmetrics(self):
         return self.metrics

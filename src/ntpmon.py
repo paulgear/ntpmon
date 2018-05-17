@@ -1,4 +1,4 @@
-
+#!/usr/bin/python3
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -89,7 +89,7 @@ def main():
     if args.interval is None:
         args.interval = 60
 
-    if args.mode == 'telegraf':
+    if args.mode == 'telegraf' and not sys.stdout.isatty():
         (host, port) = args.connect.split(':')
         port = int(port)
         s = socket.socket()

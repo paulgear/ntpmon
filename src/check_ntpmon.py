@@ -57,9 +57,9 @@ def main():
         args.check = defaultchecks
 
     if args.test:
-        # read in ntpq output in test mode
+        # read from standard input in test mode
         checkobjs = {
-            'peers': NTPPeers([x.rstrip() for x in sys.stdin.readlines()], runtime=0),
+            'peers': NTPPeers([x.rstrip() for x in sys.stdin.readlines()]),
         }
     else:
         # run the checks
