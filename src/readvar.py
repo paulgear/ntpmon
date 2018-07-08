@@ -77,8 +77,8 @@ class NTPVars(object):
         rv = [v.strip() for v in lines.split(',')]
 
         # split each string into metric name + value
-        if lines.count('\n') <= 1 and len(rv) >= 12:
-            # chronyd uses single-line of output
+        if lines.count('=') < 5 and len(rv) >= 12:
+            # chronyd has 12 fields, and no equals signs
             self.metrics = parse_chronyd_vars(rv)
         else:
             # otherwise assume ntpd
