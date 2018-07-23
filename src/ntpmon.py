@@ -47,13 +47,6 @@ def get_args():
         help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, '
              'or 60 seconds if COLLECTD_INTERVAL is not set).',
     )
-    parser.add_argument(
-        '--implementation',
-        type=str,
-        choices=['auto', 'chronyd', 'ntpd'],
-        default='auto',
-        help='Which NTP implementation to use (default: auto-detect).',
-    )
     args = parser.parse_args()
     return args
 
@@ -97,12 +90,18 @@ def main():
         sys.stdout = s.makefile(mode='w')
 
     alerter = alert.NTPAlerter(checks)
+    implementation = None
     while True:
-        # run the checks
-        checkobjs = process.ntpchecks(checks, debug=False, implementation=args.implementation)
+        # cache implementation for the lifetime of ntpmon
+        if not implementation:
+            implementation = process.detect_implementation()
 
-        # alert on what we've collected
-        alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode)
+        if implementation:
+            # run the checks
+            checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
+            # alert on what we've collected
+            alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode)
+
         sleep_until(args.interval)
 
 
