@@ -119,7 +119,7 @@ def configure_ntpmon():
     remove_state('ntpmon.started')
 
 
-@when('ntpmon.configured', 'telegraf.configured')
+@when('ntpmon.configured')
 @when_not('ntpmon.started')
 def start_ntpmon():
     """
