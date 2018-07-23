@@ -121,9 +121,8 @@ def start_ntpmon():
     """
     service_name = get_option('service-name')
     started = False
-    if service_name is not None and len(service_name):
+    if service_name:
         for f in (chrony_conf, ntp_conf):
-            # TODO: set ntpmon mode based on config file presence?
             if os.path.exists(f):
                 log('{} present; enabling and starting ntpmon'.format(f))
                 host.service_resume(service_name)
@@ -133,6 +132,9 @@ def start_ntpmon():
             log('No supported NTP service present; disabling ntpmon')
             host.service_pause(service_name)
     set_state('ntpmon.started')
+
+
+# TODO: implement stop
 
 
 @when_file_changed([chrony_conf], hash_type='sha256')
