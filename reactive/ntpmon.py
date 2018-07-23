@@ -33,7 +33,8 @@ ntp_conf = '/etc/ntp.conf'
 ntpmon_options = layer.options('ntpmon')
 
 
-def get_config(option):
+def get_option(option):
+    """Return layer option if it exists and is non-zero length, otherwise return None."""
     if option in ntpmon_options:
         value = ntpmon_options[option]
         if value is not None and len(value) > 0:
@@ -73,12 +74,12 @@ def install_ntpmon():
     """
     Install package dependencies, source files, and startup configuration.
     """
-    install_dir = get_config('install-dir')
+    install_dir = get_option('install-dir')
     if install_dir:
         log('installing ntpmon')
         host.rsync('src/', install_dir)
 
-    service_name = get_config('service-name')
+    service_name = get_option('service-name')
     using_systemd = host.init_is_systemd()
     if install_dir and service_name:
         if using_systemd:
@@ -125,7 +126,7 @@ def start_ntpmon():
     Start the ntpmon daemon process.
     If no NTP server is installed, do nothing.
     """
-    service_name = get_config('service-name')
+    service_name = get_option('service-name')
     started = False
     if service_name is not None and len(service_name):
         for f in (chrony_conf, ntp_conf):
