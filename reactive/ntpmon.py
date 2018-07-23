@@ -75,37 +75,30 @@ def install_ntpmon():
     Install package dependencies, source files, and startup configuration.
     """
     install_dir = get_option('install-dir')
+    service_name = get_option('service-name')
+    using_systemd = host.init_is_systemd()
     if install_dir:
         log('installing ntpmon')
         host.rsync('src/', install_dir)
 
-    service_name = get_option('service-name')
-    using_systemd = host.init_is_systemd()
-    if install_dir and service_name:
-        if using_systemd:
-            systemd_config = '/etc/systemd/system/' + service_name + '.service'
-            log('installing systemd service: {}'.format(service_name))
-            with open(systemd_config, 'w') as conffile:
-                conffile.write(templating.render('src/' + service_name + '.systemd', ntpmon_options))
-            subprocess.call(['systemd', 'daemon-reload'])
-        else:
-            upstart_config = '/etc/init/' + service_name + '.conf'
-            log('installing upstart service: {}'.format(service_name))
-            with open(upstart_config, 'w') as conffile:
-                conffile.write(templating.render('src/' + service_name + '.upstart', ntpmon_options))
-    else:
-        if using_systemd:
-            systemd_config = '/etc/systemd/system/' + service_name + '.service'
-            log('removing systemd service: {}'.format(service_name))
-            os.unlink(systemd_config)
-            subprocess.call(['systemd', 'daemon-reload'])
-        else:
-            upstart_config = '/etc/init/' + service_name + '.conf'
-            log('removing upstart service: {}'.format(service_name))
-            host.rsync('src/' + service_name + '.upstart', upstart_config)
+        if service_name:
+            if using_systemd:
+                systemd_config = '/etc/systemd/system/' + service_name + '.service'
+                log('installing systemd service: {}'.format(service_name))
+                with open(systemd_config, 'w') as conffile:
+                    conffile.write(templating.render('src/' + service_name + '.systemd', ntpmon_options))
+                subprocess.call(['systemd', 'daemon-reload'])
+            else:
+                upstart_config = '/etc/init/' + service_name + '.conf'
+                log('installing upstart service: {}'.format(service_name))
+                with open(upstart_config, 'w') as conffile:
+                    conffile.write(templating.render('src/' + service_name + '.upstart', ntpmon_options))
 
     set_state('ntpmon.installed')
     remove_state('ntpmon.configured')
+
+
+# TODO: implement removal
 
 
 @when('ntpmon.installed')
