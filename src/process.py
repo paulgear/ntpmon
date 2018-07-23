@@ -123,7 +123,7 @@ def fatal(msg):
     sys.exit(3)
 
 
-def ntpchecks(checks, debug, implementation):
+def ntpchecks(checks, debug, implementation=None):
     """
     Run all of the checks required by the argument list
     and return the resulting objects in a hash.
