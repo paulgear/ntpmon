@@ -63,7 +63,7 @@ def main():
         }
     else:
         # run the checks
-        checkobjs = ntpchecks(args.check, debug=args.debug, implementation=args.implementation)
+        checkobjs = ntpchecks(args.check, debug=args.debug)
 
     # alert on what we've collected
     alerter = NTPAlerter(args.check)
