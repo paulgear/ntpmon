@@ -50,11 +50,16 @@ def get_args(checks):
 
 
 def main():
-    validchecks = ['proc', 'offset', 'peers', 'reach', 'sync', 'trace', 'vars']
+    validchecks = ['proc', 'offset', 'peers', 'reach', 'reachability', 'sync', 'trace', 'vars']
     defaultchecks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
     args = get_args(validchecks)
     if args.check is None or len(args.check) < 1:
         args.check = defaultchecks
+    else:
+        # turn 'reachability' into 'reach' for backwards compatibility
+        for i in range(0, len(args.check)):
+            if args.check[i] == 'reachability':
+                args.check[i] = 'reach'
 
     if args.test:
         # read from standard input in test mode
