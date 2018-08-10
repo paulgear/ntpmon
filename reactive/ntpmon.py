@@ -26,7 +26,7 @@ import subprocess
 #
 
 ntp_conf = '/etc/ntp.conf'
-ntpmon_dir = '/opt/ntpmon/'
+ntpmon_dir = '/opt/ntpmon'
 service_name = 'ntpmon-telegraf'
 systemd_config = '/etc/systemd/system/' + service_name + '.service'
 upstart_config = '/etc/init/' + service_name + '.conf'
@@ -60,7 +60,8 @@ def install_ntpmon():
     apt_install(['python3-psutil'])
 
     hookenv.log('installing ntpmon')
-    host.rsync('src/', ntpmon_dir)
+    host.mkdir(os.path.dirname(ntpmon_dir))
+    host.rsync('src/', '{}/'.format(ntpmon_dir))
 
     if host.init_is_systemd():
         hookenv.log('installing ntpmon systemd configuration')
