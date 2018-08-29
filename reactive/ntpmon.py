@@ -79,7 +79,8 @@ def install_ntpmon():
     using_systemd = host.init_is_systemd()
     if install_dir:
         log('installing ntpmon')
-        host.rsync('src/', install_dir)
+        host.mkdir(os.path.dirname(install_dir))
+        host.rsync('src/', '{}/'.format(install_dir))
 
         if service_name:
             if using_systemd:
