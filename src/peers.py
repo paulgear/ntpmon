@@ -254,9 +254,9 @@ class NTPPeers():
     def validate_reach(cls, fields):
         # reachability should be octal
         try:
-            # convert to octal
+            # convert from octal string to integer
             fields['reach'] = int(fields['reach'], 8)
-            # convert to binary, count the # of 1s (maximum 8), convert to a percentage
+            # convert integer to binary, count the # of 1s (maximum 8), convert to a percentage
             fields['reach'] = bin(fields['reach']).count('1') * 100 / 8
         except ValueError:
             # reachability not an octal value

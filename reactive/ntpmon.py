@@ -6,9 +6,8 @@ from charms import layer
 from charmhelpers.core import host
 
 from charms.reactive import (
-    main,
-    remove_state,
-    set_state,
+    clear_flag,
+    set_flag,
 )
 
 from charms.reactive.decorators import (
@@ -28,18 +27,8 @@ import sys
 # Module configuration
 #
 
-chrony_conf = '/etc/chrony/chrony.conf'
-ntp_conf = '/etc/ntp.conf'
-ntpmon_options = layer.options('ntpmon')
-
-
-def get_option(option):
-    """Return layer option if it exists and is non-zero length, otherwise return None."""
-    if option in ntpmon_options:
-        value = ntpmon_options[option]
-        if value is not None and len(value) > 0:
-            return value
-    return None
+CHRONY_CONF = '/etc/chrony/chrony.conf'
+NTP_CONF = '/etc/ntp.conf'
 
 
 #
@@ -61,7 +50,7 @@ def log(msg):
 @hook('upgrade-charm')
 def upgrade_charm():
     log('Forcing NTPmon upgrade on upgrade-charm')
-    remove_state('ntpmon.installed')
+    clear_flag('ntpmon.installed')
 
 
 #
@@ -74,8 +63,8 @@ def install_ntpmon():
     """
     Install package dependencies, source files, and startup configuration.
     """
-    install_dir = get_option('install-dir')
-    service_name = get_option('service-name')
+    install_dir = layer.options.get('ntpmon', 'install-dir')
+    service_name = layer.options.get('ntpmon', 'service-name')
     using_systemd = host.init_is_systemd()
     if install_dir:
         log('installing ntpmon')
@@ -87,16 +76,16 @@ def install_ntpmon():
                 systemd_config = '/etc/systemd/system/' + service_name + '.service'
                 log('installing systemd service: {}'.format(service_name))
                 with open(systemd_config, 'w') as conffile:
-                    conffile.write(templating.render('src/' + service_name + '.systemd', ntpmon_options))
+                    conffile.write(templating.render('src/' + service_name + '.systemd', layer.options.get('ntpmon')))
                 subprocess.call(['systemd', 'daemon-reload'])
             else:
                 upstart_config = '/etc/init/' + service_name + '.conf'
                 log('installing upstart service: {}'.format(service_name))
                 with open(upstart_config, 'w') as conffile:
-                    conffile.write(templating.render('src/' + service_name + '.upstart', ntpmon_options))
+                    conffile.write(templating.render('src/' + service_name + '.upstart', layer.options.get('ntpmon')))
 
-    set_state('ntpmon.installed')
-    remove_state('ntpmon.configured')
+    set_flag('ntpmon.installed')
+    clear_flag('ntpmon.configured')
 
 
 # TODO: implement removal
@@ -109,8 +98,8 @@ def configure_ntpmon():
     Reconfigure ntpmon - does nothing at present
     """
     log('configuring ntpmon')
-    set_state('ntpmon.configured')
-    remove_state('ntpmon.started')
+    set_flag('ntpmon.configured')
+    clear_flag('ntpmon.started')
 
 
 @when('ntpmon.configured')
@@ -120,10 +109,10 @@ def start_ntpmon():
     Start the ntpmon daemon process.
     If no NTP server is installed, do nothing.
     """
-    service_name = get_option('service-name')
     started = False
+    service_name = layer.options.get('ntpmon', 'service-name')
     if service_name:
-        for f in (chrony_conf, ntp_conf):
+        for f in (CHRONY_CONF, NTP_CONF):
             if os.path.exists(f):
                 log('{} present; enabling and starting ntpmon'.format(f))
                 host.service_resume(service_name)
@@ -132,23 +121,19 @@ def start_ntpmon():
         if not started:
             log('No supported NTP service present; disabling ntpmon')
             host.service_pause(service_name)
-    set_state('ntpmon.started')
+    set_flag('ntpmon.started')
 
 
 # TODO: implement stop
 
 
-@when_file_changed([chrony_conf], hash_type='sha256')
+@when_file_changed([CHRONY_CONF], hash_type='sha256')
 def chrony_conf_updated():
-    log('{} changed - checking if ntpmon needs starting'.format(chrony_conf))
-    remove_state('ntpmon.started')
+    log('{} changed - checking if ntpmon needs starting'.format(CHRONY_CONF))
+    clear_flag('ntpmon.started')
 
 
-@when_file_changed([ntp_conf], hash_type='sha256')
+@when_file_changed([NTP_CONF], hash_type='sha256')
 def ntp_conf_updated():
-    log('{} changed - checking if ntpmon needs starting'.format(ntp_conf))
-    remove_state('ntpmon.started')
-
-
-if __name__ == '__main__':
-    main()
+    log('{} changed - checking if ntpmon needs starting'.format(NTP_CONF))
+    clear_flag('ntpmon.started')
