@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -23,8 +23,8 @@ import socket
 import sys
 import time
 
-from alert import NTPAlerter
-from process import ntpchecks
+import alert
+import process
 
 
 def get_args():
@@ -44,7 +44,8 @@ def get_args():
     parser.add_argument(
         '--interval',
         type=int,
-        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, or 60 seconds if COLLECTD_INTERVAL is not set).',
+        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, '
+             'or 60 seconds if COLLECTD_INTERVAL is not set).',
     )
     args = parser.parse_args()
     return args
@@ -57,14 +58,14 @@ def sleep_until(interval):
     now = time.time()
     s = interval - now % interval
     if sys.stdout.isatty():
-        print("Sleeping %g seconds" % (s,))
+        print('Sleeping %g seconds' % (s,))
     time.sleep(s)
     if sys.stdout.isatty():
         print(time.asctime())
 
 
 def main():
-    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars', 'trace']
+    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
     args = get_args()
 
     if 'COLLECTD_HOSTNAME' in os.environ:
@@ -81,23 +82,29 @@ def main():
     if args.interval is None:
         args.interval = 60
 
-    if args.mode == 'telegraf':
+    if args.mode == 'telegraf' and not sys.stdout.isatty():
         (host, port) = args.connect.split(':')
         port = int(port)
         s = socket.socket()
         s.connect((host, port))
         sys.stdout = s.makefile(mode='w')
 
-    alerter = NTPAlerter(checks)
+    alerter = alert.NTPAlerter(checks)
+    implementation = None
     while True:
-        # run the checks
-        checkobjs = ntpchecks(checks, debug=False)
+        # cache implementation for the lifetime of ntpmon
+        if not implementation:
+            implementation = process.detect_implementation()
 
-        # alert on what we've collected
-        alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode)
+        if implementation:
+            # run the checks
+            checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
+            # alert on what we've collected
+            alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode)
+
         sleep_until(args.interval)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 

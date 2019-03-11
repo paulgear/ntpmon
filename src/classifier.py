@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -44,9 +44,10 @@ Ask MetricClassifier to classify them:
         'reach': 'CRITICAL',
     }
 
-MetricClassifier can pick the worst metric and provide a return code for Nagios checks, and produce human-readable messages:
+MetricClassifier can pick the worst metric and provide a return code for Nagios checks,
+and produce human-readable messages:
     mc.worst_metric() == ('reach', 2)
-    mc.message('reach', 'reachability', '%') == "CRITICAL: reachability is too low (48.46%) - must be greater than 75%
+    mc.message('reach', 'reachability', '%') == "CRITICAL: reachability is too low (48.46%) - must be greater than 75%"
 """
 
 import warnings
@@ -207,7 +208,7 @@ class MetricClassifier(object):
                         metric = m
         except Exception as e:
             warnings.warn(e)
-            metric = "Unknown"
+            metric = 'Unknown'
             worst = 3
         return (metric, worst)
 

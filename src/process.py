@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 #
 # Copyright:    (c) 2015-2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -29,23 +29,19 @@ from readvar import NTPVars
 
 
 _progs = {
-    'peers': 'ntpq -pn',
-    'trace': 'ntptrace -n',
-    'vars': 'ntpq -nc readvar',
+    'chronyd': {
+        'peers': 'chronyc -c sources',
+        'vars': 'chronyc -c tracking',
+    },
+    'ntpd': {
+        'peers': 'ntpq -pn',
+        'trace': 'ntptrace -n',
+        'vars': 'ntpq -nc readvar',
+    },
 }
 
 
-def execute(prog, timeout=30, debug=False, errfatal=False):
-    """
-    Execute a predefined external command.  Return the output and the runtime in seconds.
-    """
-    if prog not in _progs:
-        return None
-    failmessage = '%s produced no output.  Please check that an NTP server is installed and running.'
-
-    output = None
-    cmd = _progs[prog].split()
-    start = time.time()
+def execute_subprocess(cmd, timeout, debug, errfatal):
     try:
         output = subprocess.check_output(
             cmd,
@@ -66,19 +62,60 @@ def execute(prog, timeout=30, debug=False, errfatal=False):
         if debug:
             print(te)
         output = te.output
-    runtime = time.time() - start
+    return output
 
-    if output is None or output == "":
+
+def detect_implementation():
+    """Attempt to detect implementation based on the name of the running NTP server process."""
+    implementation = NTPProcess()
+    implementation.getprocess()
+    if implementation.name:
+        return implementation.name
+    else:
+        return None
+
+
+def get_progs(implementation):
+    """Return the dict of programs for this implementation, or None, if one cannot be detected."""
+    if implementation in _progs:
+        return _progs[implementation]
+
+    implementation = detect_implementation()
+    if implementation in _progs:
+        return _progs[implementation]
+    else:
+        return None
+
+
+def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
+    """
+    Execute a predefined external command.  Return the output and the elapsed time in seconds.
+    """
+    progs = get_progs(implementation)
+    if progs is None:
+        return None
+    if prog not in progs:
+        return None
+
+    failmessage = '%s produced no output.  Please check that an NTP server is installed and running.'
+
+    output = None
+    cmd = progs[prog].split()
+    start = time.time()
+    output = execute_subprocess(cmd, timeout=timeout, debug=debug, errfatal=errfatal)
+    elapsed = time.time() - start
+
+    if output is None or len(output) == 0:
         if errfatal:
             # FIXME: should be a metric rather than fatal error
-            fatal(failmessage % _progs[prog])
+            fatal(failmessage % progs[prog])
         else:
-            return [[], runtime]
+            return [[], elapsed]
     else:
         if debug:
             print(output)
-            print('runtime: %.3f seconds' % (runtime,))
-        return [output.split('\n'), runtime]
+            print('elapsed time: %.3f seconds' % (elapsed,))
+        return [output.split('\n'), elapsed]
 
 
 def fatal(msg):
@@ -86,30 +123,35 @@ def fatal(msg):
     sys.exit(3)
 
 
-def ntpchecks(checks, debug):
+def ntpchecks(checks, debug, implementation=None):
     """
     Run all of the checks required by the argument list
     and return the resulting objects in a hash.
     """
     objs = {}
 
+    if implementation not in _progs:
+        implementation = detect_implementation()
+        if implementation is None:
+            return None
+
     for check in checks:
         if ((check in ['offset', 'peers', 'reach', 'sync'])
                 and 'peers' not in objs):
-            (output, runtime) = execute('peers', debug=debug)
-            objs['peers'] = NTPPeers(output, runtime)
+            (output, elapsed) = execute('peers', debug=debug, implementation=implementation)
+            objs['peers'] = NTPPeers(output, elapsed)
             break
 
     if 'proc' in checks:
         objs['proc'] = NTPProcess()
 
     if 'trace' in checks:
-        (output, runtime) = execute('trace', debug=debug)
-        objs['trace'] = NTPTrace(output, runtime)
+        (output, elapsed) = execute('trace', debug=debug, implementation=implementation)
+        objs['trace'] = NTPTrace(output, elapsed)
 
     if 'vars' in checks:
-        (output, runtime) = execute('vars', debug=debug)
-        objs['vars'] = NTPVars(output, runtime)
+        (output, elapsed) = execute('vars', debug=debug, implementation=implementation)
+        objs['vars'] = NTPVars(output, elapsed)
 
     return objs
 
@@ -121,7 +163,7 @@ class NTPProcess(object):
         Save which process names we're looking for, and the version of psutil.
         """
         if names is None:
-            self.names = ["ntpd", "xntpd"]
+            self.names = ['chronyd', 'ntpd']
         else:
             self.names = names
         # Check for old psutil per http://grodola.blogspot.com.au/2014/01/psutil-20-porting.html
@@ -129,7 +171,8 @@ class NTPProcess(object):
 
     def getprocess(self):
         """
-        Search the process table for a matching process name
+        Search the process table for a matching process name.
+        Return the psutil process object.
         """
         for proc in psutil.process_iter():
             try:
@@ -144,7 +187,7 @@ class NTPProcess(object):
     def getruntime(self):
         """
         Return the length of time in seconds that the process has been running.
-        If ntpd is not running or any error occurs, return -1.
+        If process is not running or any error occurs, return -1.
         """
         proc = self.getprocess()
         if proc is None:
@@ -163,8 +206,15 @@ class NTPProcess(object):
 
 def main():
     import pprint
+    implementation = detect_implementation()
+    print('Running {}'.format(implementation))
     pprint.pprint(NTPProcess().getmetrics())
+    checks = ['offset', 'peers', 'proc', 'reach', 'sync', 'vars']
+    checkobjs = ntpchecks(checks, debug=True, implementation=implementation)
+    from alert import NTPAlerter
+    alerter = NTPAlerter(checks)
+    alerter.alert(checkobjs, hostname=None, interval=0, format='telegraf')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

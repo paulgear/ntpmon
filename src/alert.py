@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -202,7 +202,8 @@ class NTPAlerter(object):
     def custom_message_runtime(self, result):
         proc = self.objs['proc']
         if result == 'CRITICAL':
-            return '%s: No NTP process could be found.  Please check that an NTP server is installed and running.' % (result,)
+            return ('%s: No NTP process could be found.'
+                    '  Please check that an NTP server is installed and running.') % (result,)
         elif result == 'WARNING':
             return 'OK: %s has only been running %d seconds' % (proc.name, proc.getruntime())
         elif result == 'OK':
@@ -228,7 +229,7 @@ class NTPAlerter(object):
         return '%s: %d hosts detected in trace: %s' % (
             result,
             trace.results['tracehosts'],
-            ", ".join(trace.hostlist)
+            ', '.join(trace.hostlist)
         )
 
     def alert(self, checkobjs, hostname, interval, format):
@@ -312,7 +313,7 @@ class NTPAlerter(object):
         else:
             (m, rc) = self.mc.worst_metric(self.checks)
             self.metrics['result'] = self.return_code()
-            print("%s | %s" % (msgs[m], self.report()))
+            print('%s | %s' % (msgs[m], self.report()))
 
     def report(self):
         """
@@ -326,19 +327,18 @@ class NTPAlerter(object):
                 else:
                     fmt = _formats[m][1] if _formats[m][1] != '%' else 'f'
                 val = self.mc.fmtstr(fmt) % self.metrics[m]
-                items.append("%s=%s" % (m, val))
+                items.append('%s=%s' % (m, val))
             else:
-                items.append("%s=" % (m,))
-        return " ".join(items)
+                items.append('%s=' % (m,))
+        return ' '.join(items)
 
     def return_code(self):
         """
-        Don't return anything other than OK until ntpd has been running for
-        at least enough time for 8 polling intervals of 64 seconds each.  This
-        prevents false positives due to ntpd restarts or short-lived VMs.
+        Don't return anything other than OK until the NTP daemon has been running
+        for at least enough time for 8 polling intervals of 64 seconds each.  This
+        prevents false positives due to restarts or short-lived VMs.
         """
         if 'runtime' in self.mc.results and self.mc.results['runtime'] == 'WARNING':
             return 0
         else:
             return self.mc.return_code(self.checks)
-

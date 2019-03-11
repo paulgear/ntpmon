@@ -1,2 +1,28 @@
-includes: ['layer:basic']
-repo:  git+ssh://git.launchpad.net/ntpmon
+repo: 'git+ssh://git.launchpad.net/ntpmon'
+includes:
+    - 'layer:basic'
+options:
+    basic:
+        packages:
+        - python3-psutil
+defines:
+    install-dir:
+        description: |
+            Install directory for the NTPmon layer;
+            if empty, no files will be installed.
+        type: string
+    service-name:
+        description: |
+            Name of the NTPmon systemd/upstart service to install;
+            if empty, no service will be installed.
+        type: string
+    user:
+        description: |
+            The user name under which to run the NTPmon service.
+        type: string
+        default: nobody
+    group:
+        description: |
+            The group name under which to run the NTPmon service.
+        type: string
+        default: nogroup

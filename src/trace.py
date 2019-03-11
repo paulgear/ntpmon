@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 #
 # Copyright:    (c) 2016 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
@@ -63,9 +63,9 @@ class NTPTrace(object):
         self.results = results
         return results
 
-    def __init__(self, lines, runtime):
+    def __init__(self, lines, elapsed):
         self.trace(lines)
-        self.results['tracetime'] = runtime
+        self.results['tracetime'] = elapsed
 
     def getmetrics(self):
         return self.results.copy()
@@ -73,6 +73,7 @@ class NTPTrace(object):
 
 def main():
     pass
+
 
 if __name__ == "__main__":
     main()

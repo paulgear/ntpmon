@@ -9,5 +9,7 @@ stop on runlevel [06]
 
 respawn
 
-# FIXME: make this configurable
-exec /opt/ntpmon/ntpmon.py --interval 60 --mode telegraf
+setuid {{ user }}
+setgid {{ group }}
+
+exec {{ install_dir }}/ntpmon.py --interval 60 --mode telegraf --implementation {{ implementation }}

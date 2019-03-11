@@ -1,4 +1,5 @@
 # This file is part of ntpmon - see COPYING.txt for license.
+PYTHONPATH=$(PWD)/src
 
 test: pytest datatest
 
