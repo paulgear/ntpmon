@@ -191,20 +191,21 @@ class NTPAlerter(object):
         Get metrics from each registered metric source and add all relevant aliases.
         """
         self.metrics = {}
-        self.objs = checkobjs
-        for o in self.objs:
-            self.metrics.update(self.objs[o].getmetrics())
-        if debug:
-            pprint.pprint(self.metrics)
-        metrics.addaliases(self.metrics, _aliases)
-        if 'proc' in self.checks:
-            self.checks.append('runtime')
-        if 'trace' in self.checks:
-            self.checks.append('tracehosts')
-            self.checks.append('traceloops')
-            self.checks.append('tracetime')
-        if 'vars' in self.checks and 'offset' not in self.checks:
-            self.checks.append('sysoffset')
+        if checkobjs:
+            self.objs = checkobjs
+            for o in self.objs:
+                self.metrics.update(self.objs[o].getmetrics())
+            if debug:
+                pprint.pprint(self.metrics)
+            metrics.addaliases(self.metrics, _aliases)
+            if 'proc' in self.checks:
+                self.checks.append('runtime')
+            if 'trace' in self.checks:
+                self.checks.append('tracehosts')
+                self.checks.append('traceloops')
+                self.checks.append('tracetime')
+            if 'vars' in self.checks and 'offset' not in self.checks:
+                self.checks.append('sysoffset')
 
     def custom_message(self, metric, result):
         """
@@ -328,13 +329,21 @@ class NTPAlerter(object):
                 msgs[metric] = self.custom_message(metric, results[metric])
                 if msgs[metric] is None:
                     msgs[metric] = self.mc.message(metric, _formats[metric][0], _formats[metric][1])
+  
+        if not msgs:
+            msgs['no_ntp_proc'] = ('CRITICAL: No NTP process could be found.'
+                '  Please check that an NTP server is installed and running.')
+            
         if debug:
             for m in msgs:
                 print(msgs[m])
         else:
             (m, rc) = self.mc.worst_metric(self.checks)
             self.metrics['result'] = self.return_code()
-            print('%s | %s' % (msgs[m], self.report()))
+            if 'no_ntp_proc' in msgs:
+                print(msgs['no_ntp_proc'])
+            else:
+                print('%s | %s' % (msgs[m], self.report()))
 
     def report(self):
         """

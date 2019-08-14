@@ -69,8 +69,9 @@ def detect_implementation():
     """Attempt to detect implementation based on the name of the running NTP server process."""
     implementation = NTPProcess()
     implementation.getprocess()
-    if implementation.name:
-        return implementation.name
+    if hasattr(implementation, 'name'):
+        if implementation.name:
+            return implementation.name
     else:
         return None
 
