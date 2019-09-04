@@ -1,8 +1,17 @@
 NTPmon
 by Paul Gear <github@libertysys.com.au>
-Copyright (c) 2015-2017 Paul D. Gear <http://libertysys.com.au/>
+Copyright (c) 2015-2019 Paul D. Gear <http://libertysys.com.au/>
+Juju layer copyright (c) 2017-2018 Canonical Ltd <https://jaas.ai/ntp>
 
 License: GPLv3 - see COPYING.txt for details
+
+
+PROMETHEUS EXPORTER: EXPERIMENTAL
+---------------------------------
+
+EXPOSE THE HTTP SERVER IN THIS BRANCH TO UNTRUSTED NETWORKS AT YOUR OWN RISK.
+NO SECURITY TESTING OR VALIDATION HAS BEEN PERFORMED, AND - AS STATED IN THE
+GNU GENERAL PUBLIC LICENSE TERMS - THIS SOFTWARE COMES WITH NO WARRANTY.
 
 
 Introduction
@@ -11,7 +20,7 @@ Introduction
 NTPmon is a program which is designed to report on essential health metrics
 for NTP.  It provides a Nagios check which can be used with many alerting
 systems, including support for Nagios performance data.  NTPmon can also run
-as a daemon for sending metrics to collectd or telegraf.
+as a daemon for sending metrics to collectd, prometheus, or telegraf.
 
 
 Prerequisites
@@ -25,7 +34,7 @@ NTPmon also requires 'ntpq' and 'ntptrace' from the NTP distribution.
 On Ubuntu (and probably other Debian-based Linux distributions), you can
 install all the prerequisites by running:
 
-    sudo apt-get install ntp python3-psutil
+    sudo apt-get install ntp python3-psutil python3-prometheus-client
 
 
 Metrics
@@ -58,6 +67,7 @@ traceloop:
     Is there a sync loop between the local server and the stratum 1 servers?
     If so, return CRITICAL.  Most public NTP servers do not support tracing,
     so for anything other than a loop (including a timeout), return OK.
+    Trace loop detection is deprecated, and is not supported for prometheus.
 
 In addition, NTPmon retrieves the following metrics directly from the local
 NTP server (using 'ntpq -nc readvar'):
