@@ -211,7 +211,7 @@ class NTPAlerter(object):
         return None
 
     def custom_message_sync(self, result):
-        if result == 'CRITICAL':
+        if result == 'WARNING':
             return '%s: No sync peer selected' % (result,)
         elif result == 'OK':
             return '%s: Time is in sync with %s' % (result, self.objs['peers'].syncpeer())

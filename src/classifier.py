@@ -177,9 +177,21 @@ class MetricClassifier(object):
         Classify the value of a single metric according to the existing definitions.
         """
         if metric in self.metricdefs:
-            return _classify(value, self.metricdefs[metric])
+            result = self.check_special_cases(metric, value)
+            return (result if result else _classify(
+                    value, self.metricdefs[metric]))
         else:
             raise ValueError('Missing definition for metric %s' % metric)
+
+    def check_special_cases(self, metric, value):
+        """
+        Handle special cases of specific combinations of metrics and their values.
+        """
+        if metric == "offset" and str(value) == "nan":
+            return "WARNING"
+        if metric == "sync" and value == 0:
+            return "WARNING"
+        return None
 
     def classify_metrics(self, metrics):
         """
@@ -200,7 +212,7 @@ class MetricClassifier(object):
         metric = None
         worst = -1
         try:
-            for m in metrics:
+            for m in reversed(metrics):
                 if m in self.results:
                     rc = return_code_for_classification(self.results[m])
                     if rc > worst:

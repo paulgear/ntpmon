@@ -133,6 +133,8 @@ badmetricdefs = {
     'd': ('high', 0, 10),
 }
 
+samplechecks = ['a', 'b', 'c', 'd']
+
 samplemetrics = {
     'a': -10,
     'b': 10,
@@ -266,9 +268,9 @@ class TestNTPPeers(unittest.TestCase):
     def test_classify_process(self):
         mc = MetricClassifier(goodmetricdefs)
         self.assertEqual(mc.classify_metrics(samplemetrics), samplemetricresults)
-        self.assertEqual(mc.worst_metric(samplemetrics), ('d', 3))
-        self.assertEqual(mc.return_code(samplemetrics), 3)
-        self.assertEqual(mc.return_code(samplemetrics, unknown_as_critical=True), 2)
+        self.assertEqual(mc.worst_metric(samplechecks), ('d', 3))
+        self.assertEqual(mc.return_code(samplechecks), 3)
+        self.assertEqual(mc.return_code(samplechecks, unknown_as_critical=True), 2)
 
 
 if __name__ == "__main__":
