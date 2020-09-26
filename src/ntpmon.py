@@ -54,8 +54,8 @@ def get_args():
     parser.add_argument(
         '--port',
         type=int,
-        help='TCP port on which to listen when acting as a prometheus exporter (default: 9646)',
-        default=9646,
+        help='TCP port on which to listen when acting as a prometheus exporter (default: 9648)',
+        default=9648,
     )
     args = parser.parse_args()
     return args
