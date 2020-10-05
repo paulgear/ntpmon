@@ -58,6 +58,9 @@ traceloop:
     Is there a sync loop between the local server and the stratum 1 servers?
     If so, return CRITICAL.  Most public NTP servers do not support tracing,
     so for anything other than a loop (including a timeout), return OK.
+    Traceloop is disabled by default and may be deprecated in a future
+    release, since it produces additional NTP traffic which is not useful in
+    most cases.
 
 In addition, NTPmon retrieves the following metrics directly from the local
 NTP server (using 'ntpq -nc readvar'):
@@ -68,16 +71,16 @@ NTP server (using 'ntpq -nc readvar'):
     - rootdelay
     - rootdisp
 See the NTP documentation for the meaning of these metrics:
-https://www.eecis.udel.edu/~mills/ntp/html/ntpq.html#system
+http://doc.ntp.org/current-stable/ntpq.html#system
 
 
 Changes from previous version
 -----------------------------
 
 NTPmon has been rewritten from version 1.0.0 of check_ntpmon.  Changes from
-check_ntpmon are:
+the original check_ntpmon are:
 
-- Now requires python 3.
+- Requires python 3.
 
 - Removed dependency on GNU coreutils.
 
@@ -114,4 +117,5 @@ To do
 
 - Better/more documentation.
 - Expand unit tests.
+  - test for NTP server not running
 - Create installer.
