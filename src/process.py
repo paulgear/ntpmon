@@ -68,7 +68,8 @@ def execute_subprocess(cmd, timeout, debug, errfatal):
 def detect_implementation():
     """Attempt to detect implementation based on the name of the running NTP server process."""
     implementation = NTPProcess()
-    implementation.getprocess()
+    if implementation.getprocess() is None:
+        return None
     if implementation.name:
         return implementation.name
     else:
@@ -132,8 +133,12 @@ def ntpchecks(checks, debug, implementation=None):
 
     if implementation not in _progs:
         implementation = detect_implementation()
-        if implementation is None:
-            return None
+
+    if 'proc' in checks:
+        objs['proc'] = NTPProcess()
+
+    if implementation is None:
+        return objs
 
     for check in checks:
         if ((check in ['offset', 'peers', 'reach', 'sync'])
@@ -141,9 +146,6 @@ def ntpchecks(checks, debug, implementation=None):
             (output, elapsed) = execute('peers', debug=debug, implementation=implementation)
             objs['peers'] = NTPPeers(output, elapsed)
             break
-
-    if 'proc' in checks:
-        objs['proc'] = NTPProcess()
 
     if 'trace' in checks:
         (output, elapsed) = execute('trace', debug=debug, implementation=implementation)
