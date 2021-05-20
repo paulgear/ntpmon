@@ -36,7 +36,7 @@ Aliases for all metrics
 """
 _aliases = {
     # peer metrics
-    'offset': ('survivor-offset-mean', 'outlier-offset-mean', 'backup-offset-mean', 'all-offset-mean'),
+    'offset': ('sync-offset-mean', 'survivor-offset-mean', 'outlier-offset-mean', 'backup-offset-mean', 'all-offset-mean'),
     'peers': 'all',
     'reach': 'all-reach-mean',
     'sync': None,
