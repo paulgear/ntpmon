@@ -170,6 +170,8 @@ class NTPAlerter(object):
         Get metrics from each registered metric source and add all relevant aliases.
         """
         self.metrics = {}
+        if checkobjs is None:
+            return
         self.objs = checkobjs
         for o in self.objs:
             self.metrics.update(self.objs[o].getmetrics())
