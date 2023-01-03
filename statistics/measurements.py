@@ -41,9 +41,6 @@ timestamp_sources = {
 }
 
 
-cutoff = 1640928300
-
-
 def checkfail(test : str) -> int:
     """Reverse the polarity of the tests so that 1 asserts the error.
     This is to make it more natural to write queries asserting, e.g. that a packet is a duplicate."""
@@ -137,7 +134,7 @@ regex = re.compile(skiplines)
 def parse_measurement(line: str) -> dict:
     f = line.split()
     return {
-        # Keep in field order rather than sorted
+        # sort by field position rather than name
         'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
         'source': f[2],
         'leap': leapcodes[f[3]],
@@ -193,7 +190,7 @@ def parse_measurement(line: str) -> dict:
 def parse_statistics(line: str) -> dict:
     f = line.split()
     return {
-        # Keep in field order rather than sorted
+        # sort by field position rather than name
         'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
         'source': f[2],
         'stdev': float(f[3]),
@@ -232,7 +229,7 @@ def parse_statistics(line: str) -> dict:
 def parse_tracking(line: str) -> dict:
     f = line.split()
     return {
-        # Keep in field order rather than sorted
+        # sort by field position rather than name
         'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
         'source': f[2],
         'stratum': int(f[3]),
@@ -283,8 +280,7 @@ def to_line_protocol(metrics: dict, which: str, additional_tags: dict = {}) -> s
 
 
 def generate_measurement_lines(tags: dict) -> Iterable[str]:
-    with open(f'terraform/ntp-server/results/{tags["ip"]}/var/log/chrony/measurements.log') as f:
-        # print(tags, f.name)
+    with open(f'{tags["ip"]}/var/log/chrony/measurements.log') as f:
         for s in f.readlines():
             if regex.match(s):
                 continue
@@ -292,17 +288,17 @@ def generate_measurement_lines(tags: dict) -> Iterable[str]:
                 yield to_line_protocol(parse_measurement(s), 'measurement', additional_tags = tags)
 
 
-# def generate_statistics_lines(tags: dict ) -> Iterable[str]:
-#     with open(f'terraform/ntp-server/results/{tags["ip"]}/var/log/chrony/statistics.log') as f:
-#         for s in f.readlines():
-#             if regex.match(s):
-#                 continue
-#             if len(s):
-#                 yield statistics_to_line_protocol(parse_statistics(s), additional_tags = tags)
+def generate_statistics_lines(tags: dict ) -> Iterable[str]:
+    with open(f'{tags["ip"]}/var/log/chrony/statistics.log') as f:
+        for s in f.readlines():
+            if regex.match(s):
+                continue
+            if len(s):
+                yield to_line_protocol(parse_statistics(s), 'statistics', additional_tags = tags)
 
 
 def generate_tracking_lines(tags: dict ) -> Iterable[str]:
-    with open(f'terraform/ntp-server/results/{tags["ip"]}/var/log/chrony/tracking.log') as f:
+    with open(f'{tags["ip"]}/var/log/chrony/tracking.log') as f:
         for s in f.readlines():
             if regex.match(s):
                 continue
@@ -316,7 +312,7 @@ def read_hosts(filename: str) -> dict:
 
 
 def write_host_file(which: str, lines: Iterable[str], tags: dict) -> None:
-    with open(f'terraform/ntp-server/results/{tags["ip"]}/{which}.line', 'w') as f:
+    with open(f'{tags["ip"]}/{which}.line', 'w') as f:
         f.writelines(lines)
 
 
@@ -326,13 +322,6 @@ def host_to_tags(cloud: str, host: str, attributes: dict) -> dict:
         'hostname': host,
     }
     tags.update(attributes)
-
-    if tags['hostname'].endswith('-before'):
-        tags['before'] = 1640928300
-        tags['hostname'] = tags['hostname'].replace('-before', '')
-    elif tags['hostname'].endswith('-after'):
-        tags['after'] = 1640928300
-        tags['hostname'] = tags['hostname'].replace('-after', '')
 
     if cloud == 'azure':
         tags['az'] = 'aus-east-' + tags['az']
@@ -352,9 +341,15 @@ def main():
     for c in clouds:
         for h in clouds[c]:
             tags = host_to_tags(c, h, clouds[c][h])
-            print(tags['cloud'], tags['hostname'], f"BEFORE: {tags['before']}" if 'before' in tags else f"AFTER: {tags['after']}" if 'after' in tags else 'ALL', tags['az'], tags['ip'])
+            print(
+                tags['cloud'],
+                tags['hostname'],
+                f"BEFORE: {tags['before']}" if 'before' in tags else f"AFTER: {tags['after']}" if 'after' in tags else 'ALL',
+                tags['az'],
+                tags['ip']
+            )
             write_host_file('measurements', generate_measurement_lines(tags), tags)
-            # write_host_file('statistics', generate_statistics_lines(tags), tags)
+            write_host_file('statistics', generate_statistics_lines(tags), tags)
             write_host_file('tracking', generate_tracking_lines(tags), tags)
 
 
