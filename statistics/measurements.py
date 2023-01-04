@@ -41,13 +41,13 @@ timestamp_sources = {
 }
 
 
-def checkfail(test : str) -> int:
+def checkfail(test: str) -> int:
     """Reverse the polarity of the tests so that 1 asserts the error.
     This is to make it more natural to write queries asserting, e.g. that a packet is a duplicate."""
     return 1 if test == '0' else 0
 
 
-def refstr(s : str) -> str:
+def refstr(s: str) -> str:
     """Convert from hex string to a printable string (if all characters are printable), or an IP
     address string otherwise.  See https://stackoverflow.com/a/2198052/1621180 for inspiration."""
     packed = bytes.fromhex(s)
@@ -195,7 +195,7 @@ def parse_statistics(line: str) -> dict:
         'source': f[2],
         'stdev': float(f[3]),
         'offset': float(f[4]),
-        'stdev': float(f[5]),
+        'stdev-est': float(f[5]),
         'skew': float(f[6]),
         'freq': float(f[7]),
         'stress': float(f[8]),
@@ -249,7 +249,7 @@ def parse_tracking(line: str) -> dict:
 # Line protocol syntax:
 # <measurement>[,<tag_key>=<tag_value>[,<tag_key>=<tag_value>]] <field_key>=<field_value>[,<field_key>=<field_value>] [<timestamp>]
 
-def validate_identifier(id : str) -> str:
+def validate_identifier(id: str) -> str:
     return id.replace('-', '_').strip('_')
 
 
