@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import datetime
+import glob
 import json
 import re
 import socket
@@ -280,30 +281,33 @@ def to_line_protocol(metrics: dict, which: str, additional_tags: dict = {}) -> s
 
 
 def generate_measurement_lines(tags: dict) -> Iterable[str]:
-    with open(f'{tags["ip"]}/var/log/chrony/measurements.log') as f:
-        for s in f.readlines():
-            if regex.match(s):
-                continue
-            if len(s):
-                yield to_line_protocol(parse_measurement(s), 'measurement', additional_tags = tags)
+    for filename in glob.glob(f'{tags["ip"]}/var/log/chrony/measurements.log*'):
+        with open(filename) as f:
+            for s in f.readlines():
+                if regex.match(s):
+                    continue
+                if len(s):
+                    yield to_line_protocol(parse_measurement(s), 'measurement', additional_tags=tags)
 
 
-def generate_statistics_lines(tags: dict ) -> Iterable[str]:
-    with open(f'{tags["ip"]}/var/log/chrony/statistics.log') as f:
-        for s in f.readlines():
-            if regex.match(s):
-                continue
-            if len(s):
-                yield to_line_protocol(parse_statistics(s), 'statistics', additional_tags = tags)
+def generate_statistics_lines(tags: dict) -> Iterable[str]:
+    for filename in glob.glob(f'{tags["ip"]}/var/log/chrony/statistics.log*'):
+        with open(filename) as f:
+            for s in f.readlines():
+                if regex.match(s):
+                    continue
+                if len(s):
+                    yield to_line_protocol(parse_statistics(s), 'statistics', additional_tags=tags)
 
 
-def generate_tracking_lines(tags: dict ) -> Iterable[str]:
-    with open(f'{tags["ip"]}/var/log/chrony/tracking.log') as f:
-        for s in f.readlines():
-            if regex.match(s):
-                continue
-            if len(s):
-                yield to_line_protocol(parse_tracking(s), 'tracking', additional_tags = tags)
+def generate_tracking_lines(tags: dict) -> Iterable[str]:
+    for filename in glob.glob(f'{tags["ip"]}/var/log/chrony/tracking.log*'):
+        with open(filename) as f:
+            for s in f.readlines():
+                if regex.match(s):
+                    continue
+                if len(s):
+                    yield to_line_protocol(parse_tracking(s), 'tracking', additional_tags=tags)
 
 
 def read_hosts(filename: str) -> dict:
