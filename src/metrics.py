@@ -17,12 +17,14 @@
 # this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import math
+
 
 def _add_alias(metrics, name, alias):
     """
     Add an alias for a single named metric
     """
-    if name in metrics:
+    if name in metrics and not math.isnan(metrics[name]):
         metrics[alias] = metrics[name]
         return True
     else:
