@@ -1,0 +1,16 @@
+[Unit]
+Description=NTP statistics monitor
+Documentation=https://github.com/paulgear/ntpmon
+After=chrony.service ntp.service
+Wants=chrony.service ntp.service
+
+[Service]
+ExecStart={{ install_dir }}/ntpmon.py --interval 60 --mode prometheus --implementation {{ implementation }}
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+User={{ user }}
+Group={{ group }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,6 +1,6 @@
 
 #
-# Copyright:    (c) 2016 Paul D. Gear
+# Copyright:    (c) 2016, 2019 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -137,6 +137,23 @@ _peer_types = {
 }
 
 """
+Metric types and suffixes for prometheus
+"""
+_prometheus_types = {
+
+    'frequency': (None, '_hertz', 'Frequency error of the local clock'),
+    'offset': (None, '_seconds', 'Mean clock offset of peers'),
+    'reach': ('%', '_ratio', 'Peer reachability over the last 8 polls'),
+    'rootdelay': (None, '_seconds', 'Network delay to stratum 0 sources'),
+    'rootdisp': (None, '_seconds', 'Maximum calculated offset from stratum 0 sources'),
+    'runtime': (None, '_duration_seconds', 'Duration NTP service has been running'),
+    'stratum': ('i', None, 'NTP stratum of this server'),
+    'sysjitter': (None, '_seconds', 'RMS average of most recent system peer offset differences'),
+    'sysoffset': (None, '_seconds', 'Current clock offset of selected system peer'),
+
+}
+
+"""
 Metric types for telegraf
 """
 _telegraf_types = {
@@ -158,12 +175,13 @@ _telegraf_types = {
 
 
 class NTPAlerter(object):
- 
+
     def __init__(self, checks):
         self.checks = checks
         self.mc = MetricClassifier(_metricdefs)
         self.metrics = {}
         self.objs = {}
+        self.prometheus_objs = {}
 
     def collectmetrics(self, checkobjs, debug):
         """
@@ -234,7 +252,7 @@ class NTPAlerter(object):
             ', '.join(trace.hostlist)
         )
 
-    def alert(self, checkobjs, hostname, interval, format):
+    def alert(self, checkobjs, hostname, interval, format, debug=False):
         """
         Produce the metrics
         """
@@ -244,9 +262,11 @@ class NTPAlerter(object):
         self.metrics['result'] = self.return_code()
         if format == 'collectd':
             self.alert_collectd(hostname, interval)
+        elif format == 'prometheus':
+            self.alert_prometheus(debug=debug)
         elif format == 'telegraf':
             self.alert_telegraf()
-        self.alert_peers(hostname, interval, format)
+        self.alert_peers(hostname, interval, format, debug)
         self.finished_output()
 
     def alert_collectd(self, hostname, interval):
@@ -262,6 +282,47 @@ class NTPAlerter(object):
                     self.metrics[metric],
                 ))
 
+    def set_prometheus_metric(self, name, description, value, peertype=None):
+        import prometheus_client
+        if name in self.prometheus_objs:
+            g = self.prometheus_objs[name]
+            if peertype is not None:
+                g = g.labels(peertype=peertype)
+        else:
+            if peertype is not None:
+                g = prometheus_client.Gauge(name, description, ['peertype'])
+                self.prometheus_objs[name] = g
+                g = g.labels(peertype=peertype)
+            else:
+                g = prometheus_client.Gauge(name, description)
+                self.prometheus_objs[name] = g
+        g.set(value)
+
+    def alert_prometheus(self, debug=False):
+
+        def emit_metric(name, description, metrictype, value, format):
+            if debug:
+                valuestr = format % (value,)
+                print('# HELP %s %s' % (name, description))
+                print('# TYPE %s gauge' % (name,))
+                print('%s %s' % (name, valuestr))
+            else:
+                self.set_prometheus_metric(name, description, value)
+
+        for metric in sorted(_prometheus_types.keys()):
+            if metric in self.metrics:
+                (metrictype, suffix, description) = _prometheus_types[metric]
+                s = 'ntpmon_' + metric
+                if suffix is not None:
+                    s += suffix
+                val = self.metrics[metric]
+                fmt = '%.9f'
+                if metrictype == 'i':
+                    fmt = '%d'
+                elif metrictype == '%':
+                    val /= 100
+                emit_metric(s, description, metrictype, val, fmt)
+
     def alert_telegraf(self):
         print('ntpmon ', end='')
         telegraf_metrics = []
@@ -275,7 +336,9 @@ class NTPAlerter(object):
                 telegraf_metrics.append(s)
         print(','.join(telegraf_metrics))
 
-    def alert_peers(self, hostname, interval, format):
+    def alert_peers(self, hostname, interval, format, debug=False):
+        if debug and format == 'prometheus':
+            print('# TYPE ntpmon_peers gauge')
         for metric in _peer_types:
             value = self.metrics.get(metric)
             if format == 'collectd':
@@ -285,6 +348,11 @@ class NTPAlerter(object):
                     interval,
                     value,
                 ))
+            elif format == 'prometheus':
+                if debug:
+                    print('ntpmon_peers{peertype="%s"} %d' % (metric, value))
+                else:
+                    self.set_prometheus_metric('ntpmon_peers', 'NTP peer count', value, metric)
             elif format == 'telegraf':
                 print('ntpmon_peers,peertype=%s count=%di' % (metric, value))
 

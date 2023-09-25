@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright:    (c) 2016 Paul D. Gear
+# Copyright:    (c) 2016, 2019 Paul D. Gear
 # License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
 #
 # This program is free software: you can redistribute it and/or modify it under
@@ -32,7 +32,11 @@ def get_args():
     parser.add_argument(
         '--mode',
         type=str,
-        choices=['collectd', 'telegraf'],
+        choices=[
+            'collectd',
+            'prometheus',
+            'telegraf',
+        ],
         help='Collectd is the default if collectd environment variables are detected.',
     )
     parser.add_argument(
@@ -46,6 +50,12 @@ def get_args():
         type=int,
         help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, '
              'or 60 seconds if COLLECTD_INTERVAL is not set).',
+    )
+    parser.add_argument(
+        '--port',
+        type=int,
+        help='TCP port on which to listen when acting as a prometheus exporter (default: 9648)',
+        default=9648,
     )
     args = parser.parse_args()
     return args
@@ -82,12 +92,17 @@ def main():
     if args.interval is None:
         args.interval = 60
 
-    if args.mode == 'telegraf' and not sys.stdout.isatty():
-        (host, port) = args.connect.split(':')
-        port = int(port)
-        s = socket.socket()
-        s.connect((host, port))
-        sys.stdout = s.makefile(mode='w')
+    debug = sys.stdout.isatty()
+    if not debug:
+        if args.mode == 'telegraf':
+            (host, port) = args.connect.split(':')
+            port = int(port)
+            s = socket.socket()
+            s.connect((host, port))
+            sys.stdout = s.makefile(mode='w')
+        elif args.mode == 'prometheus':
+            import prometheus_client
+            prometheus_client.start_http_server(args.port)
 
     alerter = alert.NTPAlerter(checks)
     implementation = None
@@ -100,11 +115,10 @@ def main():
             # run the checks
             checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
             # alert on what we've collected
-            alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode)
+            alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode, debug=debug)
 
         sleep_until(args.interval)
 
 
 if __name__ == '__main__':
     main()
-
