@@ -17,17 +17,17 @@ runtest()
     echo -n "."
     #echo "Testing $FILE $REVERSE"
     if ./src/check_ntpmon.py --test < $FILE >$TMPFILE 2>&1; then
-	if [ -n "$REVERSE" ]; then
-	    echo "ERROR: $FILE should have failed for $@:"
-	    cat $TMPFILE
-	    return 1
-	fi
+        if [ -n "$REVERSE" ]; then
+            echo "ERROR: $FILE should have failed for $@:"
+            cat $TMPFILE
+            return 1
+        fi
     else
-	if [ -z "$REVERSE" ]; then
-	    echo "ERROR: $FILE FAILED:"
-	    cat $TMPFILE
-	    return 1
-	fi
+        if [ -z "$REVERSE" ]; then
+            echo "ERROR: $FILE FAILED:"
+            cat $TMPFILE
+            return 1
+        fi
     fi
     return 0
 }

@@ -1,2 +1,3 @@
-tarballs
 *.pyc
+__pycache__
+buildroot
