@@ -1,0 +1,34 @@
+ntpmon (2.0.0-1) unstable; urgency=medium
+
+  * Apparently I had previously tagged a version of ntpmon as v1.0.0, so I'm
+    declaring this a breaking change, semver-wise, even though it probably is
+    99% backwards compatible.  The remaining changelog is lightly edited from
+    an auto-generated changelog from git history.
+  * Added:
+    - auto-detection of NTP implementation
+    - chrony support
+    - collectd support
+    - detection of hours and days in "when" field
+    - gnuplot-based scripts for loopstats and peerstats and intersection
+      algorithm visualisation
+    - juju charms reactive layer
+    - ntpd system metrics (from "ntpq -nc readvar")
+    - prometheus exporter
+    - standalone parser for chrony statistics files
+    - systemd service template
+    - telegraf support
+    - unit tests expanded and improved (still needs more work)
+    - updated documentation
+  * Fixed:
+    - correctly detect when no NTP server is running
+    - fix incorrect reversal of WARNING & CRITICAL thresholds
+    - various display quirks and inconsistencies
+    - code reformatted for flake8 fixes
+    - report metrics in seconds rather than milliseconds, to prevent confusion
+      when graphing
+    - report survivors-offset-mean instead of syncpeer-offset-mean; more
+      closely corresponds with old behaviour
+  * Removed:
+    - trace checks are now disabled by default, and marked as deprecated
+
+ -- Paul Gear <github@libertysys.com.au>  Thu, 28 Sep 2023 08:29:19 +1000
