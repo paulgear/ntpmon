@@ -20,6 +20,17 @@ set -e
 
 case "$1" in
     configure)
+        # adapted from dnsmasq-base postinst
+        if [ -z "$(id -u #PACKAGE# 2> /dev/null)" ]; then
+            adduser \
+                --disabled-password \
+                --gecos "#PACKAGE#" \
+                --home /nonexistent \
+                --no-create-home \
+                --quiet \
+                --system \
+                #PACKAGE#
+        fi
         ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

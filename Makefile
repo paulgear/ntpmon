@@ -4,12 +4,12 @@ BINDIR=bin
 BUILDROOT=buildroot
 CONFDIR=/etc/default
 DESTDIR=/
-GROUP=nogroup
+GROUP=$(NAME)
 NAME=ntpmon
 PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
-USER=nobody
+USER=$(NAME)
 VERSION=2.0.0
 
 test: pytest datatest
@@ -59,4 +59,4 @@ srcpackage:	buildenv
 	cd $(BUILDROOT); \
 		tar -xf $(NAME)_$(VERSION).orig.tar.gz; \
 		cd $(NAME)-$(VERSION)/; \
-		debuild -S
+		debuild
