@@ -1,10 +1,15 @@
 # This file is part of ntpmon - see COPYING.txt for license.
 
+BINDIR=bin
 BUILDROOT=buildroot
+CONFDIR=/etc/default
 DESTDIR=/
+GROUP=nogroup
 NAME=ntpmon
 PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
+SYSTEMD_SERVICE_DIR=/lib/systemd/system
+USER=nobody
 VERSION=2.0.0
 
 test: pytest datatest
@@ -23,13 +28,22 @@ clean:
 	find . -type d -name '__pycache__' -delete
 
 install:
-	install -d $(DESTDIR)/$(PREFIX)/ $(DESTDIR)/$(PREFIX)/$(SHAREDIR)/
+	install -d $(DESTDIR)/$(PREFIX)/ \
+		$(DESTDIR)/$(CONFDIR)/ \
+		$(DESTDIR)/$(PREFIX)/$(BINDIR)/ \
+		$(DESTDIR)/$(PREFIX)/$(SHAREDIR)/ \
+		$(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/
 	install -m 0644 src/*.py $(DESTDIR)/$(PREFIX)/$(SHAREDIR)/
 	chmod 0755 $(DESTDIR)/$(PREFIX)/$(SHAREDIR)/*ntpmon.py
-	install -d -m 0755 $(DESTDIR)/$(PREFIX)/bin
-	cd $(DESTDIR)/$(PREFIX)/bin; \
+	cd $(DESTDIR)/$(PREFIX)/$(BINDIR); \
 		ln -s ../$(SHAREDIR)/ntpmon.py $(NAME); \
 		ln -s ../$(SHAREDIR)/check_ntpmon.py check_$(NAME)
+	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
+		src/jinja2_render.py src/ntpmon-prometheus.systemd > $(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/$(NAME)-prometheus.service
+	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
+		src/jinja2_render.py src/ntpmon-telegraf.systemd > $(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/$(NAME)-telegraf.service
+	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
+		src/jinja2_render.py src/ntpmon.env > $(DESTDIR)/$(CONFDIR)/$(NAME)
 
 buildenv:
 	mkdir -p $(BUILDROOT)

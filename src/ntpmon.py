@@ -52,6 +52,12 @@ def get_args():
              'or 60 seconds if COLLECTD_INTERVAL is not set).',
     )
     parser.add_argument(
+        '--listen-address',
+        type=str,
+        help='IPv4/IPv6 address on which to listen when acting as a prometheus exporter (default: 127.0.0.1)',
+        default='127.0.0.1',
+    )
+    parser.add_argument(
         '--port',
         type=int,
         help='TCP port on which to listen when acting as a prometheus exporter (default: 9648)',
@@ -102,7 +108,7 @@ def main():
             sys.stdout = s.makefile(mode='w')
         elif args.mode == 'prometheus':
             import prometheus_client
-            prometheus_client.start_http_server(args.port)
+            prometheus_client.start_http_server(addr=args.listen_address, port=args.port)
 
     alerter = alert.NTPAlerter(checks)
     implementation = None

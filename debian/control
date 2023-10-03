@@ -6,7 +6,8 @@ Build-Depends:
  debhelper-compat (= 13),
  dh-python,
  python3-all,
- python3-docutils
+ python3-docutils,
+ python3-jinja2
 Standards-Version: 4.6.0
 Homepage: https://github.com/paulgear/ntpmon
 # X-Python3-Version: >= 3.7

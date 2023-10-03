@@ -5,12 +5,14 @@ After=chrony.service ntp.service
 Wants=chrony.service ntp.service
 
 [Service]
-ExecStart={{ install_dir }}/ntpmon.py --interval 60 --mode prometheus --implementation {{ implementation }}
+CapabilityBoundingSet=
+EnvironmentFile=-{{ CONFDIR }}/{{ NAME }}
+ExecStart={{ BINDIR }}/{{ NAME }} --interval 60 --mode prometheus $DAEMON_ARGS
+Group={{ GROUP }}
 KillMode=process
 Restart=on-failure
 RestartSec=42s
-User={{ user }}
-Group={{ group }}
+User={{ USER }}
 
 [Install]
 WantedBy=multi-user.target
