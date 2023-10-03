@@ -17,7 +17,7 @@ Usage
 #####
 
 ntpmon.py [-h] [--mode {collectd,prometheus,telegraf}] [--connect CONNECT]
-          [--interval INTERVAL] [--port PORT]
+          [--interval INTERVAL] [--listen ADDRESS] [--port PORT]
 
 Common Options
 ##############
@@ -36,6 +36,10 @@ Options:
   --interval INTERVAL   How often to report statistics (default: the value of
                         the COLLECTD_INTERVAL environment variable, or 60
                         seconds if COLLECTD_INTERVAL is not set)
+
+  --listen-address LISTEN_ADDRESS
+                        IPv4/IPv6 address on which to listen when acting as a
+                        prometheus exporter (default: 127.0.0.1)
 
   --port PORT           TCP port on which to listen when acting as a prometheus
                         exporter (default: 9648)

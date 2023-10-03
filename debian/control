@@ -15,7 +15,7 @@ Rules-Requires-Root: no
 
 Package: ntpmon
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, chrony | ntp, python3-prometheus-client, python3-psutil
+Depends: ${misc:Depends}, ${python3:Depends}, adduser, chrony | ntp, python3-prometheus-client, python3-psutil
 Suggests: collectd, nagios-nrpe-server, telegraf
 Description: Monitor/check NTP metrics
  This application is a flexible monitor/checker for the health of an

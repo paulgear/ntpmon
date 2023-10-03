@@ -46,7 +46,8 @@ install:
 		src/jinja2_render.py src/ntpmon.env > $(DESTDIR)/$(CONFDIR)/$(NAME)
 
 buildenv:
-	mkdir -p $(BUILDROOT)
+	rm -rf $(BUILDROOT)
+	mkdir $(BUILDROOT)
 	git archive --format=tar.gz --prefix=$(NAME)-$(VERSION)/ HEAD > $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz
 
 package:	buildenv
@@ -59,4 +60,4 @@ srcpackage:	buildenv
 	cd $(BUILDROOT); \
 		tar -xf $(NAME)_$(VERSION).orig.tar.gz; \
 		cd $(NAME)-$(VERSION)/; \
-		debuild
+		debuild -S

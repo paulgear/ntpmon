@@ -1,3 +1,9 @@
+ntpmon (2.0.0-2) bionic; urgency=medium
+
+  * Trying to get launchpad build right.
+
+ -- Paul Gear <github@libertysys.com.au>  Wed, 04 Oct 2023 18:08:35 +1000
+
 ntpmon (2.0.0-1) unstable; urgency=medium
 
   * Apparently I had previously tagged a version of ntpmon as v1.0.0, so I'm

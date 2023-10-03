@@ -8,5 +8,7 @@ NAME=ntpmon
 
 override_dh_auto_install:
 	$(MAKE) DESTDIR=$$(pwd)/debian/$(NAME) PREFIX=/usr install
-	rst2man debian/manpage.rst > debian/$(NAME).8
+	rst2man debian/check_ntpmon-man.rst > debian/check_$(NAME).1
+	rst2man debian/ntpmon-man.rst > debian/$(NAME).8
+	dh_installman debian/check_$(NAME).1
 	dh_installman debian/$(NAME).8
