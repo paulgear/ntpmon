@@ -10,7 +10,7 @@ PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
-VERSION=2.0.0
+VERSION=2.0.1
 
 test: pytest datatest
 
@@ -39,14 +39,14 @@ install:
 		ln -s ../$(SHAREDIR)/ntpmon.py $(NAME); \
 		ln -s ../$(SHAREDIR)/check_ntpmon.py check_$(NAME)
 	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
-		src/jinja2_render.py src/ntpmon-prometheus.systemd > $(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/$(NAME)-prometheus.service
-	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
-		src/jinja2_render.py src/ntpmon-telegraf.systemd > $(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/$(NAME)-telegraf.service
+		src/jinja2_render.py src/ntpmon.service > $(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/$(NAME).service
 	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
 		src/jinja2_render.py src/ntpmon.env > $(DESTDIR)/$(CONFDIR)/$(NAME)
 
 $(BUILDROOT):
 	mkdir $@
+
+orig:	$(BUILDROOT)
 	git archive --format=tar.gz --prefix=$(NAME)-$(VERSION)/ HEAD > $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz
 
 package:	$(BUILDROOT)

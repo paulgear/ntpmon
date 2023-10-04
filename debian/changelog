@@ -1,3 +1,9 @@
+ntpmon (2.0.1-1) bionic; urgency=medium
+
+  * Fix installation and startup scripts
+
+ -- Paul Gear <github@libertysys.com.au>  Thu, 05 Oct 2023 09:11:06 +1000
+
 ntpmon (2.0.0-6) bionic; urgency=medium
 
   * Add python3-psutil to build-depends (needed to run test suite).

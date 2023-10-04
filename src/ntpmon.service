@@ -1,13 +1,13 @@
 [Unit]
 Description=NTP statistics monitor
 Documentation=https://github.com/paulgear/ntpmon
-After=chrony.service ntp.service
-Wants=chrony.service ntp.service
+After=chrony.service ntp.service telegraf.service
+Wants=chrony.service ntp.service telegraf.service
 
 [Service]
 CapabilityBoundingSet=
 EnvironmentFile=-{{ CONFDIR }}/{{ NAME }}
-ExecStart={{ BINDIR }}/{{ NAME }} --interval 60 --mode prometheus $DAEMON_ARGS
+ExecStart={{ BINDIR }}/{{ NAME }} $DAEMON_ARGS
 Group={{ GROUP }}
 KillMode=process
 Restart=on-failure

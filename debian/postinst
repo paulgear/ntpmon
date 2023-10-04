@@ -17,19 +17,21 @@ set -e
 # for details, see https://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+NAME=ntpmon
 
 case "$1" in
     configure)
         # adapted from dnsmasq-base postinst
-        if [ -z "$(id -u #PACKAGE# 2> /dev/null)" ]; then
+        if [ -z "$(id -u "$NAME" 2> /dev/null)" ]; then
             adduser \
                 --disabled-password \
-                --gecos "#PACKAGE#" \
+                --gecos "$NAME" \
+                --group \
                 --home /nonexistent \
                 --no-create-home \
                 --quiet \
                 --system \
-                #PACKAGE#
+                "$NAME"
         fi
         ;;
 
