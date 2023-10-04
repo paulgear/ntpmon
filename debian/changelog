@@ -1,3 +1,9 @@
+ntpmon (2.0.0-3) bionic; urgency=medium
+
+  * And another attempt.
+
+ -- Paul Gear <github@libertysys.com.au>  Wed, 04 Oct 2023 18:13:58 +1000
+
 ntpmon (2.0.0-2) bionic; urgency=medium
 
   * Trying to get launchpad build right.

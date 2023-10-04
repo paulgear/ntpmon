@@ -45,18 +45,17 @@ install:
 	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
 		src/jinja2_render.py src/ntpmon.env > $(DESTDIR)/$(CONFDIR)/$(NAME)
 
-buildenv:
-	rm -rf $(BUILDROOT)
-	mkdir $(BUILDROOT)
+$(BUILDROOT):
+	mkdir $@
 	git archive --format=tar.gz --prefix=$(NAME)-$(VERSION)/ HEAD > $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz
 
-package:	buildenv
+package:	$(BUILDROOT)
 	cd $(BUILDROOT); \
 		tar -xf $(NAME)_$(VERSION).orig.tar.gz; \
 		cd $(NAME)-$(VERSION)/; \
 		debuild
 
-srcpackage:	buildenv
+srcpackage:	$(BUILDROOT)
 	cd $(BUILDROOT); \
 		tar -xf $(NAME)_$(VERSION).orig.tar.gz; \
 		cd $(NAME)-$(VERSION)/; \
