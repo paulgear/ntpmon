@@ -1,3 +1,10 @@
+ntpmon (2.0.0-5) bionic; urgency=medium
+
+  * Add debian/compat which seems needed to stop bionic builds thinking
+    we're asking for compat 1.
+
+ -- Paul Gear <github@libertysys.com.au>  Wed, 04 Oct 2023 19:57:14 +1000
+
 ntpmon (2.0.0-4) bionic; urgency=medium
 
   * Reduce debhelper-compat version to enable build on bionic
