@@ -7,10 +7,10 @@ Build-Depends:
  dh-python,
  python3-all,
  python3-docutils,
- python3-jinja2
+ python3-jinja2,
+ python3-psutil
 Standards-Version: 4.6.0
 Homepage: https://github.com/paulgear/ntpmon
-# X-Python3-Version: >= 3.7
 Rules-Requires-Root: no
 
 Package: ntpmon

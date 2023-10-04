@@ -1,3 +1,9 @@
+ntpmon (2.0.0-6) bionic; urgency=medium
+
+  * Add python3-psutil to build-depends (needed to run test suite).
+
+ -- Paul Gear <github@libertysys.com.au>  Wed, 04 Oct 2023 20:25:16 +1000
+
 ntpmon (2.0.0-5) bionic; urgency=medium
 
   * Add debian/compat which seems needed to stop bionic builds thinking
