@@ -3,7 +3,7 @@ Section: python
 Priority: optional
 Maintainer: Paul Gear <github@libertysys.com.au>
 Build-Depends:
- debhelper-compat (= 13),
+ debhelper-compat (= 11),
  dh-python,
  python3-all,
  python3-docutils,
