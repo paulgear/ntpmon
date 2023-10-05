@@ -47,7 +47,7 @@ $(BUILDROOT):
 	mkdir $@
 
 orig:	$(BUILDROOT)
-	git archive --format=tar.gz --prefix=$(NAME)-$(VERSION)/ HEAD > $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz
+	git archive --format=tar.gz --prefix=$(NAME)-$(VERSION)/ v$(VERSION) > $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz
 
 package:	$(BUILDROOT)
 	cd $(BUILDROOT); \

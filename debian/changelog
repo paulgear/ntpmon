@@ -1,3 +1,18 @@
+ntpmon (2.0.1-3) focal; urgency=medium
+
+  * No change rebuild trying to keep launchpad happy.
+
+ -- Paul Gear <github@libertysys.com.au>  Thu, 05 Oct 2023 14:14:34 +1000
+
+ntpmon (2.0.1-2) focal; urgency=medium
+
+  * Add dependency on python3-prometheus-client >= 0.16.0 to force use
+    of backported version for focal and later.  This should fix IPv6
+    support for the prometheus exporter.  I will no longer be building
+    for bionic.
+
+ -- Paul Gear <github@libertysys.com.au>  Thu, 05 Oct 2023 13:57:25 +1000
+
 ntpmon (2.0.1-1) bionic; urgency=medium
 
   * Fix installation and startup scripts
