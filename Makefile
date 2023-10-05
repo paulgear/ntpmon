@@ -10,7 +10,7 @@ PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
-VERSION=2.0.1
+VERSION=2.0.2
 
 test: pytest datatest
 
@@ -48,6 +48,9 @@ $(BUILDROOT):
 
 orig:	$(BUILDROOT)
 	git archive --format=tar.gz --prefix=$(NAME)-$(VERSION)/ v$(VERSION) > $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz
+	if [ ! -f tarballs/$(NAME)_$(VERSION).orig.tar.gz ]; then \
+		cp $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz tarballs/; \
+	fi
 
 package:	$(BUILDROOT)
 	cd $(BUILDROOT); \

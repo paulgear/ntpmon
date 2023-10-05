@@ -20,7 +20,7 @@ for sending metrics to collectd, prometheus, or telegraf.  It supports both
 
 ## Prerequisites
 
-NTPmon is written in python, and requires python 3.3 or later.  It uses modules
+NTPmon is written in python, and requires python 3.8 or later.  It uses modules
 from the standard python library, and also requires the `psutil` library, which
 is available from pypi or your operating system repositories. NTPmon also
 requires `ntpq` and `ntptrace` from the NTP distribution (or `chronyc` if you're
