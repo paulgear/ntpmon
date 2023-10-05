@@ -1,3 +1,9 @@
+ntpmon (2.0.2-2) focal; urgency=medium
+
+  * No change rebuild, trying to work out why the dependency is wrong.
+
+ -- Paul Gear <github@libertysys.com.au>  Thu, 05 Oct 2023 22:06:59 +1000
+
 ntpmon (2.0.2-1) focal; urgency=medium
 
   * New upstream version, adding dependency on updated prometheus client.
