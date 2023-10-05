@@ -6,14 +6,12 @@ Wants=chrony.service ntp.service
 Requires=telegraf.service
 
 [Service]
-CapabilityBoundingSet=
-EnvironmentFile=-{{ CONFDIR }}/{{ NAME }}
-ExecStart={{ BINDIR }}/{{ NAME }} --interval 60 --mode telegraf $DAEMON_ARGS
-Group={{ GROUP }}
+ExecStart={{ install_dir }}/ntpmon.py --interval 60 --mode telegraf --implementation {{ implementation }}
 KillMode=process
 Restart=on-failure
 RestartSec=42s
-User={{ USER }}
+User={{ user }}
+Group={{ group }}
 
 [Install]
 WantedBy=multi-user.target
