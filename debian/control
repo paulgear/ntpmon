@@ -3,18 +3,19 @@ Section: python
 Priority: optional
 Maintainer: Paul Gear <github@libertysys.com.au>
 Build-Depends:
- debhelper-compat (= 13),
+ debhelper,
  dh-python,
  python3-all,
- python3-docutils
+ python3-docutils,
+ python3-jinja2,
+ python3-psutil
 Standards-Version: 4.6.0
 Homepage: https://github.com/paulgear/ntpmon
-# X-Python3-Version: >= 3.7
 Rules-Requires-Root: no
 
 Package: ntpmon
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, chrony | ntp, python3-prometheus-client, python3-psutil
+Depends: ${misc:Depends}, ${python3:Depends}, adduser, chrony | ntp, python3-prometheus-client >= 0.16.0, python3-psutil
 Suggests: collectd, nagios-nrpe-server, telegraf
 Description: Monitor/check NTP metrics
  This application is a flexible monitor/checker for the health of an

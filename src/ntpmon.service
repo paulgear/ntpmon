@@ -1,0 +1,18 @@
+[Unit]
+Description=NTP statistics monitor
+Documentation=https://github.com/paulgear/ntpmon
+After=chrony.service ntp.service telegraf.service
+Wants=chrony.service ntp.service telegraf.service
+
+[Service]
+CapabilityBoundingSet=
+EnvironmentFile=-{{ CONFDIR }}/{{ NAME }}
+ExecStart={{ BINDIR }}/{{ NAME }} $DAEMON_ARGS
+Group={{ GROUP }}
+KillMode=process
+Restart=on-failure
+RestartSec=42s
+User={{ USER }}
+
+[Install]
+WantedBy=multi-user.target

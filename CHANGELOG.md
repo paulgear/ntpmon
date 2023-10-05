@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.2] - 2023-10-05
+
+### Added
+
+- Proper changelog entries like this one.
+
+### Fixed
+
+- The Ubuntu PPA includes a backported python3-prometheus-client package which
+  fixes the lack of IPv6 support in the prometheus client.
+- Restored ntpmon-telegraf service used by juju layer to its previous state.
+
+### Removed
+
+- Support for python versions before 3.8 (due to the above prometheus client
+  upgrade).
+
+## [2.0.1] - 2023-10-05
+
+### Added
+
+- Debian packaging, including man pages, which is available from the Ubuntu PPA
+  https://launchpad.net/~paulgear/+archive/ubuntu/ntpmon/ for Ubuntu 20.04
+  (focal) and 22.04 (jammy) LTS versions.  The Debian package defaults to
+  prometheus mode, but this can be configured by changing the contents of
+  `/etc/default/ntpmon`.
+- Makefile install target, for manual installs
+- Some other Makefile targets, mostly for supporting development of Debian
+  packages
+- `--listen-address` option for directing the prometheus exporter to listen on a
+  specific address (defaults to 127.0.0.1)
 
 ## [2.0.0] - 2023-09-28
 
