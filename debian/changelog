@@ -1,3 +1,10 @@
+ntpmon (2.0.2+repack1-2) focal; urgency=medium
+
+  * Rebuild with /opt/ntpmon as install directory so as not to clash with
+    ntpsec's /usr/bin/ntpmon.
+
+ -- Paul Gear <github@libertysys.com.au>  Fri, 06 Oct 2023 16:39:28 +1000
+
 ntpmon (2.0.2+repack1-1) focal; urgency=medium
 
   * No change rebuild.
