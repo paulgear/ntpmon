@@ -51,15 +51,10 @@ orig:	$(BUILDROOT)
 	if [ ! -f tarballs/$(NAME)_$(VERSION).orig.tar.gz ]; then \
 		cp $(BUILDROOT)/$(NAME)_$(VERSION).orig.tar.gz tarballs/; \
 	fi
+	cd $(BUILDROOT) && tar -xf $(NAME)_$(VERSION).orig.tar.gz
 
 package:	$(BUILDROOT)
-	cd $(BUILDROOT); \
-		tar -xf $(NAME)_$(VERSION).orig.tar.gz; \
-		cd $(NAME)-$(VERSION)/; \
-		debuild
+	cd $(BUILDROOT)/$(NAME)-$(VERSION)/ && debuild
 
 srcpackage:	$(BUILDROOT)
-	cd $(BUILDROOT); \
-		tar -xf $(NAME)_$(VERSION).orig.tar.gz; \
-		cd $(NAME)-$(VERSION)/; \
-		debuild -S
+	cd $(BUILDROOT)/$(NAME)-$(VERSION)/ && debuild -S
