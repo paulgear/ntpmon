@@ -398,8 +398,6 @@ class NTPAlerter(object):
                     fmt = _formats[m][1] if _formats[m][1] != '%' else 'f'
                 val = self.mc.fmtstr(fmt) % self.metrics[m]
                 items.append('%s=%s' % (m, val))
-            else:
-                items.append('%s=' % (m,))
         return ' '.join(items)
 
     def return_code(self):
