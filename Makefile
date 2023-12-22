@@ -20,6 +20,9 @@ pytest:
 datatest:
 	PYTHONPATH=./src ./testdata/testdata.sh
 
+format:
+	black --line-length=128 --target-version=py39 .
+
 push:
 	git push github
 
