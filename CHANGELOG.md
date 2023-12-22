@@ -5,7 +5,25 @@ Notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.1.0] - 2023-12-22
+
+### Changed
+
+- Readme updated to reflect PPA installation.
+- Changed Debian dependency on python3-prometheus-client to a recommendation,
+  because it is only required when using the prometheus exporter.
+
+### Removed
+
+- Metrics with no values are no longer displayed via the Nagios check, because
+  [they break icinga2's
+  GraphiteWriter](https://github.com/paulgear/ntpmon/pull/26).  Whilst this is
+  technically a breaking change, it only affects the deprecated trace-related
+  metrics, which are disabled by default, so I'm declaring this a minor release.
+  Removal of the trace-related metrics will be completed in a future release of
+  the 2.x series.
+- Removed warning about lack of IPv6 support in python3-prometheus-client, since
+  a fixed version is shipped in the PPA.
 
 ## [2.0.2] - 2023-10-05
 
@@ -13,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Proper changelog entries like this one.
 
-### Fixed
+### Changed
 
 - The Ubuntu PPA includes a backported python3-prometheus-client package which
   fixes the lack of IPv6 support in the prometheus client.
