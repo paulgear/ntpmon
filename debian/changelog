@@ -1,3 +1,9 @@
+ntpmon (2.1.0-1) focal; urgency=medium
+
+  * New upstream release.
+
+ -- Paul Gear <github@libertysys.com.au>  Fri, 22 Dec 2023 14:47:31 +1000
+
 ntpmon (2.0.2+repack1-2) focal; urgency=medium
 
   * Rebuild with /opt/ntpmon as install directory so as not to clash with
