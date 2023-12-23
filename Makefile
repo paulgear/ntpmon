@@ -15,7 +15,7 @@ VERSION=2.1.0
 test: pytest datatest
 
 pytest:
-	PYTHONPATH=./src python3 -m unittest -b unit_tests/test_classifier.py unit_tests/test_peers.py
+	PYTHONPATH=$(PWD)/src python3 -m pytest -vv unit_tests/test_tailer.py unit_tests/test_classifier.py unit_tests/test_peers.py
 
 datatest:
 	PYTHONPATH=./src ./testdata/testdata.sh

@@ -1,36 +1,42 @@
 #!/usr/bin/env python3
 
-import logging
 import os
 import sys
 import time
 
 
-log = logging.getLogger(__name__)
-
 class Tailer:
-
     def __init__(self, filename) -> None:
         self.filename = filename
+        self.first_time = True
+        self.clear()
+
+    def clear(self) -> None:
+        """Set to initial state, except for the 'first_time' flag."""
         self.file = None
         self.pos = -1
         self.st_ino = -1
         self.st_dev = -1
 
     def open(self) -> None:
-        """Open the file and seek to the end"""
+        """Open the file.  If this is the first time we've opened it, seek to
+        the end."""
         try:
-            self.file = open(self.filename, 'r')
-            self.file.seek(0, os.SEEK_END)
+            self.file = open(self.filename, "r")
+            whence = os.SEEK_END if self.first_time else os.SEEK_SET
+            self.file.seek(0, whence)
             self.pos = self.file.tell()
             stat = os.stat(self.file.fileno())
             self.st_ino = stat.st_ino
             self.st_dev = stat.st_dev
+            print(f"Opened, {self.filename=} {self.pos=} {self.st_ino=} {self.st_dev=}", file=sys.stderr)
         except OSError:
-            pass
+            self.clear()
+        finally:
+            self.first_time = False
 
     def readlines(self) -> list[str]:
-        """Read all of the remaining lines in the currently-open file"""
+        """Read all of the remaining lines in the currently-open file."""
         try:
             self.file.seek(0, os.SEEK_END)
             pos = self.file.tell()
@@ -39,11 +45,12 @@ class Tailer:
                 return None
             elif pos < self.pos:
                 # file has been truncated; reset to beginning and read all lines
-                log.warning("Truncated")
+                print(f"Truncated: {pos=} {self.pos=}", file=sys.stderr)
                 self.file.seek(0, os.SEEK_SET)
             else:
                 # Even if we were in the right place already, we need to set our
                 # position to there to keep readlines() happy.
+                print(f"Appended: {pos=} {self.pos=}", file=sys.stderr)
                 self.file.seek(self.pos, os.SEEK_SET)
 
             # we have some data to read
@@ -61,16 +68,30 @@ class Tailer:
             return None
 
         # Ensure that the file we have open is the filename we previously opened.
-        stat = os.stat(self.filename)
-        if stat.st_ino != self.st_ino or stat.st_dev != self.st_dev:
-            # It's a different file; read the rest of this one, then open the
-            # new one.  (This call to readlines() could be combined with the
-            # following one, but the logic is clearer if they are separate.)
-            lines = self.readlines()
-            self.open()
-            return lines
+        stat = None
+        try:
+            stat = os.stat(self.filename)
+        except OSError:
+            pass
+
+        reopen = False
+        if stat is None:
+            # file deleted - read the rest of it (if any) and reopen when available
+            print("Deleted file", file=sys.stderr)
+            reopen = True
+        elif stat.st_ino != self.st_ino or stat.st_dev != self.st_dev:
+            # It's a different file; read the rest of the open one, then open the
+            # new one.
+            print(f"Different file: {stat.st_ino=} {self.st_ino=} {stat.st_dev=} {self.st_dev=}", file=sys.stderr)
+            reopen = True
         else:
-            return self.readlines()
+            # Same file, just read any lines
+            pass
+
+        lines = self.readlines()
+        if reopen:
+            self.open()
+        return lines
 
 
 def tailf(filename) -> None:
