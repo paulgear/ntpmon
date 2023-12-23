@@ -101,7 +101,7 @@ def tailf(filename) -> None:
         lines = tailer.tail()
         if lines is not None:
             for l in lines:
-                print(l.strip())
+                print(l.rstrip("\n"))
         time.sleep(1)
 
 
