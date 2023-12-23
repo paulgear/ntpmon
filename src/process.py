@@ -120,7 +120,7 @@ def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
 
 
 def fatal(msg):
-    print('UNKNOWN: ' + msg)
+    print('UNKNOWN: ' + msg, file=sys.stderr)
     sys.exit(3)
 
 
