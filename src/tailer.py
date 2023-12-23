@@ -50,7 +50,6 @@ class Tailer:
             else:
                 # Even if we were in the right place already, we need to set our
                 # position to there to keep readlines() happy.
-                print(f"Appended: {pos=} {self.pos=}", file=sys.stderr)
                 self.file.seek(self.pos, os.SEEK_SET)
 
             # we have some data to read
