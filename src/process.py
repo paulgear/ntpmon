@@ -40,6 +40,11 @@ _progs = {
     },
 }
 
+_logfiles = {
+    'chronyd': '/var/log/chrony/measurements.log',
+    'ntpd': '/var/log/ntpstats/peerstats',
+}
+
 
 def execute_subprocess(cmd, timeout, debug, errfatal):
     try:
@@ -74,6 +79,11 @@ def detect_implementation():
         return implementation.name
     else:
         return None
+
+
+def get_logfile(implementation) -> str:
+    """Return the location of the peer measurements log for this implementation, or None, if one cannot be detected."""
+    return _logfiles.get(implementation, None)
 
 
 def get_progs(implementation):
