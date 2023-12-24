@@ -214,7 +214,6 @@ class NTPAlerter(object):
         elif format == 'telegraf':
             self.alert_telegraf()
         self.alert_peers(hostname, interval, format, debug)
-        self.finished_output()
 
     def alert_collectd(self, hostname, interval):
         """
@@ -302,15 +301,6 @@ class NTPAlerter(object):
                     self.set_prometheus_metric('ntpmon_peers', 'NTP peer count', value, metric)
             elif format == 'telegraf':
                 print('ntpmon_peers,peertype=%s count=%di' % (metric, value))
-
-    @staticmethod
-    def finished_output():
-        if sys.stdout.isatty():
-            # we're outputting to a terminal; must be test mode
-            print('')
-        else:
-            # flush standard output to ensure metrics are sent immediately
-            sys.stdout.flush()
 
     def alert_nagios(self, checkobjs, debug):
         """

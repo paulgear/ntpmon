@@ -9,6 +9,11 @@ import time
 
 
 class Tailer:
+
+    """Implements continuous tailing suitable for logs created by chronyd and
+    ntpd. May not be suitable as a general file tailing algorithm.  See the test
+    suite for more information about the expected behaviour."""
+
     def __init__(self, filename) -> None:
         self.filename = filename
         self.first_time = True

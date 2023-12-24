@@ -4,13 +4,23 @@
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 import argparse
+import asyncio
 import os
 import socket
 import sys
 import time
 
+from io import TextIOWrapper
+
 import alert
+import chrony_stats
+import line_protocol
 import process
+
+from tailer import Tailer
+
+
+debug = sys.stdout.isatty()
 
 
 def get_args():
@@ -44,6 +54,11 @@ def get_args():
         default='127.0.0.1',
     )
     parser.add_argument(
+        '--logfile',
+        type=str,
+        help='Log file to follow for peer statistics, if different from the default',
+    )
+    parser.add_argument(
         '--port',
         type=int,
         help='TCP port on which to listen when acting as a prometheus exporter (default: 9648)',
@@ -53,21 +68,75 @@ def get_args():
     return args
 
 
-def sleep_until(interval):
-    """
-    sleep until the end of the interval
-    """
+def get_telegraf_file(connect: str) -> TextIOWrapper:
+    """Return a TextIOWrapper for writing data to telegraf"""
+    (host, port) = connect.split(':')
+    port = int(port)
+    s = socket.socket()
+    s.connect((host, port))
+    return s.makefile(mode='w')
+
+
+def get_time_until(interval):
     now = time.time()
-    s = interval - now % interval
-    if sys.stdout.isatty():
-        print('Sleeping %g seconds' % (s,))
-    time.sleep(s)
-    if sys.stdout.isatty():
-        print(time.asctime())
+    return interval - now % interval
+
+
+async def alert_task(args: argparse.Namespace, hostname: str):
+    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
+    alerter = alert.NTPAlerter(checks)
+    while True:
+        implementation = process.get_implementation()
+        if implementation:
+            # run the checks, returning their data
+            checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
+            # alert on the data collected
+            alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode, debug=debug)
+
+        await asyncio.sleep(get_time_until(args.interval))
+
+
+async def peer_stats_task(telegraf: TextIOWrapper):
+    implementation = None
+    logfile = None
+    tailer = None
+
+    while True:
+        await asyncio.sleep(0.5)
+
+        if implementation is None:
+            implementation = process.get_implementation()
+        if implementation is None:
+            continue
+
+        if logfile is None:
+            logfile = process.get_logfile(implementation)
+        if logfile is None:
+            continue
+
+        if tailer is None:
+            tailer = Tailer(logfile)
+        if tailer is None:
+            continue
+
+        lines = tailer.tail()
+        if lines is None:
+            continue
+
+        for line in lines:
+            stats = chrony_stats.parse_measurement(line)
+            if stats is not None:
+                telegraf_line = line_protocol.to_line_protocol(stats, "ntpmon_peer")
+                print(telegraf_line, file=telegraf)
+
+
+async def start_tasks(args: argparse.Namespace, hostname: str, telegraf: TextIOWrapper) -> None:
+    alert = asyncio.create_task(alert_task(args, hostname), name="alert")
+    stats = asyncio.create_task(peer_stats_task(telegraf), name="stats")
+    await asyncio.wait((alert, stats), return_when=asyncio.ALL_COMPLETED)
 
 
 def main():
-    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
     args = get_args()
 
     if 'COLLECTD_HOSTNAME' in os.environ:
@@ -84,32 +153,18 @@ def main():
     if args.interval is None:
         args.interval = 60
 
-    debug = sys.stdout.isatty()
     if not debug:
         if args.mode == 'telegraf':
-            (host, port) = args.connect.split(':')
-            port = int(port)
-            s = socket.socket()
-            s.connect((host, port))
-            sys.stdout = s.makefile(mode='w')
+            telegraf_file = get_telegraf_file(args.connect)
+            # FIXME: use the file rather than relying on the redirect
+            sys.stdout = telegraf_file
         elif args.mode == 'prometheus':
             import prometheus_client
             prometheus_client.start_http_server(addr=args.listen_address, port=args.port)
+    else:
+        telegraf_file = sys.stdout
 
-    alerter = alert.NTPAlerter(checks)
-    implementation = None
-    while True:
-        # cache implementation for the lifetime of ntpmon
-        if not implementation:
-            implementation = process.detect_implementation()
-
-        if implementation:
-            # run the checks
-            checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
-            # alert on what we've collected
-            alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode, debug=debug)
-
-        sleep_until(args.interval)
+    asyncio.run(start_tasks(args, hostname, telegraf_file))
 
 
 if __name__ == '__main__':

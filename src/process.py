@@ -13,6 +13,11 @@ from peers import NTPPeers
 from readvar import NTPVars
 
 
+_logfiles = {
+    'chronyd': '/var/log/chrony/measurements.log',
+    'ntpd': '/var/log/ntpstats/peerstats',
+}
+
 _progs = {
     'chronyd': {
         'peers': 'chronyc -c sources',
@@ -22,11 +27,6 @@ _progs = {
         'peers': 'ntpq -pn',
         'vars': 'ntpq -nc readvar',
     },
-}
-
-_logfiles = {
-    'chronyd': '/var/log/chrony/measurements.log',
-    'ntpd': '/var/log/ntpstats/peerstats',
 }
 
 
@@ -63,6 +63,18 @@ def detect_implementation():
         return implementation.name
     else:
         return None
+
+
+# cache implementation for the lifetime of ntpmon
+cached_implementation: str = None
+
+
+def get_implementation() -> str:
+    """Return the implementation, if one is detected, or None."""
+    global cached_implementation
+    if cached_implementation is None:
+        cached_implementation = detect_implementation()
+    return cached_implementation
 
 
 def get_logfile(implementation) -> str:

@@ -4,38 +4,21 @@
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 import datetime
-import glob
-import json
 import re
-import socket
 import sys
 
-from typing import Iterable
-
-
-sample_measurements = """
-2021-12-30 11:28:49 17.253.66.253   N  1 111 111 1111   6  6 0.00 -3.420e-04  1.302e-03  4.121e-06  0.000e+00  1.984e-04 47505373 4B K K
-2021-12-30 11:28:49 17.253.66.125   N  1 111 111 1111   6  6 0.00 -2.447e-04  1.109e-03  3.707e-06  0.000e+00  1.373e-04 47505373 4B K K
-2021-12-30 11:28:49 150.101.186.50  N  2 111 111 1111   6  6 0.00 -1.287e-04  1.978e-02  4.450e-05  6.714e-04  1.282e-03 AC16FE35 4B K K
-2021-12-30 11:28:49 169.254.169.123 N  3 111 111 1111   6  6 0.00 -2.082e-04  2.231e-04  1.276e-06  2.136e-04  2.747e-04 0A2C4A4E 4B K K
-2021-12-30 11:28:49 150.101.186.48  N  2 111 111 1111   6  6 0.00 -4.276e-04  1.970e-02  4.405e-05  9.003e-04  6.546e-03 AC16FE35 4B K K
-2021-12-30 21:38:41 169.254.169.123 N  3 111 111 1101   8  7 0.01 -1.080e-03  2.430e-03  6.257e-07  2.136e-04  2.594e-04 0A2C4A4E 4B K K
-"""
-
-sample_statistics = """
-2021-12-30 11:43:02 17.253.66.253    2.762e-05 -2.951e-06  1.331e-05 -3.365e-08  1.262e-07 5.5e-02  13   0   6  0.00
-2021-12-30 11:43:03 150.101.186.48   3.384e-04 -3.644e-04  1.994e-04 -8.941e-08  1.459e-06 1.4e-01  15   0   6  0.00
-2021-12-30 11:44:06 169.254.169.123  3.312e-05 -1.386e-07  1.886e-05  2.105e-09  1.309e-07 3.0e-03  16   0  10  0.00
-2021-12-30 11:44:06 150.101.186.50   2.934e-04 -2.109e-04  1.614e-04  2.291e-07  1.257e-06 2.2e-01  14   1   6  0.00
-2021-12-30 11:44:07 17.253.66.125    2.984e-05  1.857e-05  1.568e-05  2.843e-08  1.057e-07 1.8e-01  17   0   8  0.00
-2021-12-30 11:44:07 17.253.66.253    2.679e-05 -5.997e-06  1.299e-05 -3.711e-08  1.103e-07 1.3e-02  14   0   7  0.00
-"""
 
 leapcodes = {
     'N': 0,
     '+': 1,
     '-': 2,
     '?': 3,
+}
+
+modes = {
+    '1': 'active peer',
+    '2': 'passive peer',
+    '4': 'server',
 }
 
 timestamp_sources = {
@@ -49,61 +32,6 @@ def checkfail(test: str) -> int:
     """Reverse the polarity of the tests so that 1 asserts the error.
     This is to make it more natural to write queries asserting, e.g. that a packet is a duplicate."""
     return 1 if test == '0' else 0
-
-
-def refstr(s: str) -> str:
-    """Convert from hex string to a printable string (if all characters are printable), or an IP
-    address string otherwise.  See https://stackoverflow.com/a/2198052/1621180 for inspiration."""
-    packed = bytes.fromhex(s)
-    all_printable = [x >= 20 and x <= 126 for x in packed]
-    if all(all_printable):
-        return ''.join([chr(x) for x in packed])
-    else:
-        return socket.inet_ntoa(packed)
-
-
-integer_fields = [
-    # 'auth-fail',
-    # 'bad-header',
-    # 'bogus',
-    # 'duplicate',
-    # 'exceeded-max-delay',
-    # 'exceeded-max-delay-dev-ratio',
-    # 'exceeded-max-delay-ratio',
-    # 'invalid',
-    # 'leap',
-    # 'local-poll',
-    # 'remote-poll',
-    # 'sync-loop',
-    # 'synchronized',
-    'num-combined',
-    'stratum',
-]
-
-float_fields = [
-    'delay',
-    'dispersion',
-    'freq',
-    'max-error',
-    'offset',
-    'remaining-correction',
-    'root-delay',
-    'root-dispersion',
-    'score',
-    'skew',
-    'stdev',
-]
-
-tag_fields = [
-    'source',
-    'refid',
-    # 'refstr',
-]
-
-exclude_tags = [
-    'after',
-    'before',
-]
 
 
 skiplines = r'^===|^ *Date'
@@ -135,10 +63,23 @@ regex = re.compile(skiplines)
 # 19. Source of the local transmit timestamp (D=daemon, K=kernel, H=hardware). [D]
 # 20. Source of the local receive timestamp (D=daemon, K=kernel, H=hardware). [K]
 
+
 def parse_measurement(line: str) -> dict:
-    f = line.split()
+    if regex.match(line):
+        return None
+    fields = line.split()
+    if len(fields) != 20:
+        return None
+    try:
+        return extract_fields(fields)
+    except Exception as e:
+        print(e, file=sys.stderr)
+        return None
+
+
+def extract_fields(f: list[str]) -> dict:
     return {
-        # sort by field position rather than name
+        # sorted by field position rather than name
         'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
         'source': f[2],
         'leap': leapcodes[f[3]],
@@ -161,13 +102,11 @@ def parse_measurement(line: str) -> dict:
         'dispersion': float(f[13]),
         'root-delay': float(f[14]),
         'root-dispersion': float(f[15]),
-        'refid': refstr(f[16]),
-        # Leaving the remaining fields out because they're all the same in my experiment, and I don't want to increase tag cardinality unnecessarily.
-        # 'refstr': f[16],
-        # 'mode': int(f[17][0]),
-        # 'interleaved': 1 if f[17][1] == 'I' else 0,
-        # 'tx-timestamp': timestamp_sources[f[18]],
-        # 'rx-timestamp': timestamp_sources[f[19]],
+        'refid': f[16],
+        'mode': modes.get(f[17][0], "UNKNOWN"),
+        'interleaved': 1 if f[17][1] == 'I' else 0,
+        'tx-timestamp': timestamp_sources.get(f[18], "UNKNOWN"),
+        'rx-timestamp': timestamp_sources.get(f[19], "UNKNOWN"),
     }
 
 
@@ -228,8 +167,6 @@ def parse_statistics(line: str) -> dict:
 # 14. The maximum estimated error of the system clock in the interval since the previous update (in seconds). It includes the offset, remaining offset correction, root delay, and
 #     dispersion from the previous update with the dispersion which accumulated in the interval. [8.304e-03]
 
-#    Date (UTC) Time     IP Address   St   Freq ppm   Skew ppm     Offset L Co  Offset sd Rem. corr. Root delay Root disp. Max. error
-
 def parse_tracking(line: str) -> dict:
     f = line.split()
     return {
@@ -240,7 +177,7 @@ def parse_tracking(line: str) -> dict:
         'freq': float(f[4]),
         'skew': float(f[5]),
         'offset': float(f[6]),
-        'leap': leapcodes[f[7]],
+        'leap': leapcodes.get(f[7], -1),
         'num-combined': int(f[8]),
         'stdev': float(f[9]),
         'remaining-correction': float(f[10]),
@@ -248,116 +185,3 @@ def parse_tracking(line: str) -> dict:
         'root-dispersion': float(f[12]),
         'max-error': float(f[13]),
     }
-
-
-# Line protocol syntax:
-# <measurement>[,<tag_key>=<tag_value>[,<tag_key>=<tag_value>]] <field_key>=<field_value>[,<field_key>=<field_value>] [<timestamp>]
-
-def validate_identifier(id: str) -> str:
-    return id.replace('-', '_').strip('_')
-
-
-def format_tags(metric: dict, additional_tags: dict) -> str:
-    return ','.join([
-        f'{validate_identifier(tag)}={metric[tag]}' for tag in tag_fields if tag in metric
-    ] + [
-        f'{validate_identifier(tag)}={additional_tags[tag]}' for tag in additional_tags if tag not in exclude_tags
-    ])
-
-
-def format_fields(metrics: dict) -> str:
-    return ','.join([
-        f'{validate_identifier(field)}={metrics[field]}' for field in float_fields if field in metrics
-    ] + [
-        f'{validate_identifier(field)}={metrics[field]}i' for field in integer_fields if field in metrics
-    ])
-
-
-def to_line_protocol(metrics: dict, which: str, additional_tags: dict = {}) -> str:
-    timestamp = int(metrics['datetime'].timestamp())
-    if 'after' in additional_tags and timestamp < additional_tags['after']:
-        return ''
-    elif 'before' in additional_tags and timestamp > additional_tags['before']:
-        return ''
-    else:
-        return f'{which},{format_tags(metrics, additional_tags)} {format_fields(metrics)} {timestamp}\n'
-
-
-def generate_measurement_lines(tags: dict) -> Iterable[str]:
-    for filename in glob.glob(f'{tags["ip"]}/var/log/chrony/measurements.log*'):
-        with open(filename) as f:
-            for s in f.readlines():
-                if regex.match(s):
-                    continue
-                if len(s):
-                    yield to_line_protocol(parse_measurement(s), 'measurement', additional_tags=tags)
-
-
-def generate_statistics_lines(tags: dict) -> Iterable[str]:
-    for filename in glob.glob(f'{tags["ip"]}/var/log/chrony/statistics.log*'):
-        with open(filename) as f:
-            for s in f.readlines():
-                if regex.match(s):
-                    continue
-                if len(s):
-                    yield to_line_protocol(parse_statistics(s), 'statistics', additional_tags=tags)
-
-
-def generate_tracking_lines(tags: dict) -> Iterable[str]:
-    for filename in glob.glob(f'{tags["ip"]}/var/log/chrony/tracking.log*'):
-        with open(filename) as f:
-            for s in f.readlines():
-                if regex.match(s):
-                    continue
-                if len(s):
-                    yield to_line_protocol(parse_tracking(s), 'tracking', additional_tags=tags)
-
-
-def read_hosts(filename: str) -> dict:
-    with open(filename) as f:
-        return json.load(f)
-
-
-def write_host_file(which: str, lines: Iterable[str], tags: dict) -> None:
-    with open(f'{tags["ip"]}/{which}.line', 'w') as f:
-        f.writelines(lines)
-
-
-def host_to_tags(cloud: str, host: str, attributes: dict) -> dict:
-    tags = {
-        'cloud': cloud,
-        'hostname': host,
-    }
-    tags.update(attributes)
-
-    if cloud == 'azure':
-        tags['az'] = 'aus-east-' + tags['az']
-
-    if tags.get('ipv6') is not None:
-        tags['protocol'] = 'ipv6'
-        tags['ip'] = tags['ipv6']
-        del(tags['ipv6'])
-    else:
-        tags['protocol'] = 'ipv4'
-
-    return tags
-
-
-def main():
-    clouds = read_hosts(sys.argv[1])
-    for c in clouds:
-        for h in clouds[c]:
-            tags = host_to_tags(c, h, clouds[c][h])
-            print(
-                tags['cloud'],
-                tags['hostname'],
-                f"BEFORE: {tags['before']}" if 'before' in tags else f"AFTER: {tags['after']}" if 'after' in tags else 'ALL',
-                tags['az'],
-                tags['ip']
-            )
-            write_host_file('measurements', generate_measurement_lines(tags), tags)
-            write_host_file('statistics', generate_statistics_lines(tags), tags)
-            write_host_file('tracking', generate_tracking_lines(tags), tags)
-
-
-main()

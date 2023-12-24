@@ -4,13 +4,15 @@
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 import os
-import sys
 from tempfile import NamedTemporaryFile
 
 from tailer import Tailer
 
 
 def test_tail_new_file() -> None:
+    """Create a new file, start the tailer -> should return no lines.
+    Put data in the file, tail again -> should return the data. Tail again ->
+    should return no data."""
     f = NamedTemporaryFile(mode="wt")
     tailer = Tailer(f.name)
     lines = tailer.tail()
@@ -22,11 +24,12 @@ def test_tail_new_file() -> None:
     lines = tailer.tail()
     assert lines == datalines
 
-    # if we keep reading we shouldn't get any more data
     assert tailer.tail() is None
 
 
 def test_tail_existing_file() -> None:
+    """Put data in the tempfile, close it, start the tailer, tail it several
+    times - should return no data in any of them."""
     f = NamedTemporaryFile(mode="wt")
     datalines = [
         "Hello, world\n",
