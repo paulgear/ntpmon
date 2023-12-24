@@ -20,8 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   GraphiteWriter](https://github.com/paulgear/ntpmon/pull/26).  Whilst this is
   technically a breaking change, it only affects the deprecated trace-related
   metrics, which are disabled by default, so I'm declaring this a minor release.
-  Removal of the trace-related metrics will be completed in a future release of
-  the 2.x series.
+  Removal of the trace-related metrics will be completed in a future release.
 - Removed warning about lack of IPv6 support in python3-prometheus-client, since
   a fixed version is shipped in the PPA.
 

@@ -85,14 +85,6 @@ available) acceptable?  Return CRITICAL for 50 milliseconds or more average
 difference, WARNING for 10 ms or more average difference, and OK for anything
 less.
 
-#### traceloop
-
-Is there a sync loop between the local server and the stratum 1 servers? If so,
-return CRITICAL; for anything other than a loop (including a timeout), return
-OK.  Most public NTP servers do not support tracing, so using this produces
-additional NTP traffic which is not useful in most cases. Trace loop detection
-is deprecated, disabled by default, and is not supported for prometheus.
-
 ### System metrics
 
 In addition, NTPmon retrieves the following metrics directly from the local NTP

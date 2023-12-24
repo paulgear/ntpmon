@@ -40,10 +40,6 @@ _aliases = {
     'peers': 'all',
     'reach': 'all-reach-mean',
     'sync': None,
-    # trace metrics
-    'tracehosts': None,
-    'traceloops': None,
-    'tracetime': None,
     # runtime metric
     'runtime': None,
     # readvar metrics
@@ -66,9 +62,6 @@ _formats = {
     'peers': ('Number of peers', 'd'),
     'reach': ('reachability', '%'),
     'sync': None,
-    'tracehosts': (None, 'd'),
-    'traceloops': (None, 'd'),
-    'tracetime': (None, 'f'),
     'runtime': (None, 'd'),
     'frequency': (None, 'f'),
     'rootdelay': (None, 'f'),
@@ -88,11 +81,8 @@ _metricdefs = {
     'offset': ('mid', -0.05, -0.01, 0.01, 0.05),
     'peers': ('high', 3, 1),
     'reach': ('high', 75, 50),
-    # sync & trace metrics are integral, but are set to floats
-    # in case we ever encounter rounding.
+    # sync is integral, but set to float in case we ever encounter rounding.
     'sync': ('high', 0.9, 0.9),
-    'tracehosts': ('high', 0.1, -0.1),
-    'traceloops': ('low', 0.9, 0.9),
     # readvar metrics are normally reported only, not alerted
     # however, if only vars is checked, we report on sysoffset
     'sysoffset': ('mid', -0.05, -0.01, 0.01, 0.05),
@@ -113,9 +103,6 @@ _collectdtypes = {
     'stratum': 'stratum/count',
     'sysjitter': 'sysjitter/time_offset',
     'sysoffset': 'sysoffset/time_offset',
-    'tracehosts': 'tracehosts/count',
-    'traceloops': 'traceloops/count',
-    'tracetime': 'runtime/duration',
 
 }
 
@@ -167,9 +154,6 @@ _telegraf_types = {
     'stratum': 'i',
     'sysjitter': None,
     'sysoffset': None,
-    'tracehosts': 'i',
-    'traceloops': 'i',
-    'tracetime': None,
 
 }
 
@@ -198,10 +182,6 @@ class NTPAlerter(object):
         metrics.addaliases(self.metrics, _aliases)
         if 'proc' in self.checks:
             self.checks.append('runtime')
-        if 'trace' in self.checks:
-            self.checks.append('tracehosts')
-            self.checks.append('traceloops')
-            self.checks.append('tracetime')
         if 'vars' in self.checks and 'offset' not in self.checks:
             self.checks.append('sysoffset')
 
@@ -213,10 +193,6 @@ class NTPAlerter(object):
             return self.custom_message_runtime(result)
         elif metric == 'sync':
             return self.custom_message_sync(result)
-        elif metric == 'tracehosts':
-            return self.custom_message_tracehosts(result)
-        elif metric == 'traceloops':
-            return self.custom_message_traceloops(result)
         return None
 
     def custom_message_runtime(self, result):
@@ -236,21 +212,6 @@ class NTPAlerter(object):
         elif result == 'OK':
             return '%s: Time is in sync with %s' % (result, self.objs['peers'].syncpeer())
         return None
-
-    def custom_message_traceloops(self, result):
-        if result == 'CRITICAL':
-            return '%s: Trace loop detected at host %s' % (result, self.objs['trace'].loophost)
-        elif result == 'OK':
-            return '%s: Trace detected no loops' % (result,)
-        return None
-
-    def custom_message_tracehosts(self, result):
-        trace = self.objs['trace']
-        return '%s: %d hosts detected in trace: %s' % (
-            result,
-            trace.results['tracehosts'],
-            ', '.join(trace.hostlist)
-        )
 
     def alert(self, checkobjs, hostname, interval, format, debug=False):
         """

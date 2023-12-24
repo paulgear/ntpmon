@@ -24,7 +24,6 @@ import time
 import psutil
 
 from peers import NTPPeers
-from trace import NTPTrace
 from readvar import NTPVars
 
 
@@ -35,7 +34,6 @@ _progs = {
     },
     'ntpd': {
         'peers': 'ntpq -pn',
-        'trace': 'ntptrace -n',
         'vars': 'ntpq -nc readvar',
     },
 }
@@ -156,10 +154,6 @@ def ntpchecks(checks, debug, implementation=None):
             (output, elapsed) = execute('peers', debug=debug, implementation=implementation)
             objs['peers'] = NTPPeers(output, elapsed)
             break
-
-    if 'trace' in checks:
-        (output, elapsed) = execute('trace', debug=debug, implementation=implementation)
-        objs['trace'] = NTPTrace(output, elapsed)
 
     if 'vars' in checks:
         (output, elapsed) = execute('vars', debug=debug, implementation=implementation)

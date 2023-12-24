@@ -164,41 +164,6 @@ remote refid st t when poll reach delay offset jitter
 """,
 ]
 
-demotrace = [
-    """
-127.0.0.1: stratum 3, offset 0.000079, synch distance 0.005168
-""",
-    """
-127.0.0.1: stratum 2, offset -0.000357, synch distance 0.053750
-193.79.237.14: timed out, nothing received
-***Request timed out
-""",
-]
-
-baddemotrace = [
-    """
-127.0.0.1: stratum 5, offset -0.000047, synch distance 0.027705
-128.199.84.169: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-""",
-]
-
 
 class TestCheckNTPMon(unittest.TestCase):
 
@@ -252,27 +217,6 @@ class TestCheckNTPMon(unittest.TestCase):
         self.assertEqual(check.sync('fe80::1'), 0, 'Sync peer not detected')
         self.assertEqual(check.sync('ds002.dedicated'), 0, 'Sync peer not detected')
         self.assertEqual(check.sync('node01.au.serve'), 0, 'Sync peer not detected')
-
-    def test_bad_trace(self):
-        check = CheckNTPMon()
-        self.assertEqual(check.trace(''), 1, 'Invalid trace not detected')
-        self.assertEqual(check.trace('    '), 1, 'Invalid trace not detected')
-        self.assertEqual(check.trace('!@#$%^&*()'), 1, 'Invalid trace not detected')
-        self.assertEqual(check.trace('blah.example.com'), 1, 'Invalid trace not detected')
-
-    def test_trace_demos(self):
-        """Ensure that demo traces are parsed successfully and don't produce exceptions or unknown results."""
-        for d in demotrace:
-            check = CheckNTPMon()
-            self.assertEqual(check.trace(d.split("\n")), 0, 'Error parsing demo trace data')
-
-    def test_bad_trace_demos(self):
-        """Ensure that bad demo traces produce errors."""
-        check = CheckNTPMon()
-#        for d in demodata:
-#            self.assertEqual(check.trace(d.split("\n")), 2, 'Demo data not detected as bad trace')
-        for d in baddemotrace:
-            self.assertEqual(check.trace(d.split("\n")), 2, 'Invalid trace not detected')
 
     def test_NTPPeer0(self):
         # check the parsing done by NTPCheck
@@ -540,4 +484,3 @@ if __name__ == "__main__":
         demo()
     else:
         unittest.main()
-
