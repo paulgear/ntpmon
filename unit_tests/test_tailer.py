@@ -1,3 +1,8 @@
+
+#
+# Copyright:    (c) 2016-2023 Paul D. Gear
+# License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
+
 import os
 import sys
 from tempfile import NamedTemporaryFile
