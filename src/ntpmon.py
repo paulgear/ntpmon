@@ -85,7 +85,7 @@ def get_time_until(interval):
 checkobjs = None
 
 
-async def alert_task(args: argparse.Namespace, hostname: str):
+async def alert_task(args: argparse.Namespace, hostname: str, telegraf: TextIOWrapper):
     global checkobjs
     checks = ["proc", "offset", "peers", "reach", "sync", "vars"]
     alerter = alert.NTPAlerter(checks)
@@ -95,7 +95,14 @@ async def alert_task(args: argparse.Namespace, hostname: str):
             # run the checks, returning their data
             checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
             # alert on the data collected
-            alerter.alert(checkobjs=checkobjs, hostname=hostname, interval=args.interval, format=args.mode, debug=debug)
+            alerter.alert(
+                checkobjs=checkobjs,
+                hostname=hostname,
+                interval=args.interval,
+                format=args.mode,
+                telegraf_file=telegraf,
+                debug=debug,
+            )
 
         await asyncio.sleep(get_time_until(args.interval))
 
@@ -154,7 +161,7 @@ async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> 
 
 
 async def start_tasks(args: argparse.Namespace, hostname: str, telegraf: TextIOWrapper) -> None:
-    alert = asyncio.create_task(alert_task(args, hostname), name="alert")
+    alert = asyncio.create_task(alert_task(args, hostname, telegraf), name="alert")
     stats = asyncio.create_task(peer_stats_task(args, telegraf), name="stats")
     await asyncio.wait((alert, stats), return_when=asyncio.ALL_COMPLETED)
 
@@ -179,8 +186,6 @@ def main():
     if not debug:
         if args.mode == "telegraf":
             telegraf_file = get_telegraf_file(args.connect)
-            # FIXME: use the file rather than relying on the redirect
-            sys.stdout = telegraf_file
         elif args.mode == "prometheus":
             import prometheus_client
 

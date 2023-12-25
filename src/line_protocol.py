@@ -56,8 +56,12 @@ def timestamp_to_line_protocol(timestamp: float) -> (int, int):
 
 
 def to_line_protocol(metrics: dict, which: str, additional_tags: dict = {}) -> str:
-    seconds, nanoseconds = timestamp_to_line_protocol(metrics["datetime"].timestamp())
-    return f"{which},{format_tags(metrics, additional_tags)} {format_fields(metrics)} {seconds}{nanoseconds:09}"
+    if "datetime" in metrics:
+        seconds, nanoseconds = timestamp_to_line_protocol(metrics["datetime"].timestamp())
+        timestamp = f" {seconds}{nanoseconds:09}"
+    else:
+        timestamp = ""
+    return f"{which},{format_tags(metrics, additional_tags)} {format_fields(metrics)}{timestamp}"
 
 
 def transform_identifier(id: str) -> str:

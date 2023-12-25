@@ -9,9 +9,13 @@ gathered), and creating messages for display to the user.  It contains a few
 special cases which require knowledge of the rest of the application.
 """
 
-import metrics
 import pprint
 import sys
+
+import line_protocol
+import metrics
+
+from io import TextIOWrapper
 
 from classifier import MetricClassifier
 
@@ -188,7 +192,7 @@ class NTPAlerter(object):
             return "%s: Time is in sync with %s" % (result, self.objs["peers"].syncpeer())
         return None
 
-    def alert(self, checkobjs, hostname, interval, format, debug=False):
+    def alert(self, checkobjs, hostname, interval, format, telegraf_file, debug=False):
         """
         Produce the metrics
         """
@@ -201,8 +205,8 @@ class NTPAlerter(object):
         elif format == "prometheus":
             self.alert_prometheus(debug=debug)
         elif format == "telegraf":
-            self.alert_telegraf()
-        self.alert_peers(hostname, interval, format, debug)
+            self.alert_telegraf(telegraf_file)
+        self.alert_peers(hostname, interval, format, telegraf_file, debug)
 
     def alert_collectd(self, hostname, interval):
         """
@@ -261,20 +265,12 @@ class NTPAlerter(object):
                     val /= 100
                 emit_metric(s, description, metrictype, val, fmt)
 
-    def alert_telegraf(self):
-        print("ntpmon ", end="")
-        telegraf_metrics = []
-        for metric in sorted(_telegraf_types.keys()):
-            if metric in self.metrics:
-                s = metric + "="
-                if _telegraf_types[metric] == "i":
-                    s += "%di" % (self.metrics[metric],)
-                else:
-                    s += "%.9f" % (self.metrics[metric],)
-                telegraf_metrics.append(s)
-        print(",".join(telegraf_metrics))
+    def alert_telegraf(self, telegraf_file: TextIOWrapper):
+        telegraf_metrics = {k: self.metrics[k] for k in sorted(_telegraf_types.keys()) if k in self.metrics}
+        output = line_protocol.to_line_protocol(telegraf_metrics, "ntpmon")
+        print(output, file=telegraf_file)
 
-    def alert_peers(self, hostname, interval, format, debug=False):
+    def alert_peers(self, hostname, interval, format, telegraf_file, debug=False):
         if debug and format == "prometheus":
             print("# TYPE ntpmon_peers gauge")
         for metric in _peer_types:
@@ -295,7 +291,12 @@ class NTPAlerter(object):
                 else:
                     self.set_prometheus_metric("ntpmon_peers", "NTP peer count", value, metric)
             elif format == "telegraf":
-                print("ntpmon_peers,peertype=%s count=%di" % (metric, value))
+                telegraf_metrics = {
+                    "count": value,
+                    "peertype": metric,
+                }
+                output = line_protocol.to_line_protocol(telegraf_metrics, "ntpmon_peers")
+                print(output, file=telegraf_file)
 
     def alert_nagios(self, checkobjs, debug):
         """
