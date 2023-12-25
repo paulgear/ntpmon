@@ -118,7 +118,7 @@ async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> 
         return
 
     implementation = None
-    logfile = None
+    logfile = args.logfile
     tailer = None
 
     while True:
