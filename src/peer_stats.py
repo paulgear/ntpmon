@@ -1,4 +1,5 @@
 
+# Extract and parse chronyd measurements and ntpd peerstats
 #
 # Copyright:    (c) 2016-2023 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
@@ -64,20 +65,7 @@ regex = re.compile(skiplines)
 # 20. Source of the local receive timestamp (D=daemon, K=kernel, H=hardware). [K]
 
 
-def parse_measurement(line: str) -> dict:
-    if regex.match(line):
-        return None
-    fields = line.split()
-    if len(fields) != 20:
-        return None
-    try:
-        return extract_fields(fields)
-    except Exception as e:
-        print(e, file=sys.stderr)
-        return None
-
-
-def extract_fields(f: list[str]) -> dict:
+def extract_chrony_measurements(f: list[str]) -> dict:
     return {
         # sorted by field position rather than name
         'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
@@ -87,7 +75,7 @@ def extract_fields(f: list[str]) -> dict:
         'duplicate': checkfail(f[5][0]),
         'bogus': checkfail(f[5][1]),
         'invalid': checkfail(f[5][2]),
-        'auth-fail': checkfail(f[6][0]),
+        'authentication-fail': checkfail(f[6][0]),
         'synchronized': int(f[6][1]),
         'bad-header': checkfail(f[6][2]),
         'exceeded-max-delay': checkfail(f[7][0]),
@@ -130,8 +118,7 @@ def extract_fields(f: list[str]) -> dict:
 # 13. The estimated or configured asymmetry of network jitter on the path to the source which was used to correct the measured offsets. The asymmetry can be between -0.5 and +0.5. A
 #     negative value means the delay of packets sent to the source is more variable than the delay of packets sent from the source back. [0.00, i.e. no correction for asymmetry]
 
-def parse_statistics(line: str) -> dict:
-    f = line.split()
+def extract_chrony_statistics(f: list[str]) -> dict:
     return {
         # sort by field position rather than name
         'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
@@ -167,8 +154,7 @@ def parse_statistics(line: str) -> dict:
 # 14. The maximum estimated error of the system clock in the interval since the previous update (in seconds). It includes the offset, remaining offset correction, root delay, and
 #     dispersion from the previous update with the dispersion which accumulated in the interval. [8.304e-03]
 
-def parse_tracking(line: str) -> dict:
-    f = line.split()
+def extract_chrony_tracking(f: list[str]) -> dict:
     return {
         # sort by field position rather than name
         'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
@@ -185,3 +171,73 @@ def parse_tracking(line: str) -> dict:
         'root-dispersion': float(f[12]),
         'max-error': float(f[13]),
     }
+
+
+# Ref: https://www.ntp.org/documentation/4.2.8-series/monopt/
+
+# 48773 	MJD 	date
+# 10847.650 	s 	time past midnight
+# 127.127.4.1 	IP 	source address
+# 9714 	hex 	status word
+# -0.001605376 	s 	clock offset
+# 0.000000000 	s 	roundtrip delay
+# 0.001424877 	s 	dispersion
+# 0.000958674 	s 	RMS jitter
+
+def extract_ntp_peerstats(f: list[str]) -> dict:
+    basefields = {
+        # sorted by field position rather than name
+        'datetime': datetime.datetime.fromtimestamp(mjd_to_timestamp(float(f[0]), float(f[1]))),
+        'source': f[2],
+        'offset': float(f[4]),
+        'delay': float(f[5]),
+        'dispersion': float(f[6]),
+        'jitter': float(f[7]),
+    }
+    basefields.update(extract_ntpd_status_word(f[3]))
+    return basefields
+
+
+def mjd_to_timestamp(day: float, time: float) -> float:
+    return (day-40587)*86400 + time
+
+
+select_field = {
+    0: 'invalid',
+    1: 'false',
+    2: 'excess',
+    3: 'outlier',
+    4: 'survivor',
+    5: 'backup',
+    6: 'sync',
+    7: 'pps',
+}
+
+# Ref: https://www.ntp.org/documentation/4.2.8-series/decode/#peer-status-word
+
+def extract_ntpd_status_word(status: str) -> dict:
+    status_word = int(status, 16) >> 8
+    return {
+        'broadcast': bool(status_word & 0x08),
+        'reachable': bool(status_word & 0x10),
+        'authenticated': bool(status_word & 0x20),
+        'authentication-enabled': bool(status_word & 0x40),
+        'persistent': bool(status_word & 0x80),
+        'type': select_field[status_word & 0x07],
+    }
+
+
+def parse_measurement(line: str) -> dict:
+    if regex.match(line):
+        return None
+    try:
+        fields = line.split()
+        if len(fields) == 20:
+            return extract_chrony_measurements(fields)
+        elif len(fields) == 8:
+            return extract_ntp_peerstats(fields)
+        else:
+            return None
+    except Exception as e:
+        print(e, file=sys.stderr)
+        return None

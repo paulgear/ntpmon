@@ -30,6 +30,8 @@ def format_fields(metrics: dict) -> str:
         f'{transform_identifier(field)}={metrics[field]}' for field in sorted(metrics.keys()) if field not in exclude_fields and type(metrics[field]) == float
     ] + [
         f'{transform_identifier(field)}={metrics[field]}i' for field in sorted(metrics.keys()) if field not in exclude_fields and type(metrics[field]) == int
+    ] + [
+        f'{transform_identifier(field)}={int(metrics[field])}i' for field in sorted(metrics.keys()) if field not in exclude_fields and type(metrics[field]) == bool
     ])
 
 

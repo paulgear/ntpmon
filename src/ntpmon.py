@@ -13,8 +13,8 @@ import time
 from io import TextIOWrapper
 
 import alert
-import chrony_stats
 import line_protocol
+import peer_stats
 import process
 
 from tailer import Tailer
@@ -144,9 +144,10 @@ async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> 
             continue
 
         for line in lines:
-            stats = chrony_stats.parse_measurement(line)
+            stats = peer_stats.parse_measurement(line)
             if stats is not None:
-                stats['type'] = find_type(stats['source'], checkobjs['peers'].peers)
+                if 'type' not in stats:
+                    stats['type'] = find_type(stats['source'], checkobjs['peers'].peers)
                 telegraf_line = line_protocol.to_line_protocol(stats, "ntpmon_peer")
                 print(telegraf_line, file=telegraf)
 
