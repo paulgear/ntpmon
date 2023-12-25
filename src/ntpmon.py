@@ -82,7 +82,10 @@ def get_time_until(interval):
     return interval - now % interval
 
 
+checkobjs = None
+
 async def alert_task(args: argparse.Namespace, hostname: str):
+    global checkobjs
     checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
     alerter = alert.NTPAlerter(checks)
     while True:
@@ -96,7 +99,24 @@ async def alert_task(args: argparse.Namespace, hostname: str):
         await asyncio.sleep(get_time_until(args.interval))
 
 
-async def peer_stats_task(telegraf: TextIOWrapper):
+def find_type(source: str, peerobjs: dict) -> str:
+    """Return the type of the given source based on the data already collected in peerobjs."""
+    # the order of these is significant, because pps is included in sync, and sync is included in survivor
+    try:
+        for type in ['pps', 'sync', 'invalid', 'false', 'excess', 'backup', 'outlier', 'survivor', 'unknown']:
+            if type not in peerobjs:
+                continue
+            if source in peerobjs[type]['address']:
+                return type
+    except Exception:
+        return 'UNKNOWN'
+
+
+async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> None:
+    if args.mode != "telegraf":
+        # FIXME: add prometheus & collectd implementation
+        return
+
     implementation = None
     logfile = None
     tailer = None
@@ -126,13 +146,14 @@ async def peer_stats_task(telegraf: TextIOWrapper):
         for line in lines:
             stats = chrony_stats.parse_measurement(line)
             if stats is not None:
+                stats['type'] = find_type(stats['source'], checkobjs['peers'].peers)
                 telegraf_line = line_protocol.to_line_protocol(stats, "ntpmon_peer")
                 print(telegraf_line, file=telegraf)
 
 
 async def start_tasks(args: argparse.Namespace, hostname: str, telegraf: TextIOWrapper) -> None:
     alert = asyncio.create_task(alert_task(args, hostname), name="alert")
-    stats = asyncio.create_task(peer_stats_task(telegraf), name="stats")
+    stats = asyncio.create_task(peer_stats_task(args, telegraf), name="stats")
     await asyncio.wait((alert, stats), return_when=asyncio.ALL_COMPLETED)
 
 

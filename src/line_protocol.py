@@ -51,6 +51,7 @@ tag_fields = [
     'rx-timestamp',
     'source',
     'tx-timestamp',
+    'type',
 ]
 
 exclude_tags = [
