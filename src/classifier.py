@@ -1,4 +1,3 @@
-
 #
 # Copyright:    (c) 2016-2023 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
@@ -52,16 +51,16 @@ def _is_list_numeric(numbers):
     return True
 
 
-def _is_list_ordered(numbers, order='asc'):
-    if order == 'desc':
-        last = float('inf')
+def _is_list_ordered(numbers, order="asc"):
+    if order == "desc":
+        last = float("inf")
         for x in numbers:
             if x > last:
                 return False
             last = x
     else:
         # order is ascending
-        last = float('-inf')
+        last = float("-inf")
         for x in numbers:
             if x < last:
                 return False
@@ -70,11 +69,11 @@ def _is_list_ordered(numbers, order='asc'):
 
 
 def _is_valid_metric_def(metric):
-    if metric[0] == 'low':
+    if metric[0] == "low":
         return len(metric) == 3 and _is_list_numeric(metric[1:]) and _is_list_ordered(metric[1:])
-    elif metric[0] == 'high':
-        return len(metric) == 3 and _is_list_numeric(metric[1:]) and _is_list_ordered(metric[1:], order='desc')
-    elif metric[0] == 'mid':
+    elif metric[0] == "high":
+        return len(metric) == 3 and _is_list_numeric(metric[1:]) and _is_list_ordered(metric[1:], order="desc")
+    elif metric[0] == "mid":
         return len(metric) == 5 and _is_list_numeric(metric[1:]) and _is_list_ordered(metric[1:])
     else:
         return False
@@ -82,81 +81,80 @@ def _is_valid_metric_def(metric):
 
 def _classify_low_metric(value, a, b):
     if value >= b:
-        return 'CRITICAL'
+        return "CRITICAL"
     elif value >= a:
-        return 'WARNING'
+        return "WARNING"
     else:
-        return 'OK'
+        return "OK"
 
 
 def _classify_high_metric(value, a, b):
     if value <= b:
-        return 'CRITICAL'
+        return "CRITICAL"
     elif value <= a:
-        return 'WARNING'
+        return "WARNING"
     else:
-        return 'OK'
+        return "OK"
 
 
 def _classify_mid_metric(value, a, b, c, d):
     if value > b and value < c:
-        return 'OK'
+        return "OK"
     elif value > a and value < d:
-        return 'WARNING'
+        return "WARNING"
     else:
-        return 'CRITICAL'
+        return "CRITICAL"
 
 
 def _classify(value, metricdef):
     try:
-        if metricdef[0] == 'low':
+        if metricdef[0] == "low":
             return _classify_low_metric(value, metricdef[1], metricdef[2])
-        elif metricdef[0] == 'high':
+        elif metricdef[0] == "high":
             return _classify_high_metric(value, metricdef[1], metricdef[2])
-        elif metricdef[0] == 'mid':
+        elif metricdef[0] == "mid":
             return _classify_mid_metric(value, metricdef[1], metricdef[2], metricdef[3], metricdef[4])
     except Exception:
         pass
-    return 'UNKNOWN'
+    return "UNKNOWN"
 
 
 def return_code_for_classification(classification):
-    if classification == 'OK':
+    if classification == "OK":
         return 0
-    elif classification == 'WARNING':
+    elif classification == "WARNING":
         return 1
-    elif classification == 'CRITICAL':
+    elif classification == "CRITICAL":
         return 2
-    elif classification == 'UNKNOWN':
+    elif classification == "UNKNOWN":
         return 3
     else:
         return 99
 
 
 class MetricClassifier(object):
-
     def __init__(self, metricdefs):
         self.metricdefs = {}
         for m in metricdefs:
             if _is_valid_metric_def(metricdefs[m]):
                 self.metricdefs[m] = metricdefs[m]
             else:
-                raise ValueError('Invalid metric definition for %s: %s' % (m, metricdefs[m]))
+                raise ValueError("Invalid metric definition for %s: %s" % (m, metricdefs[m]))
 
     @staticmethod
     def fmtstr(fmt):
-        if fmt == '%':
+        if fmt == "%":
             # a percentage
-            return '%.2f%%'
-        elif fmt in 'bcdeEfFgGnoxX':
+            return "%.2f%%"
+        elif fmt in "bcdeEfFgGnoxX":
             # usual python formatter
-            return '%' + fmt
-        elif len(fmt) > 1 and fmt[0] in '.0123456789':
+            return "%" + fmt
+        elif len(fmt) > 1 and fmt[0] in ".0123456789":
             # assume we've been given a valid format string with precision
-            return '%' + fmt
+            return "%" + fmt
         else:
             # force string otherwise
-            return '%s'
+            return "%s"
 
     def classify(self, metric, value):
         """
@@ -165,7 +163,7 @@ class MetricClassifier(object):
         if metric in self.metricdefs:
             return _classify(value, self.metricdefs[metric])
         else:
-            raise ValueError('Missing definition for metric %s' % metric)
+            raise ValueError("Missing definition for metric %s" % metric)
 
     def classify_metrics(self, metrics):
         """
@@ -178,7 +176,7 @@ class MetricClassifier(object):
             try:
                 results[m] = self.classify(m, metrics[m])
             except Exception:
-                results[m] = 'UNKNOWN'
+                results[m] = "UNKNOWN"
         self.results = results
         return results
 
@@ -194,7 +192,7 @@ class MetricClassifier(object):
                         metric = m
         except Exception as e:
             warnings.warn(e)
-            metric = 'Unknown'
+            metric = "Unknown"
             worst = 3
         return (metric, worst)
 
@@ -206,17 +204,17 @@ class MetricClassifier(object):
             return rc
 
     _formats = {
-        'low': '%s: %s is too high (%s) - %s be less than %s',
-        'mid': '%s: %s is out of range (%s) - %s be between %s',
-        'high': '%s: %s is too low (%s) - %s be greater than %s',
+        "low": "%s: %s is too high (%s) - %s be less than %s",
+        "mid": "%s: %s is out of range (%s) - %s be between %s",
+        "high": "%s: %s is too low (%s) - %s be greater than %s",
     }
 
     _must_should = {
-        'CRITICAL': 'must',
-        'WARNING': 'should',
+        "CRITICAL": "must",
+        "WARNING": "should",
     }
 
-    def message(self, metric, descr=None, fmt='g'):
+    def message(self, metric, descr=None, fmt="g"):
         # use base metric name if no long description provided
         if descr is None:
             descr = metric
@@ -230,7 +228,7 @@ class MetricClassifier(object):
             # WARNING or CRITICAL
             metrictype = self.metricdefs[metric][0]
             if metrictype not in MetricClassifier._formats:
-                raise ValueError('Unknown metric type %s' % metrictype)
+                raise ValueError("Unknown metric type %s" % metrictype)
             fmtargs = (
                 result,
                 descr,
@@ -241,26 +239,26 @@ class MetricClassifier(object):
             return MetricClassifier._formats[metrictype] % fmtargs
         else:
             # OK or UNKNOWN
-            return '%s: %s is %s' % (
+            return "%s: %s is %s" % (
                 result,
                 descr,
                 fmtstr % self.values[metric],
             )
 
     def limits(self, metrictype, metric, result, fmtstr):
-        if metrictype == 'mid':
+        if metrictype == "mid":
             # mid - WARNING is middle two values, CRITICAL is first & last
-            if result == 'CRITICAL':
+            if result == "CRITICAL":
                 low = fmtstr % self.metricdefs[metric][1]
                 high = fmtstr % self.metricdefs[metric][4]
             else:
                 low = fmtstr % self.metricdefs[metric][2]
                 high = fmtstr % self.metricdefs[metric][3]
-            return '%s and %s' % (low, high)
+            return "%s and %s" % (low, high)
         else:
             # high or low - WARNING is first value, CRITICAL second
-            if result == 'CRITICAL':
+            if result == "CRITICAL":
                 limit = fmtstr % self.metricdefs[metric][2]
             else:
                 limit = fmtstr % self.metricdefs[metric][1]
-            return '%s' % limit
+            return "%s" % limit

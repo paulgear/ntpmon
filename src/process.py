@@ -14,18 +14,18 @@ from readvar import NTPVars
 
 
 _logfiles = {
-    'chronyd': '/var/log/chrony/measurements.log',
-    'ntpd': '/var/log/ntpstats/peerstats',
+    "chronyd": "/var/log/chrony/measurements.log",
+    "ntpd": "/var/log/ntpstats/peerstats",
 }
 
 _progs = {
-    'chronyd': {
-        'peers': 'chronyc -c sources',
-        'vars': 'chronyc -c tracking',
+    "chronyd": {
+        "peers": "chronyc -c sources",
+        "vars": "chronyc -c tracking",
     },
-    'ntpd': {
-        'peers': 'ntpq -pn',
-        'vars': 'ntpq -nc readvar',
+    "ntpd": {
+        "peers": "ntpq -pn",
+        "vars": "ntpq -nc readvar",
     },
 }
 
@@ -42,11 +42,14 @@ def execute_subprocess(cmd, timeout, debug, errfatal):
     except subprocess.CalledProcessError as cpe:
         # FIXME: should be a metric rather than fatal error
         if errfatal:
-            fatal('%s returned %d: %s' % (
-                " ".join(cpe.cmd),
-                cpe.returncode,
-                cpe.stderr,
-            ))
+            fatal(
+                "%s returned %d: %s"
+                % (
+                    " ".join(cpe.cmd),
+                    cpe.returncode,
+                    cpe.stderr,
+                )
+            )
     except subprocess.TimeoutExpired as te:
         if debug:
             print(te)
@@ -104,7 +107,7 @@ def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
     if prog not in progs:
         return None
 
-    failmessage = '%s produced no output.  Please check that an NTP server is installed and running.'
+    failmessage = "%s produced no output.  Please check that an NTP server is installed and running."
 
     output = None
     cmd = progs[prog].split()
@@ -121,12 +124,12 @@ def execute(prog, timeout=30, debug=False, errfatal=False, implementation=None):
     else:
         if debug:
             print(output)
-            print('elapsed time: %.3f seconds' % (elapsed,))
-        return [output.split('\n'), elapsed]
+            print("elapsed time: %.3f seconds" % (elapsed,))
+        return [output.split("\n"), elapsed]
 
 
 def fatal(msg):
-    print('UNKNOWN: ' + msg, file=sys.stderr)
+    print("UNKNOWN: " + msg, file=sys.stderr)
     sys.exit(3)
 
 
@@ -140,34 +143,32 @@ def ntpchecks(checks, debug, implementation=None):
     if implementation not in _progs:
         implementation = detect_implementation()
 
-    if 'proc' in checks:
-        objs['proc'] = NTPProcess()
+    if "proc" in checks:
+        objs["proc"] = NTPProcess()
 
     if implementation is None:
         return objs
 
     for check in checks:
-        if ((check in ['offset', 'peers', 'reach', 'sync'])
-                and 'peers' not in objs):
-            (output, elapsed) = execute('peers', debug=debug, implementation=implementation)
-            objs['peers'] = NTPPeers(output, elapsed)
+        if (check in ["offset", "peers", "reach", "sync"]) and "peers" not in objs:
+            (output, elapsed) = execute("peers", debug=debug, implementation=implementation)
+            objs["peers"] = NTPPeers(output, elapsed)
             break
 
-    if 'vars' in checks:
-        (output, elapsed) = execute('vars', debug=debug, implementation=implementation)
-        objs['vars'] = NTPVars(output, elapsed)
+    if "vars" in checks:
+        (output, elapsed) = execute("vars", debug=debug, implementation=implementation)
+        objs["vars"] = NTPVars(output, elapsed)
 
     return objs
 
 
 class NTPProcess(object):
-
     def __init__(self, names=None):
         """
         Save which process names we're looking for, and the version of psutil.
         """
         if names is None:
-            self.names = ['chronyd', 'ntpd']
+            self.names = ["chronyd", "ntpd"]
         else:
             self.names = names
         # Check for old psutil per http://grodola.blogspot.com.au/2014/01/psutil-20-porting.html
@@ -205,20 +206,22 @@ class NTPProcess(object):
             return -1
 
     def getmetrics(self):
-        return {'runtime': self.getruntime()}
+        return {"runtime": self.getruntime()}
 
 
 def main():
     import pprint
+
     implementation = detect_implementation()
-    print('Running {}'.format(implementation))
+    print("Running {}".format(implementation))
     pprint.pprint(NTPProcess().getmetrics())
-    checks = ['offset', 'peers', 'proc', 'reach', 'sync', 'vars']
+    checks = ["offset", "peers", "proc", "reach", "sync", "vars"]
     checkobjs = ntpchecks(checks, debug=True, implementation=implementation)
     from alert import NTPAlerter
+
     alerter = NTPAlerter(checks)
-    alerter.alert(checkobjs, hostname=None, interval=0, format='telegraf')
+    alerter.alert(checkobjs, hostname=None, interval=0, format="telegraf")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

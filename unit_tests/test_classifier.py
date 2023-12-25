@@ -16,121 +16,114 @@ from classifier import (
 
 
 goodmetricdefs = {
-    'a': ('low', 0, 10),
-    'b': ('high', 10, 5),
-    'c': ('mid', -10, -5, 5, 10),
-    'd': ('high', 0, 0),
+    "a": ("low", 0, 10),
+    "b": ("high", 10, 5),
+    "c": ("mid", -10, -5, 5, 10),
+    "d": ("high", 0, 0),
 }
 
 okmetrics = (
     # low metric
-    ('a', float('-inf')),
-    ('a', -1000),
-    ('a', -10),
-    ('a', -1),
-    ('a', -0.000000001),
-
+    ("a", float("-inf")),
+    ("a", -1000),
+    ("a", -10),
+    ("a", -1),
+    ("a", -0.000000001),
     # high metric
-    ('b', float('inf')),
-    ('b', 1000),
-    ('b', 10.000000001),
-    ('d', 1000),
-    ('d', 10),
-    ('d', 1),
-    ('d', 0.000000001),
-
+    ("b", float("inf")),
+    ("b", 1000),
+    ("b", 10.000000001),
+    ("d", 1000),
+    ("d", 10),
+    ("d", 1),
+    ("d", 0.000000001),
     # mid metric
-    ('c', 0),
-    ('c', 1),
-    ('c', -1),
-    ('c', -4.999999999),
-    ('c', 4.999999999),
-
+    ("c", 0),
+    ("c", 1),
+    ("c", -1),
+    ("c", -4.999999999),
+    ("c", 4.999999999),
 )
 
 warnmetrics = (
     # low metric
-    ('a', 0),
-    ('a', 0.0000000001),
-    ('a', 1),
-    ('a', 5),
-    ('a', 9.9999999999),
-
+    ("a", 0),
+    ("a", 0.0000000001),
+    ("a", 1),
+    ("a", 5),
+    ("a", 9.9999999999),
     # high metric
-    ('b', 10),
-    ('b', 9.9999999999),
-    ('b', 5.0000000001),
+    ("b", 10),
+    ("b", 9.9999999999),
+    ("b", 5.0000000001),
     # no warn level for 'd' - only OK and CRITICAL
-
     # mid metric
-    ('c', -5),
-    ('c', 5),
-    ('c', -5.000000001),
-    ('c', 5.000000001),
-    ('c', -6),
-    ('c', 6),
-    ('c', -9),
-    ('c', 9),
-    ('c', -9.9999999999),
-    ('c', 9.9999999999),
+    ("c", -5),
+    ("c", 5),
+    ("c", -5.000000001),
+    ("c", 5.000000001),
+    ("c", -6),
+    ("c", 6),
+    ("c", -9),
+    ("c", 9),
+    ("c", -9.9999999999),
+    ("c", 9.9999999999),
 )
 
 criticalmetrics = (
     # low metric
-    ('a', 10),
-    ('a', 10.0000000001),
-    ('a', 100),
-    ('a', 343567),
-    ('a', float('inf')),
-
+    ("a", 10),
+    ("a", 10.0000000001),
+    ("a", 100),
+    ("a", 343567),
+    ("a", float("inf")),
     # high metric
-    ('b', 5),
-    ('b', 4.999999999),
-    ('b', 1),
-    ('b', 0.0000000001),
-    ('b', 0),
-    ('b', -1),
-    ('b', -100),
-    ('b', -100000),
-    ('d', 0),
-    ('d', -0.0000000001),
-    ('d', -1),
-    ('d', -100),
-
+    ("b", 5),
+    ("b", 4.999999999),
+    ("b", 1),
+    ("b", 0.0000000001),
+    ("b", 0),
+    ("b", -1),
+    ("b", -100),
+    ("b", -100000),
+    ("d", 0),
+    ("d", -0.0000000001),
+    ("d", -1),
+    ("d", -100),
     # mid metric
-    ('c', 10),
-    ('c', 10.0000000001),
-    ('c', 100),
-    ('c', 10000),
-    ('c', 343567),
-    ('c', float('inf')),
-    ('c', -10),
-    ('c', -10.0000000001),
-    ('c', -100),
-    ('c', -10000),
-    ('c', -343567),
-    ('c', float('-inf')),
+    ("c", 10),
+    ("c", 10.0000000001),
+    ("c", 100),
+    ("c", 10000),
+    ("c", 343567),
+    ("c", float("inf")),
+    ("c", -10),
+    ("c", -10.0000000001),
+    ("c", -100),
+    ("c", -10000),
+    ("c", -343567),
+    ("c", float("-inf")),
 )
 
 badmetricdefs = {
-    'a': ('low', 10, 0),
-    'b': ('high'),
-    'c': ('mid', -10, 5, -5, 10),
-    'd': ('high', 0, 10),
+    "a": ("low", 10, 0),
+    "b": ("high"),
+    "c": ("mid", -10, 5, -5, 10),
+    "d": ("high", 0, 10),
 }
 
 samplemetrics = {
-    'a': -10,
-    'b': 10,
-    'c': 1000.2436542,
-    'd': 'hello world!',
+    "a": -10,
+    "b": 10,
+    "c": 1000.2436542,
+    "d": "hello world!",
 }
 
 samplemetricresults = {
-    'a': 'OK',
-    'b': 'WARNING',
-    'c': 'CRITICAL',
-    'd': 'UNKNOWN',
+    "a": "OK",
+    "b": "WARNING",
+    "c": "CRITICAL",
+    "d": "UNKNOWN",
 }
 
 
@@ -140,13 +133,13 @@ class TestNTPPeers(unittest.TestCase):
     """
 
     def test_is_list_numeric_good(self):
-        l = [0, 3.14159, 'NaN', 1000, -342, 0x123, 0o377, '1000']
+        l = [0, 3.14159, "NaN", 1000, -342, 0x123, 0o377, "1000"]
         self.assertTrue(_is_list_numeric(l))
-        l = {'5678': 'a', '1234': 'c'}
+        l = {"5678": "a", "1234": "c"}
         self.assertTrue(_is_list_numeric(l))
 
     def test_is_list_numeric_bad(self):
-        l = ['0x0123abcdefghij', '0x138f', '3.14159.1', 'NaN', 1000, -342]
+        l = ["0x0123abcdefghij", "0x138f", "3.14159.1", "NaN", 1000, -342]
         self.assertFalse(_is_list_numeric(l))
 
     def test_is_list_numeric_empty(self):
@@ -156,19 +149,19 @@ class TestNTPPeers(unittest.TestCase):
     def test_is_list_numeric_wrong_type(self):
         self.assertFalse(_is_list_numeric(None))
         self.assertFalse(_is_list_numeric(True))
-        l = {'a': '5678', 'c': '1234'}
+        l = {"a": "5678", "c": "1234"}
         self.assertFalse(_is_list_numeric(l))
 
     def test_is_list_ordered_good(self):
         l = [0, 1, 2, 3, 4, 5]
         self.assertTrue(_is_list_ordered(l))
-        l = [float('inf'), 110, 101, 29, 3, 0.0000000001, -500000]
-        self.assertTrue(_is_list_ordered(l, order='desc'))
-        l = [float('-inf')]
+        l = [float("inf"), 110, 101, 29, 3, 0.0000000001, -500000]
+        self.assertTrue(_is_list_ordered(l, order="desc"))
+        l = [float("-inf")]
         self.assertTrue(_is_list_ordered(l))
         l.append(0)
         self.assertTrue(_is_list_ordered(l))
-        l.append(float('inf'))
+        l.append(float("inf"))
         self.assertTrue(_is_list_ordered(l))
         l = [0]
         self.assertTrue(_is_list_ordered(l))
@@ -178,20 +171,20 @@ class TestNTPPeers(unittest.TestCase):
     def test_is_list_ordered_bad(self):
         l = [0, 1, 2, 5, 4, 3]
         self.assertFalse(_is_list_ordered(l))
-        self.assertFalse(_is_list_ordered(l, order='desc'))
+        self.assertFalse(_is_list_ordered(l, order="desc"))
 
-        l = [110, 101, 29, 3, float('inf'), 0.0000000001, -500000]
+        l = [110, 101, 29, 3, float("inf"), 0.0000000001, -500000]
         self.assertFalse(_is_list_ordered(l))
-        self.assertFalse(_is_list_ordered(l, order='desc'))
+        self.assertFalse(_is_list_ordered(l, order="desc"))
 
-        l = [0, float('-inf'), float('inf')]
+        l = [0, float("-inf"), float("inf")]
         self.assertFalse(_is_list_ordered(l))
-        self.assertFalse(_is_list_ordered(l, order='desc'))
+        self.assertFalse(_is_list_ordered(l, order="desc"))
 
         l = [1, 0]
         self.assertFalse(_is_list_ordered(l))
         l = [0, 1]
-        self.assertFalse(_is_list_ordered(l, order='desc'))
+        self.assertFalse(_is_list_ordered(l, order="desc"))
 
     def test_is_valid_metric_def_good(self):
         for m in goodmetricdefs:
@@ -210,24 +203,24 @@ class TestNTPPeers(unittest.TestCase):
 
     def test_classify_ok_metrics(self):
         for m in okmetrics:
-            self.assertEqual(_classify(m[1], goodmetricdefs[m[0]]), 'OK')
+            self.assertEqual(_classify(m[1], goodmetricdefs[m[0]]), "OK")
 
     def test_classify_warn_metrics(self):
         for m in warnmetrics:
-            self.assertEqual(_classify(m[1], goodmetricdefs[m[0]]), 'WARNING')
+            self.assertEqual(_classify(m[1], goodmetricdefs[m[0]]), "WARNING")
 
     def test_classify_critical_metrics(self):
         for m in criticalmetrics:
-            self.assertEqual(_classify(m[1], goodmetricdefs[m[0]]), 'CRITICAL')
+            self.assertEqual(_classify(m[1], goodmetricdefs[m[0]]), "CRITICAL")
 
     def test_classify_single_metric(self):
         mc = MetricClassifier(goodmetricdefs)
         for m in okmetrics:
-            self.assertEqual(mc.classify(m[0], m[1]), 'OK')
+            self.assertEqual(mc.classify(m[0], m[1]), "OK")
         for m in warnmetrics:
-            self.assertEqual(mc.classify(m[0], m[1]), 'WARNING')
+            self.assertEqual(mc.classify(m[0], m[1]), "WARNING")
         for m in criticalmetrics:
-            self.assertEqual(mc.classify(m[0], m[1]), 'CRITICAL')
+            self.assertEqual(mc.classify(m[0], m[1]), "CRITICAL")
 
     def test_classify_multiple_metrics(self):
         mc = MetricClassifier(goodmetricdefs)
@@ -235,15 +228,15 @@ class TestNTPPeers(unittest.TestCase):
 
     def test_return_code_for_classification(self):
         returncodes = {
-            'OK': 0,
-            'WARNING': 1,
-            'WARN': 99,
-            'warning': 99,
-            'CRITICAL': 2,
-            'CRIT': 99,
-            'error': 99,
-            'UNKNOWN': 3,
-            'asdf': 99,
+            "OK": 0,
+            "WARNING": 1,
+            "WARN": 99,
+            "warning": 99,
+            "CRITICAL": 2,
+            "CRIT": 99,
+            "error": 99,
+            "UNKNOWN": 3,
+            "asdf": 99,
             None: 99,
         }
         for r in returncodes:
@@ -252,7 +245,7 @@ class TestNTPPeers(unittest.TestCase):
     def test_classify_process(self):
         mc = MetricClassifier(goodmetricdefs)
         self.assertEqual(mc.classify_metrics(samplemetrics), samplemetricresults)
-        self.assertEqual(mc.worst_metric(samplemetrics), ('d', 3))
+        self.assertEqual(mc.worst_metric(samplemetrics), ("d", 3))
         self.assertEqual(mc.return_code(samplemetrics), 3)
         self.assertEqual(mc.return_code(samplemetrics, unknown_as_critical=True), 2)
 

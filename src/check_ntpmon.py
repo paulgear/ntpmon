@@ -12,45 +12,49 @@ from process import ntpchecks
 
 
 def get_args(checks):
-    parser = argparse.ArgumentParser(description='NTPmon - Nagios check')
+    parser = argparse.ArgumentParser(description="NTPmon - Nagios check")
     parser.add_argument(
-        '--check',
+        "--check",
         choices=checks,
-        nargs='*',
-        help='Select checks to run; if omitted, run all checks.')
+        nargs="*",
+        help="Select checks to run; if omitted, run all checks.",
+    )
     parser.add_argument(
-        '--debug',
-        action='store_true',
-        help='Include command output and internal state dump along with check results.')
+        "--debug",
+        action="store_true",
+        help="Include command output and internal state dump along with check results.",
+    )
     parser.add_argument(
-        '--run-time',
+        "--run-time",
         default=512,
         type=int,
-        help='Time in seconds (default: 512) for which to always return OK after NTP daemon startup.')
+        help="Time in seconds (default: 512) for which to always return OK after NTP daemon startup.",
+    )
     parser.add_argument(
-        '--test',
-        action='store_true',
-        help='Obtain peer stats on standard input instead of from running daemon.')
+        "--test",
+        action="store_true",
+        help="Obtain peer stats on standard input instead of from running daemon.",
+    )
     args = parser.parse_args()
     return args
 
 
 def main():
-    validchecks = ['proc', 'offset', 'peers', 'reach', 'reachability', 'sync', 'vars']
-    defaultchecks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
+    validchecks = ["proc", "offset", "peers", "reach", "reachability", "sync", "vars"]
+    defaultchecks = ["proc", "offset", "peers", "reach", "sync", "vars"]
     args = get_args(validchecks)
     if args.check is None or len(args.check) < 1:
         args.check = defaultchecks
     else:
         # turn 'reachability' into 'reach' for backwards compatibility
         for i in range(0, len(args.check)):
-            if args.check[i] == 'reachability':
-                args.check[i] = 'reach'
+            if args.check[i] == "reachability":
+                args.check[i] = "reach"
 
     if args.test:
         # read from standard input in test mode
         checkobjs = {
-            'peers': NTPPeers([x.rstrip() for x in sys.stdin.readlines()]),
+            "peers": NTPPeers([x.rstrip() for x in sys.stdin.readlines()]),
         }
     else:
         # run the checks
@@ -62,5 +66,5 @@ def main():
     sys.exit(alerter.return_code())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

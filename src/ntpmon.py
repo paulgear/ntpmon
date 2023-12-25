@@ -24,44 +24,44 @@ debug = sys.stdout.isatty()
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='NTPmon - NTP metrics monitor')
+    parser = argparse.ArgumentParser(description="NTPmon - NTP metrics monitor")
     parser.add_argument(
-        '--mode',
+        "--mode",
         type=str,
         choices=[
-            'collectd',
-            'prometheus',
-            'telegraf',
+            "collectd",
+            "prometheus",
+            "telegraf",
         ],
-        help='Collectd is the default if collectd environment variables are detected.',
+        help="Collectd is the default if collectd environment variables are detected.",
     )
     parser.add_argument(
-        '--connect',
+        "--connect",
         type=str,
-        help='Connect string (in host:port format) to use when sending data to telegraf (default: 127.0.0.1:8094)',
-        default='127.0.0.1:8094',
+        help="Connect string (in host:port format) to use when sending data to telegraf (default: 127.0.0.1:8094)",
+        default="127.0.0.1:8094",
     )
     parser.add_argument(
-        '--interval',
+        "--interval",
         type=int,
-        help='How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, '
-             'or 60 seconds if COLLECTD_INTERVAL is not set).',
+        help="How often to report statistics (default: the value of the COLLECTD_INTERVAL environment variable, "
+        "or 60 seconds if COLLECTD_INTERVAL is not set).",
     )
     parser.add_argument(
-        '--listen-address',
+        "--listen-address",
         type=str,
-        help='IPv4/IPv6 address on which to listen when acting as a prometheus exporter (default: 127.0.0.1)',
-        default='127.0.0.1',
+        help="IPv4/IPv6 address on which to listen when acting as a prometheus exporter (default: 127.0.0.1)",
+        default="127.0.0.1",
     )
     parser.add_argument(
-        '--logfile',
+        "--logfile",
         type=str,
-        help='Log file to follow for peer statistics, if different from the default',
+        help="Log file to follow for peer statistics, if different from the default",
     )
     parser.add_argument(
-        '--port',
+        "--port",
         type=int,
-        help='TCP port on which to listen when acting as a prometheus exporter (default: 9648)',
+        help="TCP port on which to listen when acting as a prometheus exporter (default: 9648)",
         default=9648,
     )
     args = parser.parse_args()
@@ -70,11 +70,11 @@ def get_args():
 
 def get_telegraf_file(connect: str) -> TextIOWrapper:
     """Return a TextIOWrapper for writing data to telegraf"""
-    (host, port) = connect.split(':')
+    (host, port) = connect.split(":")
     port = int(port)
     s = socket.socket()
     s.connect((host, port))
-    return s.makefile(mode='w')
+    return s.makefile(mode="w")
 
 
 def get_time_until(interval):
@@ -84,9 +84,10 @@ def get_time_until(interval):
 
 checkobjs = None
 
+
 async def alert_task(args: argparse.Namespace, hostname: str):
     global checkobjs
-    checks = ['proc', 'offset', 'peers', 'reach', 'sync', 'vars']
+    checks = ["proc", "offset", "peers", "reach", "sync", "vars"]
     alerter = alert.NTPAlerter(checks)
     while True:
         implementation = process.get_implementation()
@@ -103,13 +104,13 @@ def find_type(source: str, peerobjs: dict) -> str:
     """Return the type of the given source based on the data already collected in peerobjs."""
     # the order of these is significant, because pps is included in sync, and sync is included in survivor
     try:
-        for type in ['pps', 'sync', 'invalid', 'false', 'excess', 'backup', 'outlier', 'survivor', 'unknown']:
+        for type in ["pps", "sync", "invalid", "false", "excess", "backup", "outlier", "survivor", "unknown"]:
             if type not in peerobjs:
                 continue
-            if source in peerobjs[type]['address']:
+            if source in peerobjs[type]["address"]:
                 return type
     except Exception:
-        return 'UNKNOWN'
+        return "UNKNOWN"
 
 
 async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> None:
@@ -146,8 +147,8 @@ async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> 
         for line in lines:
             stats = peer_stats.parse_measurement(line)
             if stats is not None:
-                if 'type' not in stats:
-                    stats['type'] = find_type(stats['source'], checkobjs['peers'].peers)
+                if "type" not in stats:
+                    stats["type"] = find_type(stats["source"], checkobjs["peers"].peers)
                 telegraf_line = line_protocol.to_line_protocol(stats, "ntpmon_peer")
                 print(telegraf_line, file=telegraf)
 
@@ -161,27 +162,28 @@ async def start_tasks(args: argparse.Namespace, hostname: str, telegraf: TextIOW
 def main():
     args = get_args()
 
-    if 'COLLECTD_HOSTNAME' in os.environ:
-        args.mode = 'collectd'
-        hostname = os.environ['COLLECTD_HOSTNAME']
+    if "COLLECTD_HOSTNAME" in os.environ:
+        args.mode = "collectd"
+        hostname = os.environ["COLLECTD_HOSTNAME"]
     else:
         hostname = socket.getfqdn()
 
-    if 'COLLECTD_INTERVAL' in os.environ:
-        args.mode = 'collectd'
+    if "COLLECTD_INTERVAL" in os.environ:
+        args.mode = "collectd"
         if args.interval is None:
-            args.interval = float(os.environ['COLLECTD_INTERVAL'])
+            args.interval = float(os.environ["COLLECTD_INTERVAL"])
 
     if args.interval is None:
         args.interval = 60
 
     if not debug:
-        if args.mode == 'telegraf':
+        if args.mode == "telegraf":
             telegraf_file = get_telegraf_file(args.connect)
             # FIXME: use the file rather than relying on the redirect
             sys.stdout = telegraf_file
-        elif args.mode == 'prometheus':
+        elif args.mode == "prometheus":
             import prometheus_client
+
             prometheus_client.start_http_server(addr=args.listen_address, port=args.port)
     else:
         telegraf_file = sys.stdout
@@ -189,5 +191,5 @@ def main():
     asyncio.run(start_tasks(args, hostname, telegraf_file))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

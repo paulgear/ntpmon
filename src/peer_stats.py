@@ -1,4 +1,3 @@
-
 # Extract and parse chronyd measurements and ntpd peerstats
 #
 # Copyright:    (c) 2016-2023 Paul D. Gear
@@ -10,32 +9,32 @@ import sys
 
 
 leapcodes = {
-    'N': 0,
-    '+': 1,
-    '-': 2,
-    '?': 3,
+    "N": 0,
+    "+": 1,
+    "-": 2,
+    "?": 3,
 }
 
 modes = {
-    '1': 'active peer',
-    '2': 'passive peer',
-    '4': 'server',
+    "1": "active peer",
+    "2": "passive peer",
+    "4": "server",
 }
 
 timestamp_sources = {
-    'D': 'daemon',
-    'H': 'hardware',
-    'K': 'kernel',
+    "D": "daemon",
+    "H": "hardware",
+    "K": "kernel",
 }
 
 
 def checkfail(test: str) -> int:
     """Reverse the polarity of the tests so that 1 asserts the error.
     This is to make it more natural to write queries asserting, e.g. that a packet is a duplicate."""
-    return 1 if test == '0' else 0
+    return 1 if test == "0" else 0
 
 
-skiplines = r'^===|^ *Date'
+skiplines = r"^===|^ *Date"
 regex = re.compile(skiplines)
 
 
@@ -68,33 +67,33 @@ regex = re.compile(skiplines)
 def extract_chrony_measurements(f: list[str]) -> dict:
     return {
         # sorted by field position rather than name
-        'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
-        'source': f[2],
-        'leap': leapcodes[f[3]],
-        'stratum': int(f[4]),
-        'duplicate': checkfail(f[5][0]),
-        'bogus': checkfail(f[5][1]),
-        'invalid': checkfail(f[5][2]),
-        'authentication-fail': checkfail(f[6][0]),
-        'synchronized': int(f[6][1]),
-        'bad-header': checkfail(f[6][2]),
-        'exceeded-max-delay': checkfail(f[7][0]),
-        'exceeded-max-delay-ratio': checkfail(f[7][1]),
-        'exceeded-max-delay-dev-ratio': checkfail(f[7][2]),
-        'sync-loop': checkfail(f[7][3]),
-        'local-poll': int(f[8]),
-        'remote-poll': int(f[9]),
-        'score': float(f[10]),
-        'offset': float(f[11]),
-        'delay': float(f[12]),
-        'dispersion': float(f[13]),
-        'root-delay': float(f[14]),
-        'root-dispersion': float(f[15]),
-        'refid': f[16],
-        'mode': modes.get(f[17][0], "UNKNOWN"),
-        'interleaved': 1 if f[17][1] == 'I' else 0,
-        'tx-timestamp': timestamp_sources.get(f[18], "UNKNOWN"),
-        'rx-timestamp': timestamp_sources.get(f[19], "UNKNOWN"),
+        "datetime": datetime.datetime.fromisoformat("+".join((f[0], f[1], "00:00"))),
+        "source": f[2],
+        "leap": leapcodes[f[3]],
+        "stratum": int(f[4]),
+        "duplicate": checkfail(f[5][0]),
+        "bogus": checkfail(f[5][1]),
+        "invalid": checkfail(f[5][2]),
+        "authentication-fail": checkfail(f[6][0]),
+        "synchronized": int(f[6][1]),
+        "bad-header": checkfail(f[6][2]),
+        "exceeded-max-delay": checkfail(f[7][0]),
+        "exceeded-max-delay-ratio": checkfail(f[7][1]),
+        "exceeded-max-delay-dev-ratio": checkfail(f[7][2]),
+        "sync-loop": checkfail(f[7][3]),
+        "local-poll": int(f[8]),
+        "remote-poll": int(f[9]),
+        "score": float(f[10]),
+        "offset": float(f[11]),
+        "delay": float(f[12]),
+        "dispersion": float(f[13]),
+        "root-delay": float(f[14]),
+        "root-dispersion": float(f[15]),
+        "refid": f[16],
+        "mode": modes.get(f[17][0], "UNKNOWN"),
+        "interleaved": 1 if f[17][1] == "I" else 0,
+        "tx-timestamp": timestamp_sources.get(f[18], "UNKNOWN"),
+        "rx-timestamp": timestamp_sources.get(f[19], "UNKNOWN"),
     }
 
 
@@ -118,21 +117,22 @@ def extract_chrony_measurements(f: list[str]) -> dict:
 # 13. The estimated or configured asymmetry of network jitter on the path to the source which was used to correct the measured offsets. The asymmetry can be between -0.5 and +0.5. A
 #     negative value means the delay of packets sent to the source is more variable than the delay of packets sent from the source back. [0.00, i.e. no correction for asymmetry]
 
+
 def extract_chrony_statistics(f: list[str]) -> dict:
     return {
         # sort by field position rather than name
-        'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
-        'source': f[2],
-        'stdev': float(f[3]),
-        'offset': float(f[4]),
-        'stdev-est': float(f[5]),
-        'skew': float(f[6]),
-        'freq': float(f[7]),
-        'stress': float(f[8]),
-        'samples': int(f[9]),
-        'begin-sample': int(f[10]),
-        'runs': int(f[11]),
-        'asymmetry': float(f[12]),
+        "datetime": datetime.datetime.fromisoformat("+".join((f[0], f[1], "00:00"))),
+        "source": f[2],
+        "stdev": float(f[3]),
+        "offset": float(f[4]),
+        "stdev-est": float(f[5]),
+        "skew": float(f[6]),
+        "freq": float(f[7]),
+        "stress": float(f[8]),
+        "samples": int(f[9]),
+        "begin-sample": int(f[10]),
+        "runs": int(f[11]),
+        "asymmetry": float(f[12]),
     }
 
 
@@ -154,22 +154,23 @@ def extract_chrony_statistics(f: list[str]) -> dict:
 # 14. The maximum estimated error of the system clock in the interval since the previous update (in seconds). It includes the offset, remaining offset correction, root delay, and
 #     dispersion from the previous update with the dispersion which accumulated in the interval. [8.304e-03]
 
+
 def extract_chrony_tracking(f: list[str]) -> dict:
     return {
         # sort by field position rather than name
-        'datetime': datetime.datetime.fromisoformat('+'.join((f[0], f[1], '00:00'))),
-        'source': f[2],
-        'stratum': int(f[3]),
-        'freq': float(f[4]),
-        'skew': float(f[5]),
-        'offset': float(f[6]),
-        'leap': leapcodes.get(f[7], -1),
-        'num-combined': int(f[8]),
-        'stdev': float(f[9]),
-        'remaining-correction': float(f[10]),
-        'root-delay': float(f[11]),
-        'root-dispersion': float(f[12]),
-        'max-error': float(f[13]),
+        "datetime": datetime.datetime.fromisoformat("+".join((f[0], f[1], "00:00"))),
+        "source": f[2],
+        "stratum": int(f[3]),
+        "freq": float(f[4]),
+        "skew": float(f[5]),
+        "offset": float(f[6]),
+        "leap": leapcodes.get(f[7], -1),
+        "num-combined": int(f[8]),
+        "stdev": float(f[9]),
+        "remaining-correction": float(f[10]),
+        "root-delay": float(f[11]),
+        "root-dispersion": float(f[12]),
+        "max-error": float(f[13]),
     }
 
 
@@ -184,46 +185,48 @@ def extract_chrony_tracking(f: list[str]) -> dict:
 # 0.001424877 	s 	dispersion
 # 0.000958674 	s 	RMS jitter
 
+
 def extract_ntp_peerstats(f: list[str]) -> dict:
     basefields = {
         # sorted by field position rather than name
-        'datetime': datetime.datetime.fromtimestamp(mjd_to_timestamp(float(f[0]), float(f[1]))),
-        'source': f[2],
-        'offset': float(f[4]),
-        'delay': float(f[5]),
-        'dispersion': float(f[6]),
-        'jitter': float(f[7]),
+        "datetime": datetime.datetime.fromtimestamp(mjd_to_timestamp(float(f[0]), float(f[1]))),
+        "source": f[2],
+        "offset": float(f[4]),
+        "delay": float(f[5]),
+        "dispersion": float(f[6]),
+        "jitter": float(f[7]),
     }
     basefields.update(extract_ntpd_status_word(f[3]))
     return basefields
 
 
 def mjd_to_timestamp(day: float, time: float) -> float:
-    return (day-40587)*86400 + time
+    return (day - 40587) * 86400 + time
 
 
 select_field = {
-    0: 'invalid',
-    1: 'false',
-    2: 'excess',
-    3: 'outlier',
-    4: 'survivor',
-    5: 'backup',
-    6: 'sync',
-    7: 'pps',
+    0: "invalid",
+    1: "false",
+    2: "excess",
+    3: "outlier",
+    4: "survivor",
+    5: "backup",
+    6: "sync",
+    7: "pps",
 }
 
 # Ref: https://www.ntp.org/documentation/4.2.8-series/decode/#peer-status-word
 
+
 def extract_ntpd_status_word(status: str) -> dict:
     status_word = int(status, 16) >> 8
     return {
-        'broadcast': bool(status_word & 0x08),
-        'reachable': bool(status_word & 0x10),
-        'authenticated': bool(status_word & 0x20),
-        'authentication-enabled': bool(status_word & 0x40),
-        'persistent': bool(status_word & 0x80),
-        'type': select_field[status_word & 0x07],
+        "broadcast": bool(status_word & 0x08),
+        "reachable": bool(status_word & 0x10),
+        "authenticated": bool(status_word & 0x20),
+        "authentication-enabled": bool(status_word & 0x40),
+        "persistent": bool(status_word & 0x80),
+        "type": select_field[status_word & 0x07],
     }
 
 

@@ -10,11 +10,11 @@ import os
 import sys
 
 varnames = [
-    'BINDIR',
-    'CONFDIR',
-    'GROUP',
-    'NAME',
-    'USER',
+    "BINDIR",
+    "CONFDIR",
+    "GROUP",
+    "NAME",
+    "USER",
 ]
 
 envvars = {x: os.environ[x] for x in varnames}
