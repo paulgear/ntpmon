@@ -37,7 +37,6 @@ class Tailer:
             stat = os.stat(self.file.fileno())
             self.st_ino = stat.st_ino
             self.st_dev = stat.st_dev
-            print(f"Opened, {self.filename=} {self.pos=} {self.st_ino=} {self.st_dev=}", file=sys.stderr)
         except OSError:
             self.clear()
         finally:
