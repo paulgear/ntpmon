@@ -12,16 +12,22 @@ SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
 VERSION=2.1.0
 
+TESTS=\
+  unit_tests/test_peer_stats.py \
+  unit_tests/test_tailer.py \
+  unit_tests/test_classifier.py \
+  unit_tests/test_peers.py
+
 test: pytest datatest
 
 pytest:
-	PYTHONPATH=./src python3 -m unittest -b unit_tests/test_classifier.py unit_tests/test_peers.py
+	PYTHONPATH=$(PWD)/src python3 -m pytest $(TESTS)
 
 datatest:
 	PYTHONPATH=./src ./testdata/testdata.sh
 
 format:
-	black --line-length=128 --target-version=py39 .
+	black --line-length=128 --target-version=py39 src/ unit_tests/
 
 push:
 	git push github

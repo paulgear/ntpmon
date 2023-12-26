@@ -1,13 +1,5 @@
 # NTPmon
 
-Copyright (c) 2015-2023 Paul D. Gear <https://libertysys.com.au/>
-
-Juju layer copyright (c) 2017-2018 Canonical Ltd <https://charmhub.io/ntp>
-
-## License
-
-GPLv3 - see COPYING.txt for details
-
 ## Introduction
 
 NTPmon is a program which is designed to report on essential health metrics for
@@ -15,6 +7,24 @@ NTP.  It provides a Nagios check which can be used with many alerting systems,
 including support for Nagios performance data.  NTPmon can also run as a daemon
 for sending metrics to collectd, prometheus, or telegraf.  It supports both
 `ntpd` and `chronyd`.
+
+## Copyright
+
+Copyright (c) 2015-2023 Paul D. Gear <https://libertysys.com.au/>
+
+## License
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program.  If not, see <https://www.gnu.org/licenses/agpl.html>.
 
 ## Installation
 
@@ -84,14 +94,6 @@ Is the clock offset from its sync peer (or other peers, if the sync peer is not
 available) acceptable?  Return CRITICAL for 50 milliseconds or more average
 difference, WARNING for 10 ms or more average difference, and OK for anything
 less.
-
-#### traceloop
-
-Is there a sync loop between the local server and the stratum 1 servers? If so,
-return CRITICAL; for anything other than a loop (including a timeout), return
-OK.  Most public NTP servers do not support tracing, so using this produces
-additional NTP traffic which is not useful in most cases. Trace loop detection
-is deprecated, disabled by default, and is not supported for prometheus.
 
 ### System metrics
 

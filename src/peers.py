@@ -1,21 +1,7 @@
-
+#!/usr/bin/env python3
 #
-# Copyright:    (c) 2016 Paul D. Gear
-# License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# You should have received a copy of the GNU General Public License along with
-# this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# Copyright:    (c) 2016-2023 Paul D. Gear
+# License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 """
 Parse 'ntpq -pn' or 'chronyc -c sources' output and extract metrics.
@@ -27,8 +13,7 @@ import statistics
 import sys
 
 
-class NTPPeers():
-
+class NTPPeers:
     @staticmethod
     def getmean(l):
         """
@@ -37,7 +22,7 @@ class NTPPeers():
         if len(l) > 0:
             return statistics.mean(l)
         else:
-            return float('nan')
+            return float("nan")
 
     @staticmethod
     def getstdev(l, mean):
@@ -47,20 +32,20 @@ class NTPPeers():
         if len(l) > 0:
             return statistics.pstdev(l, mean)
         else:
-            return float('nan')
+            return float("nan")
 
     @staticmethod
     def time2seconds(t):
         """
         Return the number of seconds represented by the time string.
         """
-        if t[-1:] == 'y':
+        if t[-1:] == "y":
             return int(t[:-1]) * 86400 * 365.25
-        elif t[-1:] == 'd':
+        elif t[-1:] == "d":
             return int(t[:-1]) * 86400
-        elif t[-1:] == 'h':
+        elif t[-1:] == "h":
             return int(t[:-1]) * 3600
-        elif t[-1:] == 'm':
+        elif t[-1:] == "m":
             return int(t[:-1]) * 60
         else:
             return int(t)
@@ -74,7 +59,7 @@ class NTPPeers():
             squares = [x ** 2 for x in l]
             return math.sqrt(statistics.mean(squares))
         else:
-            return float('nan')
+            return float("nan")
 
     """
     List of peer types by tally code
@@ -84,16 +69,16 @@ class NTPPeers():
      - http://psp2.ntp.org/bin/view/Support/TroubleshootingNTP#Section_9.4.
     """
     peertypes = {
-        'invalid': ' ~?',  # includes chrony's two different classifications
-        'false': 'x',
-        'excess': '.',
-        'backup': '#',
-        'outlier': '-',
-        'survivor': '+',
-        'sync': '*',
-        'pps': 'o',
-        'unknown': '',
-        'all': '',
+        "invalid": " ~?",  # includes chrony's two different classifications
+        "false": "x",
+        "excess": ".",
+        "backup": "#",
+        "outlier": "-",
+        "survivor": "+",
+        "sync": "*",
+        "pps": "o",
+        "unknown": "",
+        "all": "",
     }
 
     @classmethod
@@ -105,12 +90,12 @@ class NTPPeers():
         for peertype in cls.peertypes:
             if s in cls.peertypes[peertype]:
                 return peertype
-        return 'unknown'
+        return "unknown"
 
     noiselines = (
-        r'^=*$',    # matches blank lines as well as headers
-        r'remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+',
-        r'No association ID.s returned',
+        r"^=*$",  # matches blank lines as well as headers
+        r"remote\s+refid\s+st\s+t\s+when\s+poll\s+reach\s+",
+        r"No association ID.s returned",
     )
 
     @classmethod
@@ -133,7 +118,7 @@ class NTPPeers():
             return None
 
         # 10 comma-separated fields are chronyc
-        fields = line.split(',')
+        fields = line.split(",")
         if len(fields) == 10:
             fields = cls.chrony_peerline(fields)
             if fields:
@@ -159,24 +144,24 @@ class NTPPeers():
         if len(fields) != 10:
             return None
         return {
-            'mode': fields[0],
-            'tally': fields[1],
-            'address': fields[2],
-            'stratum': fields[3],
-            'poll_pow2': fields[4],
-            'reach': fields[5],
-            'when': fields[6],
-            'moffset': fields[7],
-            'offset': fields[8],
-            'error': fields[9],
+            "mode": fields[0],
+            "tally": fields[1],
+            "address": fields[2],
+            "stratum": fields[3],
+            "poll_pow2": fields[4],
+            "reach": fields[5],
+            "when": fields[6],
+            "moffset": fields[7],
+            "offset": fields[8],
+            "error": fields[9],
         }
 
     ignorerefids = (
-        '.INIT.',
-        '.LOCL.',
-        '.POOL.',
-        '.STEP.',
-        '.XFAC.',
+        ".INIT.",
+        ".LOCL.",
+        ".POOL.",
+        ".STEP.",
+        ".XFAC.",
     )
 
     @classmethod
@@ -187,35 +172,35 @@ class NTPPeers():
         if fields[1] in cls.ignorerefids:
             return None
         return {
-            'tally': tally,
-            'address': fields[0],
-            'refid': fields[1],
-            'stratum': fields[2],
-            'mode': fields[3],
-            'when': fields[4],
-            'poll': fields[5],
-            'reach': fields[6],
-            'delay': fields[7],
-            'offset': fields[8],
-            'jitter': fields[9],
+            "tally": tally,
+            "address": fields[0],
+            "refid": fields[1],
+            "stratum": fields[2],
+            "mode": fields[3],
+            "when": fields[4],
+            "poll": fields[5],
+            "reach": fields[6],
+            "delay": fields[7],
+            "offset": fields[8],
+            "jitter": fields[9],
         }
 
     @classmethod
     def validate_tally(cls, fields):
-        peertype = cls.tallytotype(fields['tally'])
-        if peertype == 'unknown':
+        peertype = cls.tallytotype(fields["tally"])
+        if peertype == "unknown":
             # Unknown peer tally code
             return False
         else:
-            fields['tally'] = peertype
+            fields["tally"] = peertype
         return True
 
     @classmethod
     def validate_stratum(cls, fields):
         # stratum should be an integer between 0 & 15
         try:
-            fields['stratum'] = int(fields['stratum'])
-            if fields['stratum'] < 0 or fields['stratum'] > 15:
+            fields["stratum"] = int(fields["stratum"])
+            if fields["stratum"] < 0 or fields["stratum"] > 15:
                 # stratum out of bounds
                 return False
         except ValueError:
@@ -227,8 +212,8 @@ class NTPPeers():
     def validate_when(cls, fields):
         # when should be an integer or '-'
         try:
-            if fields['when'] != '-':
-                fields['when'] = NTPPeers.time2seconds(fields['when'])
+            if fields["when"] != "-":
+                fields["when"] = NTPPeers.time2seconds(fields["when"])
         except ValueError:
             # last poll time not an integer
             return False
@@ -237,14 +222,14 @@ class NTPPeers():
     @classmethod
     def validate_poll(cls, fields):
         # poll should be an integer in seconds
-        if 'poll_pow2' in fields:
+        if "poll_pow2" in fields:
             try:
-                fields['poll'] = 2 ** int(fields['poll_pow2'])
+                fields["poll"] = 2 ** int(fields["poll_pow2"])
             except ValueError:
                 # poll interval not an integer
                 return False
         try:
-            fields['poll'] = int(fields['poll'])
+            fields["poll"] = int(fields["poll"])
         except ValueError:
             # poll interval not an integer
             return False
@@ -255,9 +240,9 @@ class NTPPeers():
         # reachability should be octal
         try:
             # convert from octal string to integer
-            fields['reach'] = int(fields['reach'], 8)
+            fields["reach"] = int(fields["reach"], 8)
             # convert integer to binary, count the # of 1s (maximum 8), convert to a percentage
-            fields['reach'] = bin(fields['reach']).count('1') * 100 / 8
+            fields["reach"] = bin(fields["reach"]).count("1") * 100 / 8
         except ValueError:
             # reachability not an octal value
             return False
@@ -265,7 +250,7 @@ class NTPPeers():
 
     @classmethod
     def validate_floats(cls, fields, convert_to_seconds):
-        for i in ['offset', 'moffset', 'delay', 'jitter', 'error']:
+        for i in ["offset", "moffset", "delay", "jitter", "error"]:
             try:
                 if i in fields:
                     if convert_to_seconds:
@@ -299,14 +284,14 @@ class NTPPeers():
         return fields
 
     peerfields = [
-        'address',
-        'delay',
-        'error',
-        'jitter',
-        'offset',
-        'moffset',
-        'reach',
-        'stratum',
+        "address",
+        "delay",
+        "error",
+        "jitter",
+        "offset",
+        "moffset",
+        "reach",
+        "stratum",
     ]
 
     @classmethod
@@ -316,7 +301,7 @@ class NTPPeers():
         """
         for f in cls.peerfields:
             if f in peer:
-                peers[peer['tally']][f].append(peer[f])
+                peers[peer["tally"]][f].append(peer[f])
 
     @classmethod
     def newpeerdict(cls):
@@ -337,7 +322,7 @@ class NTPPeers():
         """
         peers = cls.newpeerdict()
         if isinstance(lines, str):
-            lines = lines.split('\n')
+            lines = lines.split("\n")
         for l in lines:
             peer = cls.peerline(l)
             if not peer:
@@ -345,17 +330,17 @@ class NTPPeers():
 
             cls.appendpeer(peers, peer)
             # the pps peer is also a sync peer
-            if peer['tally'] == 'pps':
-                peer['tally'] = 'sync'
+            if peer["tally"] == "pps":
+                peer["tally"] = "sync"
                 cls.appendpeer(peers, peer)
 
             # the sync & pps peers are also survivors
-            if peer['tally'] == 'sync':
-                peer['tally'] = 'survivor'
+            if peer["tally"] == "sync":
+                peer["tally"] = "survivor"
                 cls.appendpeer(peers, peer)
 
             # also append the line to the all peer type
-            peer['tally'] = 'all'
+            peer["tally"] = "all"
             cls.appendpeer(peers, peer)
         return peers
 
@@ -369,35 +354,36 @@ class NTPPeers():
         metrics = {}
         for t in NTPPeers.peertypes:
             # number of peers of this type
-            metrics[t] = len(peers[t]['address'])
+            metrics[t] = len(peers[t]["address"])
 
             # offset of peers of this type
-            metrics[t + '-offset-mean'] = NTPPeers.getmean(peers[t]['offset'])
-            metrics[t + '-offset-stdev'] = NTPPeers.getstdev(peers[t]['offset'], metrics[t + '-offset-mean'])
-            metrics[t + '-offset-rms'] = NTPPeers.rms(peers[t]['offset'])
+            metrics[t + "-offset-mean"] = NTPPeers.getmean(peers[t]["offset"])
+            metrics[t + "-offset-stdev"] = NTPPeers.getstdev(peers[t]["offset"], metrics[t + "-offset-mean"])
+            metrics[t + "-offset-rms"] = NTPPeers.rms(peers[t]["offset"])
 
             # reachability of peers of this type
-            metrics[t + '-reach-mean'] = NTPPeers.getmean(peers[t]['reach'])
-            metrics[t + '-reach-stdev'] = NTPPeers.getstdev(peers[t]['reach'], metrics[t + '-reach-mean'])
+            metrics[t + "-reach-mean"] = NTPPeers.getmean(peers[t]["reach"])
+            metrics[t + "-reach-stdev"] = NTPPeers.getstdev(peers[t]["reach"], metrics[t + "-reach-mean"])
             # The rms of reachability is not very useful, because it's always positive
             # (so it should be very close to the mean), but we include it for completeness.
-            metrics[t + '-reach-rms'] = NTPPeers.rms(peers[t]['reach'])
+            metrics[t + "-reach-rms"] = NTPPeers.rms(peers[t]["reach"])
 
         return metrics
 
     def syncpeer(self):
         try:
-            return self.peers['sync']['address'][0]
+            return self.peers["sync"]["address"][0]
         except Exception:
             return None
 
     def __init__(self, lines, elapsed=0):
         self.peers = self.parse(lines)
-        self.elapsed = elapsed      # unused at present
+        self.elapsed = elapsed  # unused at present
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import pprint
+
     pp = pprint.PrettyPrinter(width=200)
     stdin = sys.stdin.read()
     p = NTPPeers(stdin)

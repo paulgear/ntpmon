@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+#
+# Copyright:    (c) 2023 Paul D. Gear
+# License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 """Render the jinja template given as the first command line argument."""
 
@@ -7,11 +10,11 @@ import os
 import sys
 
 varnames = [
-    'BINDIR',
-    'CONFDIR',
-    'GROUP',
-    'NAME',
-    'USER',
+    "BINDIR",
+    "CONFDIR",
+    "GROUP",
+    "NAME",
+    "USER",
 ]
 
 envvars = {x: os.environ[x] for x in varnames}

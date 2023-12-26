@@ -1,21 +1,7 @@
-
+#!/usr/bin/env python3
 #
-# Copyright:    (c) 2016 Paul D. Gear
-# License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# You should have received a copy of the GNU General Public License along with
-# this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# Copyright:    (c) 2016-2023 Paul D. Gear
+# License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 """
 Parse 'chronyc -c tracking' or 'ntpq -nc readvar' output and extract metrics.
@@ -24,24 +10,24 @@ Parse 'chronyc -c tracking' or 'ntpq -nc readvar' output and extract metrics.
 
 # This is lame; these are in exactly the opposite order as in alert.py
 _aliases = {
-    'offset': 'sysoffset',
-    'sys_jitter': 'sysjitter',
+    "offset": "sysoffset",
+    "sys_jitter": "sysjitter",
 }
 
 
 def parse_chronyd_vars(vars):
     """Turn a list of values from chronyc into metrics."""
     metrics = {}
-    metrics['stratum'] = int(vars[2])
-    metrics['systime'] = float(vars[3])
-    metrics['sysoffset'] = float(vars[4])
-    metrics['lastoffset'] = float(vars[5])
-    metrics['rmsoffset'] = float(vars[6])
-    metrics['frequency'] = float(vars[7])
-    metrics['residualfreq'] = float(vars[8])
-    metrics['skew'] = float(vars[9])
-    metrics['rootdelay'] = float(vars[10])
-    metrics['rootdisp'] = float(vars[11])
+    metrics["stratum"] = int(vars[2])
+    metrics["systime"] = float(vars[3])
+    metrics["sysoffset"] = float(vars[4])
+    metrics["lastoffset"] = float(vars[5])
+    metrics["rmsoffset"] = float(vars[6])
+    metrics["frequency"] = float(vars[7])
+    metrics["residualfreq"] = float(vars[8])
+    metrics["skew"] = float(vars[9])
+    metrics["rootdelay"] = float(vars[10])
+    metrics["rootdisp"] = float(vars[11])
     return metrics
 
 
@@ -49,10 +35,10 @@ def parse_ntpd_vars(vars):
     """Turn a list of name/value pairs separated by equals signs from ntpq into metrics."""
     metrics = {}
     for v in vars:
-        nameval = v.split('=')
+        nameval = v.split("=")
         if len(nameval) == 2:
             try:
-                if nameval[0] in ['rootdelay', 'rootdisp']:
+                if nameval[0] in ["rootdelay", "rootdisp"]:
                     # convert from milliseconds to seconds
                     metrics[nameval[0]] = round(float(nameval[1]) / 1000.0, 9)
                 elif nameval[0] in _aliases:
@@ -67,23 +53,22 @@ def parse_ntpd_vars(vars):
 
 
 class NTPVars(object):
-
     def __init__(self, lines=None, elapsed=0):
         if not isinstance(lines, str):
             # multiple lines - join them
             lines = " ".join(lines)
 
         # single string - split it by commas, remove whitespace
-        rv = [v.strip() for v in lines.split(',')]
+        rv = [v.strip() for v in lines.split(",")]
 
         # split each string into metric name + value
-        if lines.count('=') < 5 and len(rv) >= 12:
+        if lines.count("=") < 5 and len(rv) >= 12:
             # chronyd has 12 fields, and no equals signs
             self.metrics = parse_chronyd_vars(rv)
         else:
             # otherwise assume ntpd
             self.metrics = parse_ntpd_vars(rv)
-        self.metrics['varstime'] = elapsed
+        self.metrics["varstime"] = elapsed
 
     def getmetrics(self):
         return self.metrics
@@ -92,7 +77,8 @@ class NTPVars(object):
 if __name__ == "__main__":
     import pprint
     import process
-    lines, elapsed = process.execute('vars', debug=False)
+
+    lines, elapsed = process.execute("vars", debug=False)
     nv = NTPVars(lines, elapsed)
     v = nv.getmetrics()
     pprint.pprint(v)

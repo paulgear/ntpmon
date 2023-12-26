@@ -1,21 +1,6 @@
-
 #
-# Copyright:    (c) 2016, 2019 Paul D. Gear
-# License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# You should have received a copy of the GNU General Public License along with
-# this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# Copyright:    (c) 2016-2023 Paul D. Gear
+# License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 """
 This is the module responsible for setting the classifier levels of metrics,
@@ -24,9 +9,13 @@ gathered), and creating messages for display to the user.  It contains a few
 special cases which require knowledge of the rest of the application.
 """
 
-import metrics
 import pprint
 import sys
+
+import line_protocol
+import metrics
+
+from io import TextIOWrapper
 
 from classifier import MetricClassifier
 
@@ -36,47 +25,40 @@ Aliases for all metrics
 """
 _aliases = {
     # peer metrics
-    'offset': ('survivor-offset-mean', 'outlier-offset-mean', 'backup-offset-mean', 'all-offset-mean'),
-    'peers': 'all',
-    'reach': 'all-reach-mean',
-    'sync': None,
-    # trace metrics
-    'tracehosts': None,
-    'traceloops': None,
-    'tracetime': None,
+    "offset": ("survivor-offset-mean", "outlier-offset-mean", "backup-offset-mean", "all-offset-mean"),
+    "peers": "all",
+    "reach": "all-reach-mean",
+    "sync": None,
     # runtime metric
-    'runtime': None,
+    "runtime": None,
     # readvar metrics
-    'frequency': None,
-    'rootdelay': None,
-    'rootdisp': None,
-    'stratum': None,
+    "frequency": None,
+    "rootdelay": None,
+    "rootdisp": None,
+    "stratum": None,
     # these are aliased within the readvar module to prevent clashes
-    'sysjitter': None,
-    'sysoffset': None,
+    "sysjitter": None,
+    "sysoffset": None,
     # return code
-    'result': None,
+    "result": None,
 }
 
 """
 Display formats for all metrics
 """
 _formats = {
-    'offset': (None, 'f'),
-    'peers': ('Number of peers', 'd'),
-    'reach': ('reachability', '%'),
-    'sync': None,
-    'tracehosts': (None, 'd'),
-    'traceloops': (None, 'd'),
-    'tracetime': (None, 'f'),
-    'runtime': (None, 'd'),
-    'frequency': (None, 'f'),
-    'rootdelay': (None, 'f'),
-    'rootdisp': (None, 'f'),
-    'stratum': (None, 'd'),
-    'sysjitter': (None, '.9f'),
-    'sysoffset': (None, '.9f'),
-    'result': (None, 'd'),
+    "offset": (None, "f"),
+    "peers": ("Number of peers", "d"),
+    "reach": ("reachability", "%"),
+    "sync": None,
+    "runtime": (None, "d"),
+    "frequency": (None, "f"),
+    "rootdelay": (None, "f"),
+    "rootdisp": (None, "f"),
+    "stratum": (None, "d"),
+    "sysjitter": (None, ".9f"),
+    "sysoffset": (None, ".9f"),
+    "result": (None, "d"),
 }
 
 
@@ -84,18 +66,15 @@ _formats = {
 Classifications for all metrics
 """
 _metricdefs = {
-    'runtime': ('high', 512, 0),
-    'offset': ('mid', -0.05, -0.01, 0.01, 0.05),
-    'peers': ('high', 3, 1),
-    'reach': ('high', 75, 50),
-    # sync & trace metrics are integral, but are set to floats
-    # in case we ever encounter rounding.
-    'sync': ('high', 0.9, 0.9),
-    'tracehosts': ('high', 0.1, -0.1),
-    'traceloops': ('low', 0.9, 0.9),
+    "runtime": ("high", 512, 0),
+    "offset": ("mid", -0.05, -0.01, 0.01, 0.05),
+    "peers": ("high", 3, 1),
+    "reach": ("high", 75, 50),
+    # sync is integral, but set to float in case we ever encounter rounding.
+    "sync": ("high", 0.9, 0.9),
     # readvar metrics are normally reported only, not alerted
     # however, if only vars is checked, we report on sysoffset
-    'sysoffset': ('mid', -0.05, -0.01, 0.01, 0.05),
+    "sysoffset": ("mid", -0.05, -0.01, 0.01, 0.05),
 }
 
 
@@ -103,20 +82,15 @@ _metricdefs = {
 Metric types for collectd
 """
 _collectdtypes = {
-
-    'frequency': 'frequency/frequency_offset',
-    'offset': 'offset/time_offset',
-    'reach': 'reachability/percent',
-    'rootdelay': 'rootdelay/time_offset',
-    'rootdisp': 'rootdisp/time_offset',
-    'runtime': 'runtime/duration',
-    'stratum': 'stratum/count',
-    'sysjitter': 'sysjitter/time_offset',
-    'sysoffset': 'sysoffset/time_offset',
-    'tracehosts': 'tracehosts/count',
-    'traceloops': 'traceloops/count',
-    'tracetime': 'runtime/duration',
-
+    "frequency": "frequency/frequency_offset",
+    "offset": "offset/time_offset",
+    "reach": "reachability/percent",
+    "rootdelay": "rootdelay/time_offset",
+    "rootdisp": "rootdisp/time_offset",
+    "runtime": "runtime/duration",
+    "stratum": "stratum/count",
+    "sysjitter": "sysjitter/time_offset",
+    "sysoffset": "sysoffset/time_offset",
 }
 
 
@@ -124,58 +98,48 @@ _collectdtypes = {
 Peer metric types, used by both collectd & telegraf
 """
 _peer_types = {
-
-    'backup': 'peers/count-backup',
-    'excess': 'peers/count-excess',
-    'false': 'peers/count-false',
-    'invalid': 'peers/count-invalid',
-    'outlier': 'peers/count-outlier',
-    'pps': 'peers/count-pps',
-    'survivor': 'peers/count-survivor',
-    'sync': 'peers/count-sync',
-
+    "backup": "peers/count-backup",
+    "excess": "peers/count-excess",
+    "false": "peers/count-false",
+    "invalid": "peers/count-invalid",
+    "outlier": "peers/count-outlier",
+    "pps": "peers/count-pps",
+    "survivor": "peers/count-survivor",
+    "sync": "peers/count-sync",
 }
 
 """
 Metric types and suffixes for prometheus
 """
 _prometheus_types = {
-
-    'frequency': (None, '_hertz', 'Frequency error of the local clock'),
-    'offset': (None, '_seconds', 'Mean clock offset of peers'),
-    'reach': ('%', '_ratio', 'Peer reachability over the last 8 polls'),
-    'rootdelay': (None, '_seconds', 'Network delay to stratum 0 sources'),
-    'rootdisp': (None, '_seconds', 'Maximum calculated offset from stratum 0 sources'),
-    'runtime': (None, '_duration_seconds', 'Duration NTP service has been running'),
-    'stratum': ('i', None, 'NTP stratum of this server'),
-    'sysjitter': (None, '_seconds', 'RMS average of most recent system peer offset differences'),
-    'sysoffset': (None, '_seconds', 'Current clock offset of selected system peer'),
-
+    "frequency": (None, "_hertz", "Frequency error of the local clock"),
+    "offset": (None, "_seconds", "Mean clock offset of peers"),
+    "reach": ("%", "_ratio", "Peer reachability over the last 8 polls"),
+    "rootdelay": (None, "_seconds", "Network delay to stratum 0 sources"),
+    "rootdisp": (None, "_seconds", "Maximum calculated offset from stratum 0 sources"),
+    "runtime": (None, "_duration_seconds", "Duration NTP service has been running"),
+    "stratum": ("i", None, "NTP stratum of this server"),
+    "sysjitter": (None, "_seconds", "RMS average of most recent system peer offset differences"),
+    "sysoffset": (None, "_seconds", "Current clock offset of selected system peer"),
 }
 
 """
 Metric types for telegraf
 """
 _telegraf_types = {
-
-    'frequency': None,
-    'offset': None,
-    'reach': None,
-    'rootdelay': None,
-    'rootdisp': None,
-    'runtime': None,
-    'stratum': 'i',
-    'sysjitter': None,
-    'sysoffset': None,
-    'tracehosts': 'i',
-    'traceloops': 'i',
-    'tracetime': None,
-
+    "frequency": None,
+    "offset": None,
+    "reach": None,
+    "rootdelay": None,
+    "rootdisp": None,
+    "runtime": None,
+    "stratum": "i",
+    "sysjitter": None,
+    "sysoffset": None,
 }
 
 
 class NTPAlerter(object):
-
     def __init__(self, checks):
         self.checks = checks
         self.mc = MetricClassifier(_metricdefs)
@@ -196,78 +160,53 @@ class NTPAlerter(object):
         if debug:
             pprint.pprint(self.metrics)
         metrics.addaliases(self.metrics, _aliases)
-        if 'proc' in self.checks:
-            self.checks.append('runtime')
-        if 'trace' in self.checks:
-            self.checks.append('tracehosts')
-            self.checks.append('traceloops')
-            self.checks.append('tracetime')
-        if 'vars' in self.checks and 'offset' not in self.checks:
-            self.checks.append('sysoffset')
+        if "proc" in self.checks:
+            self.checks.append("runtime")
+        if "vars" in self.checks and "offset" not in self.checks:
+            self.checks.append("sysoffset")
 
     def custom_message(self, metric, result):
         """
         Special cases for message formats
         """
-        if metric == 'runtime':
+        if metric == "runtime":
             return self.custom_message_runtime(result)
-        elif metric == 'sync':
+        elif metric == "sync":
             return self.custom_message_sync(result)
-        elif metric == 'tracehosts':
-            return self.custom_message_tracehosts(result)
-        elif metric == 'traceloops':
-            return self.custom_message_traceloops(result)
         return None
 
     def custom_message_runtime(self, result):
-        proc = self.objs['proc']
-        if result == 'CRITICAL':
-            return ('%s: No NTP process could be found.'
-                    '  Please check that an NTP server is installed and running.') % (result,)
-        elif result == 'WARNING':
-            return 'OK: %s has only been running %d seconds' % (proc.name, proc.getruntime())
-        elif result == 'OK':
-            return '%s: %s has been running %d seconds' % (result, proc.name, proc.getruntime())
+        proc = self.objs["proc"]
+        if result == "CRITICAL":
+            return "%s: No NTP process could be found.  Please check that an NTP server is installed and running." % (result,)
+        elif result == "WARNING":
+            return "OK: %s has only been running %d seconds" % (proc.name, proc.getruntime())
+        elif result == "OK":
+            return "%s: %s has been running %d seconds" % (result, proc.name, proc.getruntime())
         return None
 
     def custom_message_sync(self, result):
-        if result == 'CRITICAL':
-            return '%s: No sync peer selected' % (result,)
-        elif result == 'OK':
-            return '%s: Time is in sync with %s' % (result, self.objs['peers'].syncpeer())
+        if result == "CRITICAL":
+            return "%s: No sync peer selected" % (result,)
+        elif result == "OK":
+            return "%s: Time is in sync with %s" % (result, self.objs["peers"].syncpeer())
         return None
 
-    def custom_message_traceloops(self, result):
-        if result == 'CRITICAL':
-            return '%s: Trace loop detected at host %s' % (result, self.objs['trace'].loophost)
-        elif result == 'OK':
-            return '%s: Trace detected no loops' % (result,)
-        return None
-
-    def custom_message_tracehosts(self, result):
-        trace = self.objs['trace']
-        return '%s: %d hosts detected in trace: %s' % (
-            result,
-            trace.results['tracehosts'],
-            ', '.join(trace.hostlist)
-        )
-
-    def alert(self, checkobjs, hostname, interval, format, debug=False):
+    def alert(self, checkobjs, hostname, interval, format, telegraf_file, debug=False):
         """
         Produce the metrics
         """
         self.collectmetrics(checkobjs=checkobjs, debug=False)
         self.mc.classify_metrics(self.metrics)
         (m, rc) = self.mc.worst_metric(self.checks)
-        self.metrics['result'] = self.return_code()
-        if format == 'collectd':
+        self.metrics["result"] = self.return_code()
+        if format == "collectd":
             self.alert_collectd(hostname, interval)
-        elif format == 'prometheus':
+        elif format == "prometheus":
             self.alert_prometheus(debug=debug)
-        elif format == 'telegraf':
-            self.alert_telegraf()
-        self.alert_peers(hostname, interval, format, debug)
-        self.finished_output()
+        elif format == "telegraf":
+            self.alert_telegraf(telegraf_file)
+        self.alert_peers(hostname, interval, format, telegraf_file, debug)
 
     def alert_collectd(self, hostname, interval):
         """
@@ -275,22 +214,26 @@ class NTPAlerter(object):
         """
         for metric in sorted(_collectdtypes.keys()):
             if metric in self.metrics:
-                print('PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f' % (
-                    hostname,
-                    _collectdtypes[metric],
-                    interval,
-                    self.metrics[metric],
-                ))
+                print(
+                    'PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f'
+                    % (
+                        hostname,
+                        _collectdtypes[metric],
+                        interval,
+                        self.metrics[metric],
+                    )
+                )
 
     def set_prometheus_metric(self, name, description, value, peertype=None):
         import prometheus_client
+
         if name in self.prometheus_objs:
             g = self.prometheus_objs[name]
             if peertype is not None:
                 g = g.labels(peertype=peertype)
         else:
             if peertype is not None:
-                g = prometheus_client.Gauge(name, description, ['peertype'])
+                g = prometheus_client.Gauge(name, description, ["peertype"])
                 self.prometheus_objs[name] = g
                 g = g.labels(peertype=peertype)
             else:
@@ -299,71 +242,61 @@ class NTPAlerter(object):
         g.set(value)
 
     def alert_prometheus(self, debug=False):
-
         def emit_metric(name, description, metrictype, value, format):
             if debug:
                 valuestr = format % (value,)
-                print('# HELP %s %s' % (name, description))
-                print('# TYPE %s gauge' % (name,))
-                print('%s %s' % (name, valuestr))
+                print("# HELP %s %s" % (name, description))
+                print("# TYPE %s gauge" % (name,))
+                print("%s %s" % (name, valuestr))
             else:
                 self.set_prometheus_metric(name, description, value)
 
         for metric in sorted(_prometheus_types.keys()):
             if metric in self.metrics:
                 (metrictype, suffix, description) = _prometheus_types[metric]
-                s = 'ntpmon_' + metric
+                s = "ntpmon_" + metric
                 if suffix is not None:
                     s += suffix
                 val = self.metrics[metric]
-                fmt = '%.9f'
-                if metrictype == 'i':
-                    fmt = '%d'
-                elif metrictype == '%':
+                fmt = "%.9f"
+                if metrictype == "i":
+                    fmt = "%d"
+                elif metrictype == "%":
                     val /= 100
                 emit_metric(s, description, metrictype, val, fmt)
 
-    def alert_telegraf(self):
-        print('ntpmon ', end='')
-        telegraf_metrics = []
-        for metric in sorted(_telegraf_types.keys()):
-            if metric in self.metrics:
-                s = metric + '='
-                if _telegraf_types[metric] == 'i':
-                    s += '%di' % (self.metrics[metric],)
-                else:
-                    s += '%.9f' % (self.metrics[metric],)
-                telegraf_metrics.append(s)
-        print(','.join(telegraf_metrics))
+    def alert_telegraf(self, telegraf_file: TextIOWrapper):
+        telegraf_metrics = {k: self.metrics[k] for k in sorted(_telegraf_types.keys()) if k in self.metrics}
+        output = line_protocol.to_line_protocol(telegraf_metrics, "ntpmon")
+        print(output, file=telegraf_file)
 
-    def alert_peers(self, hostname, interval, format, debug=False):
-        if debug and format == 'prometheus':
-            print('# TYPE ntpmon_peers gauge')
+    def alert_peers(self, hostname, interval, format, telegraf_file, debug=False):
+        if debug and format == "prometheus":
+            print("# TYPE ntpmon_peers gauge")
         for metric in _peer_types:
             value = self.metrics.get(metric)
-            if format == 'collectd':
-                print('PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f' % (
-                    hostname,
-                    _peer_types[metric],
-                    interval,
-                    value,
-                ))
-            elif format == 'prometheus':
+            if format == "collectd":
+                print(
+                    'PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f'
+                    % (
+                        hostname,
+                        _peer_types[metric],
+                        interval,
+                        value,
+                    )
+                )
+            elif format == "prometheus":
                 if debug:
                     print('ntpmon_peers{peertype="%s"} %d' % (metric, value))
                 else:
-                    self.set_prometheus_metric('ntpmon_peers', 'NTP peer count', value, metric)
-            elif format == 'telegraf':
-                print('ntpmon_peers,peertype=%s count=%di' % (metric, value))
-
-    @staticmethod
-    def finished_output():
-        if sys.stdout.isatty():
-            # we're outputting to a terminal; must be test mode
-            print('')
-        else:
-            # flush standard output to ensure metrics are sent immediately
-            sys.stdout.flush()
+                    self.set_prometheus_metric("ntpmon_peers", "NTP peer count", value, metric)
+            elif format == "telegraf":
+                telegraf_metrics = {
+                    "count": value,
+                    "peertype": metric,
+                }
+                output = line_protocol.to_line_protocol(telegraf_metrics, "ntpmon_peers")
+                print(output, file=telegraf_file)
 
     def alert_nagios(self, checkobjs, debug):
         """
@@ -382,8 +315,8 @@ class NTPAlerter(object):
                 print(msgs[m])
         else:
             (m, rc) = self.mc.worst_metric(self.checks)
-            self.metrics['result'] = self.return_code()
-            print('%s | %s' % (msgs[m], self.report()))
+            self.metrics["result"] = self.return_code()
+            print("%s | %s" % (msgs[m], self.report()))
 
     def report(self):
         """
@@ -393,12 +326,12 @@ class NTPAlerter(object):
         for m in sorted(_aliases.keys()):
             if m in self.metrics:
                 if _formats[m] is None:
-                    fmt = 'f'
+                    fmt = "f"
                 else:
-                    fmt = _formats[m][1] if _formats[m][1] != '%' else 'f'
+                    fmt = _formats[m][1] if _formats[m][1] != "%" else "f"
                 val = self.mc.fmtstr(fmt) % self.metrics[m]
-                items.append('%s=%s' % (m, val))
-        return ' '.join(items)
+                items.append("%s=%s" % (m, val))
+        return " ".join(items)
 
     def return_code(self):
         """
@@ -406,7 +339,7 @@ class NTPAlerter(object):
         for at least enough time for 8 polling intervals of 64 seconds each.  This
         prevents false positives due to restarts or short-lived VMs.
         """
-        if 'runtime' in self.mc.results and self.mc.results['runtime'] == 'WARNING':
+        if "runtime" in self.mc.results and self.mc.results["runtime"] == "WARNING":
             return 0
         else:
             return self.mc.return_code(self.checks)

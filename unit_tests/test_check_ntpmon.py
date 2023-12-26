@@ -1,21 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
-# Copyright:    (c) 2015-2016 Paul D. Gear
-# License:      GPLv3 <http://www.gnu.org/licenses/gpl.html>
-#
-# This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the Free Software
-# Foundation, either version 3 of the License, or (at your option) any later
-# version.
-#
-# This program is distributed in the hope that it will be useful, but WITHOUT
-# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-# details.
-#
-# You should have received a copy of the GNU General Public License along with
-# this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+# Copyright:    (c) 2015-2023 Paul D. Gear
+# License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
+
 
 import argparse
 import unittest
@@ -164,232 +151,170 @@ remote refid st t when poll reach delay offset jitter
 """,
 ]
 
-demotrace = [
-    """
-127.0.0.1: stratum 3, offset 0.000079, synch distance 0.005168
-""",
-    """
-127.0.0.1: stratum 2, offset -0.000357, synch distance 0.053750
-193.79.237.14: timed out, nothing received
-***Request timed out
-""",
-]
-
-baddemotrace = [
-    """
-127.0.0.1: stratum 5, offset -0.000047, synch distance 0.027705
-128.199.84.169: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-121.0.0.42: stratum 4, offset 0.001596, synch distance 0.026285
-""",
-]
-
 
 class TestCheckNTPMon(unittest.TestCase):
-
     def test_offset(self):
         check = CheckNTPMon()
 
         for i in [50.01, 50.1, 51, 99, 100, 999]:
-            self.assertEqual(check.offset(i), 2, 'High offset non-critical')
-            self.assertEqual(check.offset(-i), 2, 'High offset non-critical')
+            self.assertEqual(check.offset(i), 2, "High offset non-critical")
+            self.assertEqual(check.offset(-i), 2, "High offset non-critical")
 
         for i in [10.01, 10.1, 11, 49, 49.99, 50]:
-            self.assertEqual(check.offset(i), 1, 'Moderate offset non-warning')
-            self.assertEqual(check.offset(-i), 1, 'Moderate offset non-warning')
+            self.assertEqual(check.offset(i), 1, "Moderate offset non-warning")
+            self.assertEqual(check.offset(-i), 1, "Moderate offset non-warning")
 
         for i in [0, 0.01, 1, 1.01, 9, 9.99, 10]:
-            self.assertEqual(check.offset(i), 0, 'Low offset non-OK')
-            self.assertEqual(check.offset(-i), 0, 'Low offset non-OK')
+            self.assertEqual(check.offset(i), 0, "Low offset non-OK")
+            self.assertEqual(check.offset(-i), 0, "Low offset non-OK")
 
     def test_peers(self):
         check = CheckNTPMon()
 
         for i in [-100, -10, -1, 0, 1]:
-            self.assertEqual(check.peers(i), 2, 'Low peers non-critical')
+            self.assertEqual(check.peers(i), 2, "Low peers non-critical")
 
         for i in [2, 3]:
-            self.assertEqual(check.peers(i), 1, 'Few peers non-warning')
+            self.assertEqual(check.peers(i), 1, "Few peers non-warning")
 
         for i in [4, 5, 6, 10, 100]:
-            self.assertEqual(check.peers(i), 0, 'High peers non-OK')
+            self.assertEqual(check.peers(i), 0, "High peers non-OK")
 
     def test_reach(self):
         check = CheckNTPMon()
 
         for i in [0, 0.01, 1, 25, 49, 49.99, 50]:
-            self.assertEqual(check.reachability(i), 2, 'Low reachability non-critical')
+            self.assertEqual(check.reachability(i), 2, "Low reachability non-critical")
         for i in [50.01, 50.1, 74.99, 75]:
-            self.assertEqual(check.reachability(i), 1, 'Moderate reachability non-warning')
+            self.assertEqual(check.reachability(i), 1, "Moderate reachability non-warning")
         for i in [75.01, 76, 99, 100]:
-            self.assertEqual(check.reachability(i), 0, 'High reachability non-OK')
+            self.assertEqual(check.reachability(i), 0, "High reachability non-OK")
         # check that invalid percentage causes exception
         for i in [-100, -1, 100.01, 101, 1000]:
             self.assertRaises(ValueError, check.reachability, (i))
 
     def test_sync(self):
         check = CheckNTPMon()
-        self.assertEqual(check.sync(''), 2, 'Invalid sync peer not detected')
-        self.assertEqual(check.sync('    '), 2, 'Invalid sync peer not detected')
-        self.assertEqual(check.sync('!@#$%^&*()'), 2, 'Invalid sync peer not detected')
-        self.assertEqual(check.sync('blah.example.com'), 0, 'Sync peer not detected')
-        self.assertEqual(check.sync('192.168.2.1'), 0, 'Sync peer not detected')
-        self.assertEqual(check.sync('fe80::1'), 0, 'Sync peer not detected')
-        self.assertEqual(check.sync('ds002.dedicated'), 0, 'Sync peer not detected')
-        self.assertEqual(check.sync('node01.au.serve'), 0, 'Sync peer not detected')
-
-    def test_bad_trace(self):
-        check = CheckNTPMon()
-        self.assertEqual(check.trace(''), 1, 'Invalid trace not detected')
-        self.assertEqual(check.trace('    '), 1, 'Invalid trace not detected')
-        self.assertEqual(check.trace('!@#$%^&*()'), 1, 'Invalid trace not detected')
-        self.assertEqual(check.trace('blah.example.com'), 1, 'Invalid trace not detected')
-
-    def test_trace_demos(self):
-        """Ensure that demo traces are parsed successfully and don't produce exceptions or unknown results."""
-        for d in demotrace:
-            check = CheckNTPMon()
-            self.assertEqual(check.trace(d.split("\n")), 0, 'Error parsing demo trace data')
-
-    def test_bad_trace_demos(self):
-        """Ensure that bad demo traces produce errors."""
-        check = CheckNTPMon()
-#        for d in demodata:
-#            self.assertEqual(check.trace(d.split("\n")), 2, 'Demo data not detected as bad trace')
-        for d in baddemotrace:
-            self.assertEqual(check.trace(d.split("\n")), 2, 'Invalid trace not detected')
+        self.assertEqual(check.sync(""), 2, "Invalid sync peer not detected")
+        self.assertEqual(check.sync("    "), 2, "Invalid sync peer not detected")
+        self.assertEqual(check.sync("!@#$%^&*()"), 2, "Invalid sync peer not detected")
+        self.assertEqual(check.sync("blah.example.com"), 0, "Sync peer not detected")
+        self.assertEqual(check.sync("192.168.2.1"), 0, "Sync peer not detected")
+        self.assertEqual(check.sync("fe80::1"), 0, "Sync peer not detected")
+        self.assertEqual(check.sync("ds002.dedicated"), 0, "Sync peer not detected")
+        self.assertEqual(check.sync("node01.au.serve"), 0, "Sync peer not detected")
 
     def test_NTPPeer0(self):
         # check the parsing done by NTPCheck
         ntp = NTPCheck(testdata[0].split("\n"))
-        self.assertEqual(ntp.ntpdata['syncpeer'], '91.189.89.199')
-        self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 0.598)
-        self.assertEqual(ntp.ntpdata['survivors'], 1)
-        self.assertEqual(ntp.ntpdata['averageoffsetsurvivors'], 0.598)
-        self.assertEqual(ntp.ntpdata['discards'], 0)
-        self.assertEqual(ntp.ntpdata.get('averageoffsetdiscards'), None)
-        self.assertEqual(ntp.ntpdata['peers'], 1)
-        self.assertEqual(ntp.ntpdata['averageoffset'], 0.598)
-        self.assertEqual(ntp.ntpdata['reachability'], 100)
+        self.assertEqual(ntp.ntpdata["syncpeer"], "91.189.89.199")
+        self.assertEqual(ntp.ntpdata["offsetsyncpeer"], 0.598)
+        self.assertEqual(ntp.ntpdata["survivors"], 1)
+        self.assertEqual(ntp.ntpdata["averageoffsetsurvivors"], 0.598)
+        self.assertEqual(ntp.ntpdata["discards"], 0)
+        self.assertEqual(ntp.ntpdata.get("averageoffsetdiscards"), None)
+        self.assertEqual(ntp.ntpdata["peers"], 1)
+        self.assertEqual(ntp.ntpdata["averageoffset"], 0.598)
+        self.assertEqual(ntp.ntpdata["reachability"], 100)
 
         # run checks on the data
         check = CheckNTPMon()
-        self.assertEqual(check.sync(ntp.ntpdata['syncpeer']), 0, 'Sync peer not detected')
-        self.assertEqual(check.offset(ntp.ntpdata['offsetsyncpeer']), 0, 'Low offset non-OK')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffsetsurvivors']), 0, 'Low offset non-OK')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 0, 'Low offset non-OK')
-        self.assertEqual(check.peers(ntp.ntpdata['peers']), 2, 'Low peers non-critical')
-        self.assertEqual(
-            check.reachability(ntp.ntpdata['reachability']), 0,
-            'High reachability non-OK')
+        self.assertEqual(check.sync(ntp.ntpdata["syncpeer"]), 0, "Sync peer not detected")
+        self.assertEqual(check.offset(ntp.ntpdata["offsetsyncpeer"]), 0, "Low offset non-OK")
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffsetsurvivors"]), 0, "Low offset non-OK")
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffset"]), 0, "Low offset non-OK")
+        self.assertEqual(check.peers(ntp.ntpdata["peers"]), 2, "Low peers non-critical")
+        self.assertEqual(check.reachability(ntp.ntpdata["reachability"]), 0, "High reachability non-OK")
 
         # run overall health checks
-        self.assertEqual(ntp.check_sync(), 0, 'Sync peer not detected')
-        self.assertEqual(ntp.check_offset(), 0, 'Low offset non-OK')
-        self.assertEqual(ntp.check_peers(), 2, 'Low peers non-critical')
-        self.assertEqual(ntp.check_reachability(), 0, 'High reachability non-OK')
+        self.assertEqual(ntp.check_sync(), 0, "Sync peer not detected")
+        self.assertEqual(ntp.check_offset(), 0, "Low offset non-OK")
+        self.assertEqual(ntp.check_peers(), 2, "Low peers non-critical")
+        self.assertEqual(ntp.check_reachability(), 0, "High reachability non-OK")
 
     def test_NTPPeer1(self):
         # check the parsing done by NTPCheck
         ntp = NTPCheck(testdata[1].split("\n"))
-        self.assertEqual(ntp.ntpdata['syncpeer'], '202.60.94.11')
-        self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 0.259)
-        self.assertEqual(ntp.ntpdata['survivors'], 3)
-        self.assertEqual(ntp.ntpdata['averageoffsetsurvivors'], 0.21133333333333335)
-        self.assertEqual(ntp.ntpdata['discards'], 3)
-        self.assertEqual(ntp.ntpdata['averageoffsetdiscards'], 1.024)
-        self.assertEqual(ntp.ntpdata['peers'], 6)
-        self.assertEqual(ntp.ntpdata['averageoffset'], 0.6176666666666667)
-        self.assertEqual(ntp.ntpdata['reachability'], 100)
+        self.assertEqual(ntp.ntpdata["syncpeer"], "202.60.94.11")
+        self.assertEqual(ntp.ntpdata["offsetsyncpeer"], 0.259)
+        self.assertEqual(ntp.ntpdata["survivors"], 3)
+        self.assertEqual(ntp.ntpdata["averageoffsetsurvivors"], 0.21133333333333335)
+        self.assertEqual(ntp.ntpdata["discards"], 3)
+        self.assertEqual(ntp.ntpdata["averageoffsetdiscards"], 1.024)
+        self.assertEqual(ntp.ntpdata["peers"], 6)
+        self.assertEqual(ntp.ntpdata["averageoffset"], 0.6176666666666667)
+        self.assertEqual(ntp.ntpdata["reachability"], 100)
 
         # run checks on the data
         check = CheckNTPMon()
-        self.assertEqual(check.sync(ntp.ntpdata['syncpeer']), 0, 'Sync peer not detected')
-        self.assertEqual(check.offset(ntp.ntpdata['offsetsyncpeer']), 0, 'Low offset non-OK')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffsetsurvivors']), 0, 'Low offset non-OK')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffsetdiscards']), 0, 'Low offset non-OK')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 0, 'Low offset non-OK')
-        self.assertEqual(check.peers(ntp.ntpdata['peers']), 0, 'High peers non-OK')
-        self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 0,
-                         'High reachability non-OK')
+        self.assertEqual(check.sync(ntp.ntpdata["syncpeer"]), 0, "Sync peer not detected")
+        self.assertEqual(check.offset(ntp.ntpdata["offsetsyncpeer"]), 0, "Low offset non-OK")
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffsetsurvivors"]), 0, "Low offset non-OK")
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffsetdiscards"]), 0, "Low offset non-OK")
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffset"]), 0, "Low offset non-OK")
+        self.assertEqual(check.peers(ntp.ntpdata["peers"]), 0, "High peers non-OK")
+        self.assertEqual(check.reachability(ntp.ntpdata["reachability"]), 0, "High reachability non-OK")
 
         # run overall health checks
-        self.assertEqual(ntp.check_sync(), 0, 'Sync peer not detected')
-        self.assertEqual(ntp.check_offset(), 0, 'Low offset non-OK')
-        self.assertEqual(ntp.check_peers(), 0, 'High peers non-OK')
-        self.assertEqual(ntp.check_reachability(), 0, 'High reachability non-OK')
+        self.assertEqual(ntp.check_sync(), 0, "Sync peer not detected")
+        self.assertEqual(ntp.check_offset(), 0, "Low offset non-OK")
+        self.assertEqual(ntp.check_peers(), 0, "High peers non-OK")
+        self.assertEqual(ntp.check_reachability(), 0, "High reachability non-OK")
 
     def test_NTPPeer2(self):
         # check the parsing done by NTPCheck
         ntp = NTPCheck(testdata[2].split("\n"))
-        self.assertEqual(ntp.ntpdata['syncpeer'], '91.189.94.4')
-        self.assertEqual(ntp.ntpdata['offsetsyncpeer'], 194.54)
-        self.assertEqual(ntp.ntpdata['survivors'], 1)
-        self.assertEqual(ntp.ntpdata['averageoffsetsurvivors'], 194.54)
-        self.assertEqual(ntp.ntpdata['discards'], 0)
-        self.assertEqual(ntp.ntpdata.get('averageoffsetdiscards'), None)
-        self.assertEqual(ntp.ntpdata['peers'], 1)
-        self.assertEqual(ntp.ntpdata['averageoffset'], 194.54)
-        self.assertEqual(ntp.ntpdata['reachability'], 100)
+        self.assertEqual(ntp.ntpdata["syncpeer"], "91.189.94.4")
+        self.assertEqual(ntp.ntpdata["offsetsyncpeer"], 194.54)
+        self.assertEqual(ntp.ntpdata["survivors"], 1)
+        self.assertEqual(ntp.ntpdata["averageoffsetsurvivors"], 194.54)
+        self.assertEqual(ntp.ntpdata["discards"], 0)
+        self.assertEqual(ntp.ntpdata.get("averageoffsetdiscards"), None)
+        self.assertEqual(ntp.ntpdata["peers"], 1)
+        self.assertEqual(ntp.ntpdata["averageoffset"], 194.54)
+        self.assertEqual(ntp.ntpdata["reachability"], 100)
 
         # run checks on the data
         check = CheckNTPMon()
-        self.assertEqual(check.sync(ntp.ntpdata['syncpeer']), 0, 'Sync peer not detected')
-        self.assertEqual(check.offset(ntp.ntpdata['offsetsyncpeer']), 2, 'High offset non-critical')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffsetsurvivors']), 2, 'High offset non-critical')
-        self.assertEqual(ntp.ntpdata.get('averageoffsetdiscards'), None)
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 2, 'High offset non-critical')
-        self.assertEqual(check.peers(ntp.ntpdata['peers']), 2, 'Low peers non-critical')
-        self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 0,
-                         'High reachability non-OK')
+        self.assertEqual(check.sync(ntp.ntpdata["syncpeer"]), 0, "Sync peer not detected")
+        self.assertEqual(check.offset(ntp.ntpdata["offsetsyncpeer"]), 2, "High offset non-critical")
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffsetsurvivors"]), 2, "High offset non-critical")
+        self.assertEqual(ntp.ntpdata.get("averageoffsetdiscards"), None)
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffset"]), 2, "High offset non-critical")
+        self.assertEqual(check.peers(ntp.ntpdata["peers"]), 2, "Low peers non-critical")
+        self.assertEqual(check.reachability(ntp.ntpdata["reachability"]), 0, "High reachability non-OK")
 
         # run overall health checks
-        self.assertEqual(ntp.check_sync(), 0, 'Sync peer not detected')
-        self.assertEqual(ntp.check_offset(), 2, 'High offset non-critical')
-        self.assertEqual(ntp.check_peers(), 2, 'Low peers non-critical')
-        self.assertEqual(ntp.check_reachability(), 0, 'High reachability non-OK')
+        self.assertEqual(ntp.check_sync(), 0, "Sync peer not detected")
+        self.assertEqual(ntp.check_offset(), 2, "High offset non-critical")
+        self.assertEqual(ntp.check_peers(), 2, "Low peers non-critical")
+        self.assertEqual(ntp.check_reachability(), 0, "High reachability non-OK")
 
     def test_NTPPeer3(self):
         # check the parsing done by NTPCheck
         ntp = NTPCheck(testdata[3].split("\n"))
-        self.assertEqual(ntp.ntpdata.get('syncpeer'), None)
-        self.assertEqual(ntp.ntpdata.get('offsetsyncpeer'), None)
-        self.assertEqual(ntp.ntpdata['survivors'], 0)
-        self.assertEqual(ntp.ntpdata.get('averageoffsetsurvivors'), None)
-        self.assertEqual(ntp.ntpdata['discards'], 1)
-        self.assertEqual(ntp.ntpdata['averageoffsetdiscards'], 0.913)
-        self.assertEqual(ntp.ntpdata['peers'], 1)
-        self.assertEqual(ntp.ntpdata['averageoffset'], 0.913)
-        self.assertEqual(ntp.ntpdata['reachability'], 37.5)
+        self.assertEqual(ntp.ntpdata.get("syncpeer"), None)
+        self.assertEqual(ntp.ntpdata.get("offsetsyncpeer"), None)
+        self.assertEqual(ntp.ntpdata["survivors"], 0)
+        self.assertEqual(ntp.ntpdata.get("averageoffsetsurvivors"), None)
+        self.assertEqual(ntp.ntpdata["discards"], 1)
+        self.assertEqual(ntp.ntpdata["averageoffsetdiscards"], 0.913)
+        self.assertEqual(ntp.ntpdata["peers"], 1)
+        self.assertEqual(ntp.ntpdata["averageoffset"], 0.913)
+        self.assertEqual(ntp.ntpdata["reachability"], 37.5)
 
         # run checks on the data
         check = CheckNTPMon()
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffsetdiscards']), 0, 'Low offset non-OK')
-        self.assertEqual(check.offset(ntp.ntpdata['averageoffset']), 0, 'Low offset non-OK')
-        self.assertEqual(check.peers(ntp.ntpdata['peers']), 2, 'Low peers non-critical')
-        self.assertEqual(check.reachability(ntp.ntpdata['reachability']), 2,
-                         'Low reachability non-critical')
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffsetdiscards"]), 0, "Low offset non-OK")
+        self.assertEqual(check.offset(ntp.ntpdata["averageoffset"]), 0, "Low offset non-OK")
+        self.assertEqual(check.peers(ntp.ntpdata["peers"]), 2, "Low peers non-critical")
+        self.assertEqual(check.reachability(ntp.ntpdata["reachability"]), 2, "Low reachability non-critical")
 
         # run overall health checks
-        self.assertEqual(ntp.check_sync(), 2, 'Missing sync peer not detected')
-        self.assertEqual(ntp.check_offset(), 1, 'Missing sync peer/survivor offset non-warning')
-        self.assertEqual(ntp.check_peers(), 2, 'Low peers non-critical')
-        self.assertEqual(ntp.check_reachability(), 2, 'Low reachability non-critical')
+        self.assertEqual(ntp.check_sync(), 2, "Missing sync peer not detected")
+        self.assertEqual(ntp.check_offset(), 1, "Missing sync peer/survivor offset non-warning")
+        self.assertEqual(ntp.check_peers(), 2, "Low peers non-critical")
+        self.assertEqual(ntp.check_reachability(), 2, "Low reachability non-critical")
 
     def test_defaults(self):
         c = CheckNTPMon()
@@ -441,9 +366,11 @@ class TestCheckNTPMon(unittest.TestCase):
 
     def test_clone_inheritance(self):
         """Cloning a child class should work too"""
+
         class testobject(CheckNTPMonSilent):
             def dump(self):
                 pass
+
         obj = testobject()
         self.assertEqual(obj.warnpeers, 2)
         self.assertEqual(obj.okpeers, 4)
@@ -461,9 +388,11 @@ class TestCheckNTPMon(unittest.TestCase):
 
     def test_clone_inheritance_non_silent(self):
         """Cloning a non-silent child class should work too"""
+
         class testobject(CheckNTPMon):
             def dump(self):
                 pass
+
         obj = testobject()
         self.assertEqual(obj.warnpeers, 2)
         self.assertEqual(obj.okpeers, 4)
@@ -481,17 +410,21 @@ class TestCheckNTPMon(unittest.TestCase):
 
     def test_clone_inheritance_non_silent_made_silent(self):
         """Don't try this at home, kids"""
+
         class testobject(CheckNTPMon):
             def is_silent(self):
                 return True
+
         obj = testobject()
         c = CheckNTPMonSilent.clone(obj)
         self.assertEqual(c, obj)
 
     def test_bad_clone(self):
         """Cloning something that's not a CheckNTPMonSilent or CheckNTPMon should raise an AttributeError"""
+
         class testobject(object):
             pass
+
         obj = testobject()
         self.assertRaises(AttributeError, CheckNTPMonSilent.clone, obj)
 
@@ -500,13 +433,14 @@ class TestCheckNTPMon(unittest.TestCase):
         for d in demodata:
             ntp = NTPCheck(d.split("\n"))
             ntp.dump()
-            methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability,
-                       ntp.check_sync, ntp.checks]
+            methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability, ntp.check_sync, ntp.checks]
             for method in methods:
                 ret = method()
                 self.assertIn(
-                    ret, [0, 1, 2],
-                    "Method %s returned invalid result parsing demo data:\n%s\nTry running with --show-demos." % (method, d))
+                    ret,
+                    [0, 1, 2],
+                    "Method %s returned invalid result parsing demo data:\n%s\nTry running with --show-demos." % (method, d),
+                )
 
 
 def demo():
@@ -517,8 +451,7 @@ def demo():
         ntp = NTPCheck(d.split("\n"))
         i += 1
         ntp.dump()
-        methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability,
-                   ntp.check_sync, ntp.checks]
+        methods = [ntp.check_offset, ntp.check_peers, ntp.check_reachability, ntp.check_sync, ntp.checks]
         for method in methods:
             ret = method()
             if ret not in [0, 1, 2]:
@@ -531,13 +464,10 @@ if __name__ == "__main__":
     test_checkntpmon = CheckNTPMon()
 
     # parse command line
-    parser = argparse.ArgumentParser(description='NTPmon test class')
-    parser.add_argument(
-        '--show-demos', action='store_true',
-        help='Show demo output.')
+    parser = argparse.ArgumentParser(description="NTPmon test class")
+    parser.add_argument("--show-demos", action="store_true", help="Show demo output.")
     args = parser.parse_args(namespace=test_checkntpmon)
     if test_checkntpmon.show_demos:
         demo()
     else:
         unittest.main()
-
