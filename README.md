@@ -130,9 +130,9 @@ configure this to listen on a host and/or port other than the default
 ## Startup delay
 
 By default, until the NTP server has been running for 512 seconds (the minimum
-time for 8 polls at 64-second intervals), `check_ntpmon`` will return OK (zero
+time for 8 polls at 64-second intervals), `check_ntpmon` will return OK (zero
 return code). This is to prevent false positives on startup or for short-lived
-VMs.  To ignore this safety precaution, use `--run-time`` with a low number
+VMs.  To ignore this safety precaution, use `--run-time` with a low number
 (e.g. 1 sec).
 
 ## To do
