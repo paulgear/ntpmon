@@ -169,13 +169,13 @@ async def start_tasks(args: argparse.Namespace, hostname: str, telegraf: TextIOW
 def main():
     args = get_args()
 
-    if "COLLECTD_HOSTNAME" in os.environ:
+    if "COLLECTD_HOSTNAME" in os.environ and args.mode is None:
         args.mode = "collectd"
         hostname = os.environ["COLLECTD_HOSTNAME"]
     else:
         hostname = socket.getfqdn()
 
-    if "COLLECTD_INTERVAL" in os.environ:
+    if "COLLECTD_INTERVAL" in os.environ and args.mode is None:
         args.mode = "collectd"
         if args.interval is None:
             args.interval = float(os.environ["COLLECTD_INTERVAL"])
