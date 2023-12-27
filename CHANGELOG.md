@@ -5,6 +5,30 @@ Notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2023-12-27
+
+### Changed
+
+- Added individual peer stats (derived from chronyd's measurements.log or ntpd's
+  peerstats) to metrics output.  These are automatically detected in the default
+  locations of /var/log/chrony/measurements.log and /var/log/ntpstats/peerstats
+  and emitted automatically to telegraf or the prometheus exporter.
+- Added --logfile command line option to allow changing the above defaults.
+- Reformatted all code with 'black' (see Makefile 'format' target).  Please use
+  this Makefile target before submitting any pull requests.
+- Updated license to AGPLv3.
+- Removed trace-related metrics.
+- Removed juju layer.
+- Clean up internal structure:
+  - outputs.py now provides a class structure for encapsulating knowledge about
+    collectd, prometheus, and telegraf
+  - alert.py and ntpmon.py no longer have special casing for the mode
+  - all argument processing and defaults selection is done in get_args()
+- Some collectd data types have been updated to reflect the defaults available
+  in version 5.12.  I'm considering deprecating collectd support in a near
+  future version.  If you are using ntpmon with collectd and would prefer this
+  support not to go away, please let me know.
+
 ## [2.1.0] - 2023-12-22
 
 ### Changed
