@@ -8,7 +8,7 @@ import socket
 import sys
 
 from io import TextIOWrapper
-from typing import ClassVar
+from typing import ClassVar, Dict
 
 
 import line_protocol
@@ -16,7 +16,7 @@ import line_protocol
 
 class Output:
 
-    peertypes: ClassVar[dict[str, str]] = {
+    peertypes: ClassVar[Dict[str, str]] = {
         "backup": "peers/count-backup",
         "excess": "peers/count-excess",
         "false": "peers/count-false",
@@ -27,7 +27,7 @@ class Output:
         "sync": "peers/count-sync",
     }
 
-    peerstatstypes: ClassVar[dict[str, str]] = {
+    peerstatstypes: ClassVar[Dict[str, str]] = {
         "authenticated": "authenticated/bool",
         "authentication_enabled": "authentication-enabled/bool",
         "authentication_fail": "authentication-fail/bool",
@@ -58,7 +58,7 @@ class Output:
         "synchronized": "synchronized/bool",
     }
 
-    summarytypes: ClassVar[dict[str, str]] = {
+    summarytypes: ClassVar[Dict[str, str]] = {
         "frequency": "frequency/frequency_offset",
         "offset": "offset/time_offset",
         "reach": "reachability/percent",
@@ -119,7 +119,7 @@ class PrometheusOutput(Output):
         "type",
     ]
 
-    peerstatstypes: ClassVar[dict[str, str]] = {
+    peerstatstypes: ClassVar[Dict[str, str]] = {
         "authenticated": ("i", None, "Whether the peer is authenticated"),
         "authentication_enabled": ("i", None, "Whether the peer has authentication enabled"),
         "authentication_fail": ("i", None, "Whether the peer has failed authentication"),
@@ -150,7 +150,7 @@ class PrometheusOutput(Output):
         "synchronized": ("i", None, "Whether the peer reports as synchronized"),
     }
 
-    summarystatstypes: ClassVar[dict[str, tuple[str, str, str]]] = {
+    summarystatstypes: ClassVar[Dict[str, tuple[str, str, str]]] = {
         "frequency": (None, "_hertz", "Frequency error of the local clock"),
         "offset": (None, "_seconds", "Mean clock offset of peers"),
         "reach": ("%", "_ratio", "Peer reachability over the last 8 polls"),
