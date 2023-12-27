@@ -226,7 +226,7 @@ class PrometheusOutput(Output):
         if debug:
             print("# HELP %s %s" % (name, description))
             print("# TYPE %s gauge" % (name,))
-            labelstr = ",".join([k + "=\"" + v + "\"" for k, v in zip(labelnames, labels)])
+            labelstr = ",".join([k + '="' + v + '"' for k, v in zip(labelnames, labels)])
             if len(labelstr):
                 labelstr = "{" + labelstr + "}"
             valuestr = fmt % (value,)
