@@ -10,20 +10,15 @@ import socket
 import sys
 import time
 
-from io import TextIOWrapper
-
 import alert
-import line_protocol
+import outputs
 import peer_stats
 import process
 
 from tailer import Tailer
 
 
-debug = sys.stdout.isatty()
-
-
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="NTPmon - NTP metrics monitor")
     parser.add_argument(
         "--mode",
@@ -40,6 +35,17 @@ def get_args():
         type=str,
         help="Connect string (in host:port format) to use when sending data to telegraf (default: 127.0.0.1:8094)",
         default="127.0.0.1:8094",
+    )
+    parser.add_argument(
+        "--debug",
+        action=argparse.BooleanOptionalAction,
+        help="Run in debug mode (default: True if standard output is a tty device)",
+        default=sys.stdout.isatty(),
+    )
+    parser.add_argument(
+        "--hostname",
+        type=str,
+        help="The hostname to use for sending collectd metrics",
     )
     parser.add_argument(
         "--interval",
@@ -65,46 +71,34 @@ def get_args():
         default=9648,
     )
     args = parser.parse_args()
+
+    if "COLLECTD_INTERVAL" in os.environ:
+        if args.interval is None:
+            args.interval = float(os.environ["COLLECTD_INTERVAL"])
+        if args.mode is None:
+            args.mode = "collectd"
+
+    if "COLLECTD_HOSTNAME" in os.environ:
+        if args.hostname is None:
+            args.hostname = os.environ["COLLECTD_HOSTNAME"]
+        if args.mode is None:
+            args.mode = "collectd"
+
+    if args.hostname is None:
+        args.hostname = socket.getfqdn()
+
+    if args.interval is None:
+        args.interval = 60
+
     return args
 
 
-def get_telegraf_file(connect: str) -> TextIOWrapper:
-    """Return a TextIOWrapper for writing data to telegraf"""
-    (host, port) = connect.split(":")
-    port = int(port)
-    s = socket.socket()
-    s.connect((host, port))
-    return s.makefile(mode="w")
-
-
-def get_time_until(interval):
+def get_time_until(interval: int) -> float:
     now = time.time()
     return interval - now % interval
 
 
 checkobjs = None
-
-
-async def alert_task(args: argparse.Namespace, hostname: str, telegraf: TextIOWrapper):
-    global checkobjs
-    checks = ["proc", "offset", "peers", "reach", "sync", "vars"]
-    alerter = alert.NTPAlerter(checks)
-    while True:
-        implementation = process.get_implementation()
-        if implementation:
-            # run the checks, returning their data
-            checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
-            # alert on the data collected
-            alerter.alert(
-                checkobjs=checkobjs,
-                hostname=hostname,
-                interval=args.interval,
-                format=args.mode,
-                telegraf_file=telegraf,
-                debug=debug,
-            )
-
-        await asyncio.sleep(get_time_until(args.interval))
 
 
 def find_type(source: str, peerobjs: dict) -> str:
@@ -120,11 +114,9 @@ def find_type(source: str, peerobjs: dict) -> str:
         return "UNKNOWN"
 
 
-async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> None:
-    if args.mode != "telegraf":
-        # FIXME: add prometheus & collectd implementation
-        return
-
+async def peer_stats_task(args: argparse.Namespace, output: outputs.Output) -> None:
+    """Tail the peer stats log file and send the measurements to the selected output"""
+    global checkobjs
     implementation = None
     logfile = args.logfile
     tailer = None
@@ -156,45 +148,30 @@ async def peer_stats_task(args: argparse.Namespace, telegraf: TextIOWrapper) -> 
             if stats is not None:
                 if "type" not in stats:
                     stats["type"] = find_type(stats["source"], checkobjs["peers"].peers)
-                telegraf_line = line_protocol.to_line_protocol(stats, "ntpmon_peer")
-                print(telegraf_line, file=telegraf)
+                output.send_measurement(stats, debug=args.debug)
 
 
-async def start_tasks(args: argparse.Namespace, hostname: str, telegraf: TextIOWrapper) -> None:
-    alert = asyncio.create_task(alert_task(args, hostname, telegraf), name="alert")
-    stats = asyncio.create_task(peer_stats_task(args, telegraf), name="stats")
-    await asyncio.wait((alert, stats), return_when=asyncio.ALL_COMPLETED)
+async def summary_stats_task(args: argparse.Namespace, output: outputs.Output) -> None:
+    global checkobjs
+    checks = ["proc", "offset", "peers", "reach", "sync", "vars"]
+    alerter = alert.NTPAlerter(checks)
+    while True:
+        implementation = process.get_implementation()
+        if implementation:
+            # run the checks, returning their data
+            checkobjs = process.ntpchecks(checks, debug=False, implementation=implementation)
+            # alert on the data collected
+            alerter.alert(checkobjs=checkobjs, output=output, debug=args.debug)
+
+        await asyncio.sleep(get_time_until(args.interval))
 
 
-def main():
-    args = get_args()
-
-    if "COLLECTD_HOSTNAME" in os.environ and args.mode is None:
-        args.mode = "collectd"
-        hostname = os.environ["COLLECTD_HOSTNAME"]
-    else:
-        hostname = socket.getfqdn()
-
-    if "COLLECTD_INTERVAL" in os.environ and args.mode is None:
-        args.mode = "collectd"
-        if args.interval is None:
-            args.interval = float(os.environ["COLLECTD_INTERVAL"])
-
-    if args.interval is None:
-        args.interval = 60
-
-    if not debug:
-        if args.mode == "telegraf":
-            telegraf_file = get_telegraf_file(args.connect)
-        elif args.mode == "prometheus":
-            import prometheus_client
-
-            prometheus_client.start_http_server(addr=args.listen_address, port=args.port)
-    else:
-        telegraf_file = sys.stdout
-
-    asyncio.run(start_tasks(args, hostname, telegraf_file))
+async def start_tasks(args: argparse.Namespace) -> None:
+    output = outputs.get_output(args)
+    peer_stats = asyncio.create_task(peer_stats_task(args, output), name="peerstats")
+    summary_stats = asyncio.create_task(summary_stats_task(args, output), name="summarystats")
+    await asyncio.wait((peer_stats, summary_stats), return_when=asyncio.FIRST_COMPLETED)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(start_tasks(get_args()))

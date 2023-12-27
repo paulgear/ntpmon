@@ -39,7 +39,7 @@ def test_parse_chrony_measurements() -> None:
     assert measurements[3]["offset"] > measurements[4]["offset"]
     assert measurements[4]["datetime"] == datetime.datetime(2021, 12, 30, 11, 28, 49, tzinfo=datetime.timezone.utc)
     assert measurements[5]["score"] == 0.01
-    assert bool(measurements[5]["exceeded-max-delay-dev-ratio"])
+    assert bool(measurements[5]["exceeded_max_delay_dev_ratio"])
 
 
 peerstats = """
