@@ -1,3 +1,9 @@
+ntpmon (3.0.0-1) focal; urgency=medium
+
+  * New upstream release.
+
+ -- Paul Gear <github@libertysys.com.au>  Wed, 27 Dec 2023 21:23:05 +1000
+
 ntpmon (2.1.0-1) focal; urgency=medium
 
   * New upstream release.
