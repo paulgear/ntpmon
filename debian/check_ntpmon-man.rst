@@ -1,5 +1,5 @@
-:Version: 2.1.0
-:Date: 2023-09-28
+:Version: 3.0.0
+:Date: 2023-12-27
 :Copyright: 2015-2023 Paul Gear
 :Title: check_ntpmon
 :Subtitle: NTPmon Nagios check

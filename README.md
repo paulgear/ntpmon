@@ -8,6 +8,11 @@ including support for Nagios performance data.  NTPmon can also run as a daemon
 for sending metrics to collectd, prometheus, or telegraf.  It supports both
 `ntpd` and `chronyd`.
 
+NTPmon is designed to encourage the use of robust NTP configurations.  The
+defaults for what is considered healthy and non-healthy are roughly based on
+[RFC8633: NTP Best Current
+Practices](https://datatracker.ietf.org/doc/html/rfc8633).
+
 ## Copyright
 
 Copyright (c) 2015-2023 Paul D. Gear <https://libertysys.com.au/>
@@ -71,6 +76,8 @@ To run NTPmon directly from source after manually installing the prerequisites:
 
 NTPmon alerts on the following metrics of the local NTP server:
 
+### Summary metrics
+
 #### sync
 
 Does NTP have a sync peer?  If not, return CRITICAL, otherwise return OK.
@@ -79,8 +86,9 @@ Does NTP have a sync peer?  If not, return CRITICAL, otherwise return OK.
 
 Are there more than the minimum number of peers active?  The NTP algorithms
 require a minimum of 3 peers for accurate clock management; to allow for failure
-or maintenance of one peer at all times, NTPmon returns OK for 4 or more
-configured peers, CRITICAL for 1 or 0, and WARNING for 2-3.
+or maintenance of one peer at all times, NTPmon returns OK for [4 or more
+configured peers](https://datatracker.ietf.org/doc/html/rfc8633#section-3.2),
+CRITICAL for 1 or 0, and WARNING for 2-3.
 
 #### reach
 
@@ -98,7 +106,7 @@ less.
 ### System metrics
 
 In addition, NTPmon retrieves the following metrics directly from the local NTP
-server (using `ntpq -nc readvar`):
+server (using `ntpq -nc readvar` or `chronyc -c tracking`):
 
 - offset (as `sysoffset`, to distinguish it from `offset`)
 - sys_jitter (as `sysjitter`, for grouping with `sysoffset`)
@@ -110,7 +118,34 @@ server (using `ntpq -nc readvar`):
 See the [NTP documentation](http://doc.ntp.org/current-stable/ntpq.html#system)
 for the meaning of these metrics.
 
-### Prometheus exporter
+### Peer metrics
+
+Counts of each peer type are emitted under the `ntpmon_peers` metric.  The
+recognised peer types are `pps`, `sync`, `invalid`, `false`, `excess`, `backup`,
+`outlier`, `survivor`, and `unknown`.  (Under normal circumstances, `unknown`
+will never appear - its presence indicates a bug in NTPmon.)  Note that `sync`
+also includes the `pps` peer (if any), and `survivor` also includes the `sync`
+peer (if any), so they are not strictly mutually exclusive.  There should be no
+overlap in any of the other types.
+
+If your `chronyd` or `ntpd` is configured to store peer (source) statistics,
+these will be collected as they appear in the relevant log files
+(`/var/log/chrony/measurements.log` and `/var/log/ntpstats/peerstats`,
+respectively, by default) and emitted under the `ntpmon_peer` (singluar) metric,
+in addition to all the above-mentioned metrics.  Use the `--logfile` command
+line option to monitor a different file if your distribution uses different
+locations.  NTPmon will silently ignore any issues relating to these files in
+order to continue running, so if you don't notice metrics coming out when you
+expect them, check permissions on the files and compare their contents to the
+documented formats.  Please submit a bug report if you encounter persistent
+issues with this.
+
+`Collectd` doesn't have a really great way to support these individual peer
+metrics, so each peer is considered to be a `collectd` "host".  This feature
+should be considered experimental for `collectd`, and subject to change (input
+on this is welcome).
+
+## Prometheus exporter
 
 When run in prometheus mode, NTPmon uses the [prometheus python
 client](https://pypi.python.org/pypi/prometheus_client) to expose metrics via
@@ -119,13 +154,20 @@ been performed on this library by the NTPmon author; users are suggested not to
 expose it on untrusted networks, and are reminded that - as stated in the
 license terms - this software comes with no warranty.
 
-### Telegraf integration
+## Telegraf integration
 
 When run in telegraf mode, NTPmon requires the telegraf [socket
 listener](https://docs.influxdata.com/telegraf/v1/plugins/#input-socket_listener)
 input plugin to be enabled.  Use the `--connect` command-line option if you
 configure this to listen on a host and/or port other than the default
 (127.0.0.1:8094).
+
+Telegraf is the preferred output integration for NTPmon (over collectd and
+prometheus), due to its higher resolution timestamps, and measuring the
+timestamp at the source which generated it rather than the scraping host.  The
+other integrations (first collectd, then Nagios, then prometheus) may eventually
+go away if they are not widely used.  Please let me know if you have strong
+feelings about this.
 
 ## Startup delay
 
@@ -134,8 +176,3 @@ time for 8 polls at 64-second intervals), `check_ntpmon` will return OK (zero
 return code). This is to prevent false positives on startup or for short-lived
 VMs.  To ignore this safety precaution, use `--run-time` with a low number
 (e.g. 1 sec).
-
-## To do
-
-- Better/more documentation.
-- Better/more unit tests.
