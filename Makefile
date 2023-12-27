@@ -10,7 +10,8 @@ PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
-VERSION=3.0.0
+VERSION=3.0.1
+RELEASE=1
 
 TESTS=\
   unit_tests/test_peer_stats.py \
@@ -51,6 +52,16 @@ install:
 		src/jinja2_render.py src/ntpmon.service > $(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/$(NAME).service
 	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
 		src/jinja2_render.py src/ntpmon.env > $(DESTDIR)/$(CONFDIR)/$(NAME)
+
+release:
+	dch --newversion $(VERSION)-$(RELEASE)
+	dch --release --distribution focal
+	for i in CHANGELOG.md debian/changelog debian/*.rst; do \
+		grep -qw "$(VERSION)" $$i || exit 1; \
+	done
+	git commit -m'Prepare $(VERSION) release' -a
+	git tag --sign v$(VERSION)
+	git push --tags
 
 $(BUILDROOT):
 	mkdir $@

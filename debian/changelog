@@ -1,8 +1,14 @@
+ntpmon (3.0.1-1) focal; urgency=medium
+
+  * New upstream patch version to add packaging workflow.
+
+ -- Paul Gear <github@libertysys.com.au>  Wed, 27 Dec 2023 22:16:45 +1000
+
 ntpmon (3.0.0+repack1-1) focal; urgency=medium
 
   * No change repack to add Debian changelog.
 
- -- Paul Gear <github@libertysys.com.au>  Wed, 27 Dec 2023 22:04:40 +1000
+ -- Paul Gear <github@libertysys.com.au>  Wed, 27 Dec 2023 22:15:20 +1000
 
 ntpmon (3.0.0-1) focal; urgency=medium
 
