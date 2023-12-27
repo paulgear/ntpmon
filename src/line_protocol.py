@@ -61,7 +61,10 @@ def to_line_protocol(metrics: dict, which: str, additional_tags: dict = {}) -> s
         timestamp = f" {seconds}{nanoseconds:09}"
     else:
         timestamp = ""
-    return f"{which},{format_tags(metrics, additional_tags)} {format_fields(metrics)}{timestamp}"
+    tags = format_tags(metrics, additional_tags)
+    if len(tags):
+        tags = "," + tags
+    return f"{which}{tags} {format_fields(metrics)}{timestamp}"
 
 
 def transform_identifier(id: str) -> str:
