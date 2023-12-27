@@ -59,9 +59,14 @@ release:
 	for i in CHANGELOG.md debian/changelog debian/*.rst; do \
 		grep -qw "$(VERSION)" $$i || exit 1; \
 	done
+
+tag:
 	git commit -m'Prepare $(VERSION) release' -a
 	git tag --sign v$(VERSION)
 	git push --tags
+
+dput:
+	dput ntpmon buildroot/ntpmon_$(VERSION)-$(RELEASE)_source.changes
 
 $(BUILDROOT):
 	mkdir $@
