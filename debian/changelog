@@ -1,3 +1,9 @@
+ntpmon (3.0.0+repack1-1) focal; urgency=medium
+
+  * No change repack to add Debian changelog.
+
+ -- Paul Gear <github@libertysys.com.au>  Wed, 27 Dec 2023 22:04:40 +1000
+
 ntpmon (3.0.0-1) focal; urgency=medium
 
   * New upstream release.
