@@ -8,7 +8,7 @@ import socket
 import sys
 
 from io import TextIOWrapper
-from typing import ClassVar, Dict
+from typing import ClassVar, Dict, List
 
 
 import line_protocol
@@ -110,7 +110,7 @@ class PrometheusOutput(Output):
 
         prometheus_client.start_http_server(addr=args.listen_address, port=args.port)
 
-    peerstatslabels: ClassVar[list[str]] = [
+    peerstatslabels: ClassVar[List[str]] = [
         "mode",
         "refid",
         "rx_timestamp",
