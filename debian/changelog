@@ -1,3 +1,9 @@
+ntpmon (3.0.3-1) focal; urgency=medium
+
+  * Further fixes to focal build.
+
+ -- Paul Gear <github@libertysys.com.au>  Fri, 29 Dec 2023 14:38:42 +1000
+
 ntpmon (3.0.2-1) focal; urgency=medium
 
   * New upstream release to fix failing focal build.

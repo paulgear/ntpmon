@@ -8,7 +8,7 @@ import socket
 import sys
 
 from io import TextIOWrapper
-from typing import ClassVar, Dict, List
+from typing import ClassVar, Dict, List, Tuple
 
 
 import line_protocol
@@ -150,7 +150,7 @@ class PrometheusOutput(Output):
         "synchronized": ("i", None, "Whether the peer reports as synchronized"),
     }
 
-    summarystatstypes: ClassVar[Dict[str, tuple[str, str, str]]] = {
+    summarystatstypes: ClassVar[Dict[str, Tuple[str, str, str]]] = {
         "frequency": (None, "_hertz", "Frequency error of the local clock"),
         "offset": (None, "_seconds", "Mean clock offset of peers"),
         "reach": ("%", "_ratio", "Peer reachability over the last 8 polls"),
@@ -193,8 +193,8 @@ class PrometheusOutput(Output):
         prefix: str,
         metrics: dict,
         metrictypes: dict,
-        labelnames: list[str] = [],
-        labels: list[str] = [],
+        labelnames: List[str] = [],
+        labels: List[str] = [],
         debug: bool = False,
     ) -> None:
         for metric in sorted(metrictypes.keys()):
@@ -217,8 +217,8 @@ class PrometheusOutput(Output):
         description: str,
         value: float,
         fmt: str,
-        labelnames: list[str],
-        labels: list[str],
+        labelnames: List[str],
+        labels: List[str],
         debug: bool = False,
     ) -> None:
         import prometheus_client

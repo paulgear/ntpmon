@@ -10,7 +10,7 @@ PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
-VERSION=3.0.2
+VERSION=3.0.3
 RELEASE=1
 
 TESTS=\
@@ -22,10 +22,10 @@ TESTS=\
 test: pytest datatest
 
 pytest:
-	PYTHONPATH=$(PWD)/src python3 -m pytest $(TESTS)
+	PYTHONPATH=./src python3 -m pytest $(TESTS)
 
 datatest:
-	PYTHONPATH=$(PWD)/src ./testdata/testdata.sh
+	PYTHONPATH=./src ./testdata/testdata.sh
 
 format:
 	black --line-length=128 --target-version=py39 src/ unit_tests/
