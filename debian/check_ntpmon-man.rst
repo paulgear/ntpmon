@@ -1,4 +1,4 @@
-:Version: 3.0.3
+:Version: 3.0
 :Date: 2023-12-28
 :Copyright: 2015-2023 Paul Gear
 :Title: check_ntpmon
@@ -25,11 +25,15 @@ Common Options
 
 options:
   -h, --help            show this help message and exit
+
   --check [{proc,offset,peers,reach,reachability,sync,vars} ...]
                         Select checks to run; if omitted, run all checks.
+
   --debug               Include command output and internal state dump along
                         with check results.
+
   --run-time RUN_TIME   Time in seconds (default: 512) for which to always
                         return OK after NTP daemon startup.
+
   --test                Obtain peer stats on standard input instead of from
                         running daemon.

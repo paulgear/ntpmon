@@ -190,7 +190,7 @@ def extract_chrony_tracking(f: List[str]) -> dict:
 def extract_ntp_peerstats(f: List[str]) -> dict:
     basefields = {
         # sorted by field position rather than name
-        "datetime": datetime.datetime.fromtimestamp(mjd_to_timestamp(float(f[0]), float(f[1]))),
+        "datetime": datetime.datetime.fromtimestamp(mjd_to_timestamp(float(f[0]), float(f[1])), tz=datetime.timezone.utc),
         "source": f[2],
         "offset": float(f[4]),
         "delay": float(f[5]),
