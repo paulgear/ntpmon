@@ -10,7 +10,7 @@ PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
-VERSION=3.0.3
+VERSION=3.0.4
 RELEASE=1
 
 TESTS=\
@@ -54,15 +54,13 @@ install:
 		src/jinja2_render.py src/ntpmon.env > $(DESTDIR)/$(CONFDIR)/$(NAME)
 
 release:
+	grep -qw "$(VERSION)" CHANGELOG.md
 	dch --newversion $(VERSION)-$(RELEASE)
 	dch --release --distribution focal
-	for i in CHANGELOG.md debian/changelog debian/*.rst; do \
-		grep -qw "$(VERSION)" $$i || exit 1; \
-	done
+	git commit -m'Prepare $(VERSION) release' -a
 
 tag:
-	git commit -m'Prepare $(VERSION) release' -a
-	git tag --sign v$(VERSION)
+	git tag --sign -m'$(VERSION) release' v$(VERSION)
 	git push --tags
 
 dput:

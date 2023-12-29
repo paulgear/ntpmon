@@ -69,7 +69,7 @@ def test_parse_ntpd_peerstats() -> None:
     assert all([m is not None for m in measurements])
     assert measurements[0]["reachable"] == True
     assert measurements[0]["type"] == "survivor"
-    assert measurements[1]["datetime"] == datetime.datetime(2023, 12, 25, 18, 41, 56, 612000)
+    assert measurements[1]["datetime"] == datetime.datetime(2023, 12, 25, 8, 41, 56, 612000, tzinfo=datetime.timezone.utc)
     assert measurements[2]["offset"] > 0
     assert measurements[3]["type"] == "outlier"
     assert measurements[5]["type"] == "sync"
