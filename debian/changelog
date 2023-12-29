@@ -1,3 +1,9 @@
+ntpmon (3.0.2-1) focal; urgency=medium
+
+  * New upstream release to fix failing focal build.
+
+ -- Paul Gear <github@libertysys.com.au>  Fri, 29 Dec 2023 12:19:23 +1000
+
 ntpmon (3.0.1-1) focal; urgency=medium
 
   * New upstream patch version to add packaging workflow.
