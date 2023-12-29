@@ -6,6 +6,7 @@
 import datetime
 import re
 import sys
+from typing import List
 
 
 leapcodes = {
@@ -64,7 +65,7 @@ regex = re.compile(skiplines)
 # 20. Source of the local receive timestamp (D=daemon, K=kernel, H=hardware). [K]
 
 
-def extract_chrony_measurements(f: list[str]) -> dict:
+def extract_chrony_measurements(f: List[str]) -> dict:
     return {
         # sorted by field position rather than name
         "datetime": datetime.datetime.fromisoformat("+".join((f[0], f[1], "00:00"))),
@@ -118,7 +119,7 @@ def extract_chrony_measurements(f: list[str]) -> dict:
 #     negative value means the delay of packets sent to the source is more variable than the delay of packets sent from the source back. [0.00, i.e. no correction for asymmetry]
 
 
-def extract_chrony_statistics(f: list[str]) -> dict:
+def extract_chrony_statistics(f: List[str]) -> dict:
     return {
         # sort by field position rather than name
         "datetime": datetime.datetime.fromisoformat("+".join((f[0], f[1], "00:00"))),
@@ -155,7 +156,7 @@ def extract_chrony_statistics(f: list[str]) -> dict:
 #     dispersion from the previous update with the dispersion which accumulated in the interval. [8.304e-03]
 
 
-def extract_chrony_tracking(f: list[str]) -> dict:
+def extract_chrony_tracking(f: List[str]) -> dict:
     return {
         # sort by field position rather than name
         "datetime": datetime.datetime.fromisoformat("+".join((f[0], f[1], "00:00"))),
@@ -186,7 +187,7 @@ def extract_chrony_tracking(f: list[str]) -> dict:
 # 0.000958674 	s 	RMS jitter
 
 
-def extract_ntp_peerstats(f: list[str]) -> dict:
+def extract_ntp_peerstats(f: List[str]) -> dict:
     basefields = {
         # sorted by field position rather than name
         "datetime": datetime.datetime.fromtimestamp(mjd_to_timestamp(float(f[0]), float(f[1]))),

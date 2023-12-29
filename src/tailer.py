@@ -7,6 +7,8 @@ import os
 import sys
 import time
 
+from typing import List
+
 
 class Tailer:
 
@@ -42,7 +44,7 @@ class Tailer:
         finally:
             self.first_time = False
 
-    def readlines(self) -> list[str]:
+    def readlines(self) -> List[str]:
         """Read all of the remaining lines in the currently-open file."""
         try:
             self.file.seek(0, os.SEEK_END)
@@ -66,7 +68,7 @@ class Tailer:
         except OSError:
             pass
 
-    def tail(self) -> list[str]:
+    def tail(self) -> List[str]:
         """Get the lines from the file.  Handle the case where the file is not
         yet open, or if it has been deleted and recreated."""
         if self.file is None:
