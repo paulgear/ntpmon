@@ -1,5 +1,5 @@
-:Version: 3.0.1
-:Date: 2023-12-27
+:Version: 3.0.2
+:Date: 2023-12-28
 :Copyright: 2015-2023 Paul Gear
 :Title: ntpmon
 :Subtitle: NTP metrics monitor
