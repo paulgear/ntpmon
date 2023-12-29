@@ -16,8 +16,8 @@ jobs:
 
       - name: build debian package
         uses: jtdor/build-deb-action@v1
-        docker-image: ubuntu:focal
         env:
           DEB_BUILD_OPTIONS: noautodbgsym
         with:
           buildpackage-opts: --build=binary --no-sign
+          docker-image: ubuntu:focal
