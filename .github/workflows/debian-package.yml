@@ -1,0 +1,23 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches:
+      - feature/*
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v3
+
+      - name: build debian package
+        uses: jtdor/build-deb-action@v1
+        docker-image: ubuntu:focal
+        env:
+          DEB_BUILD_OPTIONS: noautodbgsym
+        with:
+          buildpackage-opts: --build=binary --no-sign
