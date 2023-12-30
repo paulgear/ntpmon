@@ -250,7 +250,7 @@ class TelegrafOutput(Output):
         super().__init__()
         self.file = sys.stdout if args.debug else self.get_telegraf_file(args.connect)
 
-    @classmethod
+    @staticmethod
     def get_telegraf_file(connect: str) -> TextIOWrapper:
         """Return a TextIOWrapper for writing data to telegraf"""
         (host, port) = connect.split(":")
