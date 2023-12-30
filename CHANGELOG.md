@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ensure the ntpmon user is in the chrony or ntp system groups if they are
   present.
 - Add test suite for line_protocol and fix some resultant bugs.
+- Reduce polling frequency on peer stats log to once every 3 seconds.
 
 ## [3.0.4] - 2023-12-29
 
