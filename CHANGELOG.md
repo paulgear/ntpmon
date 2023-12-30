@@ -5,6 +5,17 @@ Notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.5] - 2023-12-30
+
+### Changed
+
+- Fix incorrect function decorator preventing startup in telegraf mode.
+- Ensure the ntpmon user is in the chrony or ntp system groups if they are
+  present.  This fixes the inability to read chrony logs by default on Debian
+  and Ubuntu.
+- Add test suite for line_protocol and fix some resultant bugs.
+- Reduce polling frequency on peer stats log to once every 3 seconds.
+
 ## [3.0.4] - 2023-12-29
 
 ### Changed

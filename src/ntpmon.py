@@ -122,7 +122,7 @@ async def peer_stats_task(args: argparse.Namespace, output: outputs.Output) -> N
     tailer = None
 
     while True:
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(3)
 
         if implementation is None:
             implementation = process.get_implementation()

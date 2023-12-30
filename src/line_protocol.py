@@ -9,22 +9,28 @@
 # With telegraf we can only use timestamps in nanosecond format
 
 
+import re
+
+
 exclude_fields = []
 
 exclude_tags = []
 
 
+# https://docs.influxdata.com/influxdb/v2/reference/syntax/line-protocol/#special-characters
+def escape_tag_value(s: str) -> str:
+    return s.replace(" ", "\\ ").replace(",", "\\,").replace("=", "\\=")
+
+
 def format_tags(metrics: dict, additional_tags: dict) -> str:
+    all_metrics = {}
+    all_metrics.update(additional_tags)
+    all_metrics.update(metrics)
     return ",".join(
         [
-            f"{transform_identifier(tag)}={metrics[tag]}"
-            for tag in sorted(metrics.keys())
-            if tag not in exclude_tags and type(metrics[tag]) == str
-        ]
-        + [
-            f"{transform_identifier(tag)}={additional_tags[tag]}"
-            for tag in sorted(additional_tags.keys())
-            if tag not in exclude_tags
+            f"{transform_identifier(tag)}={escape_tag_value(all_metrics[tag])}"
+            for tag in sorted(all_metrics.keys())
+            if tag not in exclude_tags and type(all_metrics[tag]) == str
         ]
     )
 
@@ -50,8 +56,10 @@ def format_fields(metrics: dict) -> str:
 
 
 def timestamp_to_line_protocol(timestamp: float) -> (int, int):
+    if timestamp < 0:
+        raise ValueError("timestamps cannot be negative")
     seconds = int(timestamp)
-    nanoseconds = int((timestamp - seconds) * 1_000_000_000)
+    nanoseconds = round((timestamp - seconds) * 1_000_000_000)
     return (seconds, nanoseconds)
 
 
@@ -67,5 +75,8 @@ def to_line_protocol(metrics: dict, which: str, additional_tags: dict = {}) -> s
     return f"{which}{tags} {format_fields(metrics)}{timestamp}"
 
 
+punctuation = re.compile(r'[-!@#$%^&()<>,./\?+=:;"\'\[\]\{\}\*\s]+')
+
+
 def transform_identifier(id: str) -> str:
-    return id.replace("-", "_").strip("_")
+    return punctuation.sub("_", id).strip("_")

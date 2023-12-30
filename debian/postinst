@@ -33,6 +33,16 @@ case "$1" in
                 --system \
                 "$NAME"
         fi
+        TMP=$(mktemp)
+        for GROUP in _chrony ntp; do
+            if getent group "$GROUP" >$TMP; then
+                if grep -qw "$NAME" $TMP; then
+                    : $NAME already in $GROUP
+                else
+                    adduser "$NAME" "$GROUP"
+                fi
+            fi
+        done
         ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
