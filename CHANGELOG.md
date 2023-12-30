@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix incorrect function decorator preventing startup in telegraf mode.
 - Ensure the ntpmon user is in the chrony or ntp system groups if they are
-  present.
+  present.  This fixes the inability to read chrony logs by default on Debian
+  and Ubuntu.
 - Add test suite for line_protocol and fix some resultant bugs.
 - Reduce polling frequency on peer stats log to once every 3 seconds.
 
