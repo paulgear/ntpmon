@@ -10,7 +10,7 @@ PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
-VERSION=3.0.4
+VERSION=3.0.5
 RELEASE=1
 
 TESTS=\
