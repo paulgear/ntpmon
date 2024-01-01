@@ -39,7 +39,7 @@ def get_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--debug",
-        action=argparse.BooleanOptionalAction,
+        action="store_true",
         help="Run in debug mode (default: True if standard output is a tty device)",
         default=sys.stdout.isatty(),
     )
@@ -64,6 +64,11 @@ def get_args() -> argparse.Namespace:
         "--logfile",
         type=str,
         help="Log file to follow for peer statistics, if different from the default",
+    )
+    parser.add_argument(
+        "--no-debug",
+        action="store_false",
+        dest="debug",
     )
     parser.add_argument(
         "--port",
