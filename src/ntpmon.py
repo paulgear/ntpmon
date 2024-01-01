@@ -14,6 +14,7 @@ import alert
 import outputs
 import peer_stats
 import process
+import version
 
 from tailer import Tailer
 
@@ -70,7 +71,17 @@ def get_args() -> argparse.Namespace:
         help="TCP port on which to listen when acting as a prometheus exporter (default: 9648)",
         default=9648,
     )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        default=False,
+        help="Print the ntpmon version and exit",
+    )
     args = parser.parse_args()
+
+    if args.version:
+        print(version.get_version())
+        sys.exit(0)
 
     if "COLLECTD_INTERVAL" in os.environ:
         if args.interval is None:

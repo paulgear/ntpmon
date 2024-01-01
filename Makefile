@@ -10,7 +10,7 @@ PREFIX=/usr/local
 SHAREDIR=share/$(NAME)
 SYSTEMD_SERVICE_DIR=/lib/systemd/system
 USER=$(NAME)
-VERSION=3.0.5
+VERSION=$(shell python3 ./src/ntpmon.py --version)
 RELEASE=1
 
 TESTS=\
@@ -30,7 +30,7 @@ datatest:
 	PYTHONPATH=./src ./testdata/testdata.sh
 
 format:
-	black --line-length=128 --target-version=py39 src/ unit_tests/
+	black --line-length=128 --target-version=py39 --exclude version_data.py src/ unit_tests/
 
 push:
 	git push github

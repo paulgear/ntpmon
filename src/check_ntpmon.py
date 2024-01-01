@@ -6,6 +6,8 @@
 import argparse
 import sys
 
+import version
+
 from alert import NTPAlerter
 from peers import NTPPeers
 from process import ntpchecks
@@ -35,7 +37,18 @@ def get_args(checks):
         action="store_true",
         help="Obtain peer stats on standard input instead of from running daemon.",
     )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        default=False,
+        help="Print the check_ntpmon version and exit",
+    )
     args = parser.parse_args()
+
+    if args.version:
+        print(version.get_version())
+        sys.exit(0)
+
     return args
 
 
