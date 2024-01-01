@@ -162,8 +162,8 @@ async def peer_stats_task(args: argparse.Namespace, output: outputs.Output) -> N
         for line in lines:
             stats = peer_stats.parse_measurement(line)
             if stats is not None:
-                if "type" not in stats:
-                    stats["type"] = find_type(stats["source"], checkobjs["peers"].peers)
+                if "peertype" not in stats:
+                    stats["peertype"] = find_type(stats["source"], checkobjs["peers"].peers)
                 output.send_measurement(stats, debug=args.debug)
 
 

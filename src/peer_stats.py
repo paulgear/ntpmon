@@ -222,12 +222,13 @@ select_field = {
 def extract_ntpd_status_word(status: str) -> dict:
     status_word = int(status, 16) >> 8
     return {
-        "broadcast": bool(status_word & 0x08),
-        "reachable": bool(status_word & 0x10),
-        "authenticated": bool(status_word & 0x20),
-        "authentication_enabled": bool(status_word & 0x40),
+        # ordered from most significant to least significant bits
         "persistent": bool(status_word & 0x80),
-        "type": select_field[status_word & 0x07],
+        "authentication_enabled": bool(status_word & 0x40),
+        "authenticated": bool(status_word & 0x20),
+        "reachable": bool(status_word & 0x10),
+        "broadcast": bool(status_word & 0x08),
+        "peertype": select_field[status_word & 0x07],
     }
 
 
