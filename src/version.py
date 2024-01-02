@@ -4,6 +4,11 @@
 
 import version_data
 
+_version = None
+
 
 def get_version() -> str:
-    return ".".join((str(version_data.MAJOR), str(version_data.MINOR), str(version_data.PATCH)))
+    global _version
+    if _version is None:
+        _version = ".".join((str(version_data.MAJOR), str(version_data.MINOR), str(version_data.PATCH)))
+    return _version
