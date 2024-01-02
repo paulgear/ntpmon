@@ -13,6 +13,7 @@ import pprint
 
 import metrics
 import outputs
+import version
 
 from classifier import MetricClassifier
 
@@ -90,6 +91,7 @@ class NTPAlerter(object):
         self.mc.classify_metrics(self.metrics)
         (m, rc) = self.mc.worst_metric(self.checks)
         self.metrics["result"] = self.return_code()
+        self.metrics["ntpmon_version"] = version.get_version()
         output.send_summary_stats(self.metrics, debug)
         output.send_peer_counts(self.metrics, debug)
 

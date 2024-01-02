@@ -60,6 +60,7 @@ class Output:
 
     summarytypes: ClassVar[Dict[str, str]] = {
         "frequency": "frequency/frequency_offset",
+        "ntpmon_version": None,
         "offset": "offset/time_offset",
         "reach": "reachability/percent",
         "rootdelay": "rootdelay/root_delay",
@@ -96,7 +97,7 @@ class CollectdOutput(Output):
         if hostname is None:
             hostname = self.args.hostname
         for metric in sorted(types.keys()):
-            if metric in metrics:
+            if metric in metrics and types[metric] is not None:
                 print(self.formatstr % (hostname, types[metric], self.args.interval, metrics[metric]))
 
     def send_summary_stats(self, metrics: dict, debug: bool = False) -> None:
@@ -186,7 +187,14 @@ class PrometheusOutput(Output):
                 )
 
     def send_summary_stats(self, metrics: dict, debug: bool = False) -> None:
-        self.send_stats("ntpmon", metrics, self.summarystatstypes, debug=debug)
+        self.send_stats(
+            "ntpmon",
+            metrics,
+            self.summarystatstypes,
+            labelnames=["ntpmon_version"],
+            labels=[metrics["ntpmon_version"]],
+            debug=debug,
+        )
 
     def send_stats(
         self,
