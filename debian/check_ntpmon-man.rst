@@ -1,6 +1,6 @@
 :Version: 3.0
 :Date: 2023-12-28
-:Copyright: 2015-2023 Paul Gear
+:Copyright: 2015-2024 Paul D. Gear
 :Title: check_ntpmon
 :Subtitle: NTPmon Nagios check
 :Manual group: NTP metrics monitor
