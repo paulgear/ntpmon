@@ -3,7 +3,24 @@
 Notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project (mostly) adheres to [Semantic
+Versioning](https://semver.org/spec/v2.0.0.html).
+
+Semantic Versioning dictates that only the 0.y.z version should undergo rapid
+changes.  This project differs in that I want to be able to undertake rapid
+changes at multiple stages after stable versions have been released.  Hence,
+from version 3.x onwards NTPmon will use a versioning style somewhat like the
+Linux kernel original versioning scheme, where odd-numbered major versions are
+development releases, which can have backwards incompatible changes introduced
+over the lifetime of that major version. Even-numbered major versions will be
+stable releases which will only contain new features and bug fixes.
+
+The current stable release is 2.1.0.  It will be receiving no further
+development unless critical security or data integrity bugs are found.
+
+The current development release is 3.0.6.  This is the recommended version for
+anyone who wants the latest features.  It should be suitable for production
+deployment very soon.
 
 ## [3.0.5] - 2023-12-30
 
