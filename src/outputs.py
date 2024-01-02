@@ -112,11 +112,11 @@ class PrometheusOutput(Output):
 
     peerstatslabels: ClassVar[List[str]] = [
         "mode",
+        "peertype",
         "refid",
         "rx_timestamp",
         "source",
         "tx_timestamp",
-        "type",
     ]
 
     peerstatstypes: ClassVar[Dict[str, str]] = {
