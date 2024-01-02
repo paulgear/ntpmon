@@ -15,6 +15,7 @@ RELEASE=1
 
 TESTS=\
   unit_tests/test_classifier.py \
+  unit_tests/test_info.py \
   unit_tests/test_line_protocol.py \
   unit_tests/test_peer_stats.py \
   unit_tests/test_peers.py \

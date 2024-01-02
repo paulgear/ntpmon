@@ -87,11 +87,13 @@ class NTPAlerter(object):
         """
         Produce the metrics
         """
+        if "info" in checkobjs:
+            output.send_info(checkobjs["info"], debug)
+            del checkobjs["info"]
         self.collectmetrics(checkobjs=checkobjs)
         self.mc.classify_metrics(self.metrics)
         (m, rc) = self.mc.worst_metric(self.checks)
         self.metrics["result"] = self.return_code()
-        self.metrics["ntpmon_version"] = version.get_version()
         output.send_summary_stats(self.metrics, debug)
         output.send_peer_counts(self.metrics, debug)
 

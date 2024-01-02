@@ -169,7 +169,7 @@ async def peer_stats_task(args: argparse.Namespace, output: outputs.Output) -> N
 
 async def summary_stats_task(args: argparse.Namespace, output: outputs.Output) -> None:
     global checkobjs
-    checks = ["proc", "offset", "peers", "reach", "sync", "vars"]
+    checks = ["proc", "info", "offset", "peers", "reach", "sync", "vars"]
     alerter = alert.NTPAlerter(checks)
     while True:
         implementation = process.get_implementation()

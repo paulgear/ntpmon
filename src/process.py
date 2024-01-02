@@ -9,6 +9,8 @@ import time
 
 import psutil
 
+import info
+
 from peers import NTPPeers
 from readvar import NTPVars
 
@@ -22,10 +24,12 @@ _progs = {
     "chronyd": {
         "peers": "chronyc -c sources",
         "vars": "chronyc -c tracking",
+        "version": "chronyd --version",
     },
     "ntpd": {
         "peers": "ntpq -pn",
         "vars": "ntpq -nc readvar",
+        "version": "ntpd --version",
     },
 }
 
@@ -87,7 +91,7 @@ def get_logfile(implementation) -> str:
 
 def get_progs(implementation):
     """Return the dict of programs for this implementation, or None, if one cannot be detected."""
-    if implementation in _progs:
+    if implementation is not None and implementation in _progs:
         return _progs[implementation]
 
     implementation = detect_implementation()
@@ -158,6 +162,10 @@ def ntpchecks(checks, debug, implementation=None):
     if "vars" in checks:
         (output, elapsed) = execute("vars", debug=debug, implementation=implementation)
         objs["vars"] = NTPVars(output, elapsed)
+
+    if "info" in checks:
+        (output, elapsed) = execute("version", debug=debug, implementation=implementation)
+        objs["info"] = info.get_info(implementation=implementation, version=output[0])
 
     return objs
 
