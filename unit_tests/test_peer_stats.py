@@ -1,5 +1,5 @@
 #
-# Copyright:    (c) 2015-2023 Paul D. Gear
+# Copyright:    (c) 2015-2024 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 import datetime
@@ -68,11 +68,11 @@ def test_parse_ntpd_peerstats() -> None:
     assert len(measurements) == len(lines)
     assert all([m is not None for m in measurements])
     assert measurements[0]["reachable"] == True
-    assert measurements[0]["type"] == "survivor"
+    assert measurements[0]["peertype"] == "survivor"
     assert measurements[1]["datetime"] == datetime.datetime(2023, 12, 25, 8, 41, 56, 612000, tzinfo=datetime.timezone.utc)
     assert measurements[2]["offset"] > 0
-    assert measurements[3]["type"] == "outlier"
-    assert measurements[5]["type"] == "sync"
+    assert measurements[3]["peertype"] == "outlier"
+    assert measurements[5]["peertype"] == "sync"
     assert measurements[10]["offset"] < 0
     assert all([m["authenticated"] == False for m in measurements])
     assert all([m["broadcast"] == False for m in measurements])

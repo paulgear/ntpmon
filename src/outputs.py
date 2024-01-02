@@ -1,5 +1,5 @@
 #
-# Copyright:    (c) 2023 Paul D. Gear
+# Copyright:    (c) 2023-2024 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 
@@ -70,6 +70,9 @@ class Output:
         "sysoffset": "sysoffset/time_offset",
     }
 
+    def send_info(self, metrics: dict, debug: bool = False) -> None:
+        pass
+
     def send_measurement(self, metrics: dict, debug: bool = False) -> None:
         pass
 
@@ -96,7 +99,7 @@ class CollectdOutput(Output):
         if hostname is None:
             hostname = self.args.hostname
         for metric in sorted(types.keys()):
-            if metric in metrics:
+            if metric in metrics and types[metric] is not None:
                 print(self.formatstr % (hostname, types[metric], self.args.interval, metrics[metric]))
 
     def send_summary_stats(self, metrics: dict, debug: bool = False) -> None:
@@ -110,16 +113,32 @@ class PrometheusOutput(Output):
 
         prometheus_client.start_http_server(addr=args.listen_address, port=args.port)
 
+    infolabels: ClassVar[List[str]] = [
+        "implementation_name",
+        "implementation_version",
+        "ntpmon_version",
+        "platform_machine",
+        "platform_release",
+        "platform_system",
+        "python_version",
+    ]
+
+    infotypes: ClassVar[Dict[str, Tuple[str, str, str]]] = {
+        "ntpmon_rss": ("i", "_bytes", "The resident set size of the ntpmon process"),
+        "ntpmon_uptime": (None, "_seconds", "Time for which the ntpmon process has been running"),
+        "ntpmon_vms": ("i", "_bytes", "The virtual memory size of the ntpmon process"),
+    }
+
     peerstatslabels: ClassVar[List[str]] = [
         "mode",
+        "peertype",
         "refid",
         "rx_timestamp",
         "source",
         "tx_timestamp",
-        "type",
     ]
 
-    peerstatstypes: ClassVar[Dict[str, str]] = {
+    peerstatstypes: ClassVar[Dict[str, Tuple[str, str, str]]] = {
         "authenticated": ("i", None, "Whether the peer is authenticated"),
         "authentication_enabled": ("i", None, "Whether the peer has authentication enabled"),
         "authentication_fail": ("i", None, "Whether the peer has failed authentication"),
@@ -161,6 +180,16 @@ class PrometheusOutput(Output):
         "sysjitter": (None, "_seconds", "RMS average of most recent system peer offset differences"),
         "sysoffset": (None, "_seconds", "Current clock offset of selected system peer"),
     }
+
+    def send_info(self, metrics: dict, debug: bool = False) -> None:
+        self.send_stats(
+            "ntpmon_info",
+            metrics,
+            self.infotypes,
+            [x for x in self.infolabels if x in metrics],
+            [metrics[x] for x in self.infolabels if x in metrics],
+            debug=debug,
+        )
 
     def send_measurement(self, metrics: dict, debug: bool = False) -> None:
         self.send_stats(
@@ -258,6 +287,10 @@ class TelegrafOutput(Output):
         s = socket.socket()
         s.connect((host, port))
         return s.makefile(mode="w")
+
+    def send_info(self, metrics: dict, debug: bool) -> None:
+        telegraf_line = line_protocol.to_line_protocol(metrics, "ntpmon_info")
+        print(telegraf_line, file=self.file)
 
     def send_measurement(self, metrics: dict, debug: bool = False) -> None:
         telegraf_line = line_protocol.to_line_protocol(metrics, "ntpmon_peer")

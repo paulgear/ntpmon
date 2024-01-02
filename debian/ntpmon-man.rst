@@ -1,6 +1,6 @@
 :Version: 3.0
 :Date: 2023-12-28
-:Copyright: 2015-2023 Paul Gear
+:Copyright: 2015-2024 Paul D. Gear
 :Title: ntpmon
 :Subtitle: NTP metrics monitor
 :Manual group: NTP metrics monitor

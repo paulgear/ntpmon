@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright:    (c) 2016-2023 Paul D. Gear
+# Copyright:    (c) 2016-2024 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 """
@@ -44,6 +44,8 @@ def parse_ntpd_vars(vars):
                 elif nameval[0] in _aliases:
                     # convert from milliseconds to seconds, alias
                     metrics[_aliases[nameval[0]]] = round(float(nameval[1]) / 1000.0, 9)
+                elif nameval[0] == "stratum":
+                    metrics[nameval[0]] = int(nameval[1])
                 else:
                     metrics[nameval[0]] = float(nameval[1])
             except ValueError:

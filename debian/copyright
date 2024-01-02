@@ -4,7 +4,7 @@ Upstream-Author: Paul Gear <github@libertysys.com.au>
 Source: https://github.com/paulgear/ntpmon
 
 Files: *
-Copyright: 2015-2023 Paul D. Gear.
+Copyright: 2015-2024 Paul D. Gear.
 License: AGPL-3.0+
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU Affero General Public License as published by

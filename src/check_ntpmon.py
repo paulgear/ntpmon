@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 #
-# Copyright:    (c) 2016-2023 Paul D. Gear
+# Copyright:    (c) 2016-2024 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 import argparse
 import sys
+
+import version
 
 from alert import NTPAlerter
 from peers import NTPPeers
@@ -35,7 +37,18 @@ def get_args(checks):
         action="store_true",
         help="Obtain peer stats on standard input instead of from running daemon.",
     )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        default=False,
+        help="Print the check_ntpmon version and exit",
+    )
     args = parser.parse_args()
+
+    if args.version:
+        print(version.get_version())
+        sys.exit(0)
+
     return args
 
 

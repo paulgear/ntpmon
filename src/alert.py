@@ -1,5 +1,5 @@
 #
-# Copyright:    (c) 2016-2023 Paul D. Gear
+# Copyright:    (c) 2016-2024 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 """
@@ -13,6 +13,7 @@ import pprint
 
 import metrics
 import outputs
+import version
 
 from classifier import MetricClassifier
 
@@ -86,6 +87,9 @@ class NTPAlerter(object):
         """
         Produce the metrics
         """
+        if "info" in checkobjs:
+            output.send_info(checkobjs["info"], debug)
+            del checkobjs["info"]
         self.collectmetrics(checkobjs=checkobjs)
         self.mc.classify_metrics(self.metrics)
         (m, rc) = self.mc.worst_metric(self.checks)

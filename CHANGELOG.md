@@ -3,7 +3,44 @@
 Notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project (mostly) adheres to [Semantic
+Versioning](https://semver.org/spec/v2.0.0.html).
+
+Semantic Versioning dictates that only the 0.y.z version should undergo rapid
+changes.  This project differs in that I want to be able to undertake rapid
+changes at multiple stages after stable versions have been released.  Hence,
+from version 3.x onwards NTPmon will use a versioning style somewhat like the
+Linux kernel original versioning scheme, where odd-numbered major versions are
+development releases, which can have backwards incompatible changes introduced
+over the lifetime of that major version. Even-numbered major versions will be
+stable releases which will only contain new features and bug fixes.
+
+The current stable release is 2.1.0.  It will be receiving no further
+development unless critical security or data integrity bugs are found.
+
+The current development release is 3.0.6.  This is the recommended version for
+anyone who wants the latest features.  It should be suitable for production
+deployment very soon.
+
+## [3.0.6] - 2024-01-02
+
+### Added
+
+- `ntpmon_info` metric in prometheus and telegraf modes, including tags for
+  various system, python, and ntp components.
+  - If someone wants this for collectd and can explain how to do it in a way
+    which makes sense, please get in touch.
+- `--version` command line argument.
+- Roadmap in README.
+- Versioning strategy in CHANGELOG.
+
+### Changed
+
+- Fix data type on `stratum` metric for `ntpd`. This was an integer under 2.x and
+  now is consistently so between `chronyd` and `ntpd`.
+- Use `peertype` instead of `type` for individual peer metrics, to provide tag
+  compatibility between `ntpmon_peer` and `ntpmon_peers` metrics.
+- Fix python 3.8 compatibility with debug flag.
 
 ## [3.0.5] - 2023-12-30
 

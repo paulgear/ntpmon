@@ -142,8 +142,8 @@ issues with this.
 
 `Collectd` doesn't have a really great way to support these individual peer
 metrics, so each peer is considered to be a `collectd` "host".  This feature
-should be considered experimental for `collectd`, and subject to change (input
-on this is welcome).
+should be considered experimental for `collectd`, and subject to change or
+deprecation (input on this is welcome).
 
 ## Prometheus exporter
 
@@ -162,13 +162,6 @@ input plugin to be enabled.  Use the `--connect` command-line option if you
 configure this to listen on a host and/or port other than the default
 (127.0.0.1:8094).
 
-Telegraf is the preferred output integration for NTPmon (over collectd and
-prometheus), due to its higher resolution timestamps, and measuring the
-timestamp at the source which generated it rather than the scraping host.  The
-other integrations (first collectd, then Nagios, then prometheus) may eventually
-go away if they are not widely used.  Please let me know if you have strong
-feelings about this.
-
 ## Startup delay
 
 By default, until the NTP server has been running for 512 seconds (the minimum
@@ -176,3 +169,23 @@ time for 8 polls at 64-second intervals), `check_ntpmon` will return OK (zero
 return code). This is to prevent false positives on startup or for short-lived
 VMs.  To ignore this safety precaution, use `--run-time` with a low number
 (e.g. 1 sec).
+
+## Roadmap
+
+### Python version
+
+The current minimum python version targeted is 3.8.  This version [reaches end
+of life in October 2024](https://www.python.org/downloads/) and will be
+deprecated in NTPmon sometime between [the release of Ubuntu
+24.04](https://discourse.ubuntu.com/t/noble-numbat-release-schedule/35649)
+("Noble Numbat") in April 2024 and python 3.8's EOL date.
+
+### Output integrations
+
+Telegraf is the preferred output integration for NTPmon (over collectd and
+prometheus), due to its higher resolution timestamps, and measuring the
+timestamp at the source which generated it rather than the scraping host.  The
+other integrations (first collectd, then Nagios, then prometheus) may eventually
+go away if they are not widely used.  Please let me know (via an
+[issue](https://github.com/paulgear/ntpmon/issues)) if you have strong feelings
+about this.

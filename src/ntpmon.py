@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright:    (c) 2016-2023 Paul D. Gear
+# Copyright:    (c) 2016-2024 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
 import argparse
@@ -14,6 +14,7 @@ import alert
 import outputs
 import peer_stats
 import process
+import version
 
 from tailer import Tailer
 
@@ -38,7 +39,7 @@ def get_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--debug",
-        action=argparse.BooleanOptionalAction,
+        action="store_true",
         help="Run in debug mode (default: True if standard output is a tty device)",
         default=sys.stdout.isatty(),
     )
@@ -65,12 +66,27 @@ def get_args() -> argparse.Namespace:
         help="Log file to follow for peer statistics, if different from the default",
     )
     parser.add_argument(
+        "--no-debug",
+        action="store_false",
+        dest="debug",
+    )
+    parser.add_argument(
         "--port",
         type=int,
         help="TCP port on which to listen when acting as a prometheus exporter (default: 9648)",
         default=9648,
     )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        default=False,
+        help="Print the ntpmon version and exit",
+    )
     args = parser.parse_args()
+
+    if args.version:
+        print(version.get_version())
+        sys.exit(0)
 
     if "COLLECTD_INTERVAL" in os.environ:
         if args.interval is None:
@@ -146,14 +162,14 @@ async def peer_stats_task(args: argparse.Namespace, output: outputs.Output) -> N
         for line in lines:
             stats = peer_stats.parse_measurement(line)
             if stats is not None:
-                if "type" not in stats:
-                    stats["type"] = find_type(stats["source"], checkobjs["peers"].peers)
+                if "peertype" not in stats:
+                    stats["peertype"] = find_type(stats["source"], checkobjs["peers"].peers)
                 output.send_measurement(stats, debug=args.debug)
 
 
 async def summary_stats_task(args: argparse.Namespace, output: outputs.Output) -> None:
     global checkobjs
-    checks = ["proc", "offset", "peers", "reach", "sync", "vars"]
+    checks = ["proc", "info", "offset", "peers", "reach", "sync", "vars"]
     alerter = alert.NTPAlerter(checks)
     while True:
         implementation = process.get_implementation()
