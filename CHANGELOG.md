@@ -22,6 +22,25 @@ The current development release is 3.0.6.  This is the recommended version for
 anyone who wants the latest features.  It should be suitable for production
 deployment very soon.
 
+## [3.0.6] - 2024-01-02
+
+### Added
+
+- `ntpmon_version` tag now provided with prometheus and telegraf metrics.
+  - If someone wants this for collectd and can explain how to do it, please get
+    in touch.
+- `--version` command line argument.
+- Versioning strategy in CHANGELOG.
+- Roadmap in README.
+
+### Changed
+
+- Fix data type on `stratum` metric for ntpd. This was an integer under 2.x and
+  needs to remain so.
+- Use `peertype` instead of `type` for individual peer metrics, to provide tag
+  compatibility between `ntpmon_peer` and `ntpmon_peers` metrics.
+- Fix python 3.8 compatibility with debug flag.
+
 ## [3.0.5] - 2023-12-30
 
 ### Changed
