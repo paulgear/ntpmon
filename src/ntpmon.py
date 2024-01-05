@@ -187,6 +187,7 @@ async def start_tasks(args: argparse.Namespace) -> None:
     peer_stats = asyncio.create_task(peer_stats_task(args, output), name="peerstats")
     summary_stats = asyncio.create_task(summary_stats_task(args, output), name="summarystats")
     await asyncio.wait((peer_stats, summary_stats), return_when=asyncio.FIRST_COMPLETED)
+    sys.exit(1)
 
 
 if __name__ == "__main__":
