@@ -35,6 +35,7 @@ _progs = {
 
 
 def execute_subprocess(cmd, timeout, debug, errfatal):
+    output = None
     try:
         output = subprocess.check_output(
             cmd,
