@@ -22,6 +22,14 @@ The current development release is 3.0.6.  This is the recommended version for
 anyone who wants the latest features.  It should be suitable for production
 deployment very soon.
 
+## [3.0.7] - 2024-01-05
+
+### Changed
+
+- Handle loss of telegraf socket more gracefully
+- Handle failure of subprocess more gracefully
+- Ensure that systemd always restarts ntpmon regardless of exit code
+
 ## [3.0.6] - 2024-01-02
 
 ### Added

@@ -164,7 +164,7 @@ async def peer_stats_task(args: argparse.Namespace, output: outputs.Output) -> N
             if stats is not None:
                 if "peertype" not in stats:
                     stats["peertype"] = find_type(stats["source"], checkobjs["peers"].peers)
-                output.send_measurement(stats, debug=args.debug)
+                output.send_peer_measurements(stats, debug=args.debug)
 
 
 async def summary_stats_task(args: argparse.Namespace, output: outputs.Output) -> None:
@@ -187,6 +187,7 @@ async def start_tasks(args: argparse.Namespace) -> None:
     peer_stats = asyncio.create_task(peer_stats_task(args, output), name="peerstats")
     summary_stats = asyncio.create_task(summary_stats_task(args, output), name="summarystats")
     await asyncio.wait((peer_stats, summary_stats), return_when=asyncio.FIRST_COMPLETED)
+    sys.exit(1)
 
 
 if __name__ == "__main__":

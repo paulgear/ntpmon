@@ -4,10 +4,12 @@
 
 
 import argparse
+import datetime
 import socket
 import sys
 
 from io import TextIOWrapper
+import time
 from typing import ClassVar, Dict, List, Tuple
 
 
@@ -73,10 +75,10 @@ class Output:
     def send_info(self, metrics: dict, debug: bool = False) -> None:
         pass
 
-    def send_measurement(self, metrics: dict, debug: bool = False) -> None:
+    def send_peer_counts(self, metrics: dict, debug: bool = False) -> None:
         pass
 
-    def send_peer_counts(self, metrics: dict, debug: bool = False) -> None:
+    def send_peer_measurements(self, metrics: dict, debug: bool = False) -> None:
         pass
 
     def send_summary_stats(self, metrics: dict, debug: bool = False) -> None:
@@ -89,11 +91,11 @@ class CollectdOutput(Output):
 
     formatstr: ClassVar[str] = 'PUTVAL "%s/ntpmon-%s" interval=%d N:%.9f'
 
-    def send_measurement(self, metrics: dict, debug: bool = False) -> None:
-        self.send_stats(metrics, self.peerstatstypes, hostname=metrics["source"], debug=debug)
-
     def send_peer_counts(self, metrics: dict, debug: bool = False) -> None:
         self.send_stats(metrics, self.peertypes, debug=debug)
+
+    def send_peer_measurements(self, metrics: dict, debug: bool = False) -> None:
+        self.send_stats(metrics, self.peerstatstypes, hostname=metrics["source"], debug=debug)
 
     def send_stats(self, metrics: dict, types: dict, debug: bool = False, hostname: str = None) -> None:
         if hostname is None:
@@ -191,16 +193,6 @@ class PrometheusOutput(Output):
             debug=debug,
         )
 
-    def send_measurement(self, metrics: dict, debug: bool = False) -> None:
-        self.send_stats(
-            "ntpmon_peer",
-            metrics,
-            self.peerstatstypes,
-            [x for x in self.peerstatslabels if x in metrics],
-            [metrics[x] for x in self.peerstatslabels if x in metrics],
-            debug=debug,
-        )
-
     def send_peer_counts(self, metrics: dict, debug: bool = False) -> None:
         for metric in sorted(self.peertypes.keys()):
             if metric in metrics:
@@ -214,8 +206,15 @@ class PrometheusOutput(Output):
                     debug=debug,
                 )
 
-    def send_summary_stats(self, metrics: dict, debug: bool = False) -> None:
-        self.send_stats("ntpmon", metrics, self.summarystatstypes, debug=debug)
+    def send_peer_measurements(self, metrics: dict, debug: bool = False) -> None:
+        self.send_stats(
+            "ntpmon_peer",
+            metrics,
+            self.peerstatstypes,
+            [x for x in self.peerstatslabels if x in metrics],
+            [metrics[x] for x in self.peerstatslabels if x in metrics],
+            debug=debug,
+        )
 
     def send_stats(
         self,
@@ -239,6 +238,9 @@ class PrometheusOutput(Output):
                 elif datatype == "%":
                     value /= 100
                 self.set_prometheus_metric(name, description, value, fmt, labelnames, labels, debug=debug)
+
+    def send_summary_stats(self, metrics: dict, debug: bool = False) -> None:
+        self.send_stats("ntpmon", metrics, self.summarystatstypes, debug=debug)
 
     def set_prometheus_metric(
         self,
@@ -277,7 +279,8 @@ class PrometheusOutput(Output):
 class TelegrafOutput(Output):
     def __init__(self, args: argparse.Namespace) -> None:
         super().__init__()
-        self.file = sys.stdout if args.debug else self.get_telegraf_file(args.connect)
+        self.args = args
+        self.set_file()
 
     @staticmethod
     def get_telegraf_file(connect: str) -> TextIOWrapper:
@@ -288,13 +291,26 @@ class TelegrafOutput(Output):
         s.connect((host, port))
         return s.makefile(mode="w")
 
-    def send_info(self, metrics: dict, debug: bool) -> None:
-        telegraf_line = line_protocol.to_line_protocol(metrics, "ntpmon_info")
-        print(telegraf_line, file=self.file)
+    def send(self, name: str, metrics: dict, tries: int = 0) -> None:
+        telegraf_line = line_protocol.to_line_protocol(metrics, name)
+        if tries >= 5:
+            print("Reached maximum retries on telegraf connection", file=sys.stderr)
+            print(telegraf_line)
+            sys.exit(3)
+        try:
+            print(telegraf_line, file=self.file)
+        except BrokenPipeError as bpe:
+            # If we have lost our connection to telegraf, wait a little, then
+            # reopen the socket and try again. We add a timestamp to metrics
+            # without it, in case it takes a while to make the connection.
+            if "datetime" not in metrics:
+                metrics["datetime"] = datetime.datetime.now(tz=datetime.timezone.utc)
+            time.sleep(0.1)
+            self.set_file()
+            self.send(name, metrics, tries + 1)
 
-    def send_measurement(self, metrics: dict, debug: bool = False) -> None:
-        telegraf_line = line_protocol.to_line_protocol(metrics, "ntpmon_peer")
-        print(telegraf_line, file=self.file)
+    def send_info(self, metrics: dict, debug: bool) -> None:
+        self.send("ntpmon_info", metrics)
 
     def send_peer_counts(self, metrics: dict, debug: bool = False) -> None:
         for metric in sorted(self.peertypes.keys()):
@@ -302,13 +318,17 @@ class TelegrafOutput(Output):
                 "count": metrics[metric],
                 "peertype": metric,
             }
-            output = line_protocol.to_line_protocol(telegraf_metrics, "ntpmon_peers")
-            print(output, file=self.file)
+            self.send("ntpmon_peers", telegraf_metrics)
+
+    def send_peer_measurements(self, metrics: dict, debug: bool = False) -> None:
+        self.send("ntpmon_peer", metrics)
 
     def send_summary_stats(self, metrics: dict, debug: bool = False) -> None:
         telegraf_metrics = {k: metrics[k] for k in sorted(self.summarytypes.keys()) if k in metrics}
-        telegraf_line = line_protocol.to_line_protocol(telegraf_metrics, "ntpmon")
-        print(telegraf_line, file=self.file)
+        self.send("ntpmon", telegraf_metrics)
+
+    def set_file(self) -> None:
+        self.file = sys.stdout if self.args.debug else self.get_telegraf_file(self.args.connect)
 
 
 def get_output(args: argparse.Namespace) -> Output:

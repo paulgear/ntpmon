@@ -2,4 +2,4 @@
 # and bash.
 MAJOR="3"
 MINOR="0"
-PATCH="6"
+PATCH="7"
