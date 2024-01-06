@@ -33,11 +33,12 @@ def test_parse_chrony_measurements() -> None:
         measurements.append(peer_stats.parse_measurement(l))
     assert len(measurements) == 6
 
+    timestamp = int(datetime.datetime(2021, 12, 30, 11, 28, 49, tzinfo=datetime.timezone.utc).timestamp() * 1_000_000_000)
     assert measurements[0]["refid"] == "47505373"  # 4th-last field extract
     assert measurements[1]["mode"] == "server"  # parse 3rd-last field
     assert measurements[2]["source"] == "150.101.186.50"  # 3rd field extract
     assert measurements[3]["offset"] > measurements[4]["offset"]
-    assert measurements[4]["datetime"] == datetime.datetime(2021, 12, 30, 11, 28, 49, tzinfo=datetime.timezone.utc)
+    assert measurements[4]["timestamp_ns"] == timestamp
     assert measurements[5]["score"] == 0.01
     assert bool(measurements[5]["exceeded_max_delay_dev_ratio"])
 
@@ -64,12 +65,14 @@ peerstats = """
 def test_parse_ntpd_peerstats() -> None:
     lines = peerstats.strip().split("\n")
     measurements = [peer_stats.parse_measurement(l) for l in lines]
-    print(measurements[0])
+    timestamp = int(
+        datetime.datetime(2023, 12, 25, 8, 41, 56, 612000, tzinfo=datetime.timezone.utc).timestamp() * 1_000_000_000
+    )
     assert len(measurements) == len(lines)
     assert all([m is not None for m in measurements])
     assert measurements[0]["reachable"] == True
     assert measurements[0]["peertype"] == "survivor"
-    assert measurements[1]["datetime"] == datetime.datetime(2023, 12, 25, 8, 41, 56, 612000, tzinfo=datetime.timezone.utc)
+    assert measurements[1]["timestamp_ns"] == timestamp
     assert measurements[2]["offset"] > 0
     assert measurements[3]["peertype"] == "outlier"
     assert measurements[5]["peertype"] == "sync"

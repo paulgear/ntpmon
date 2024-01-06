@@ -301,10 +301,7 @@ class TelegrafOutput(Output):
             print(telegraf_line, file=self.file)
         except BrokenPipeError as bpe:
             # If we have lost our connection to telegraf, wait a little, then
-            # reopen the socket and try again. We add a timestamp to metrics
-            # without it, in case it takes a while to make the connection.
-            if "datetime" not in metrics:
-                metrics["datetime"] = datetime.datetime.now(tz=datetime.timezone.utc)
+            # reopen the socket and try again.
             time.sleep(0.1)
             self.set_file()
             self.send(name, metrics, tries + 1)

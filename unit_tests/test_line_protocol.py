@@ -2,6 +2,7 @@
 # Copyright:    (c) 2023 Paul D. Gear
 # License:      AGPLv3 <http://www.gnu.org/licenses/agpl.html>
 
+import time
 import pytest
 
 import line_protocol
@@ -28,8 +29,10 @@ def test_timestamp_to_line_protocol() -> None:
 
 
 def test_to_line_protocol() -> None:
+    now_ns = time.time_ns()
     metrics = {
         "associd": 0,
+        "timestamp_ns": now_ns,
         "frequency": -11.673,
         "leap": False,
         "offset": +0.0000145826,
@@ -50,7 +53,7 @@ def test_to_line_protocol() -> None:
         == "ntpmon,hostname=ntp1,processor=x86_64,refid=100.66.246.50,reftime=e93a0505.8336edfd,system=Linux/5.10.0-26-amd64,"
         "version=ntpd\\ 4.2.8p15@1.3728-o\\ Wed\\ Sep\\ 23\\ 11:46:38\\ UTC\\ 2020\\ (1) "
         "frequency=-11.673,offset=1.45826e-05,rootdelay=1.026,rootdisp=8.218,"
-        "sys_jitter=0.082849,associd=0i,precision=-23i,stratum=2i,leap=0i,test=1i"
+        f"sys_jitter=0.082849,associd=0i,precision=-23i,stratum=2i,leap=0i,test=1i {now_ns}"
     )
 
 

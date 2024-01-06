@@ -10,9 +10,12 @@
 
 
 import re
+import time
 
 
-exclude_fields = []
+exclude_fields = [
+    "timestamp_ns",
+]
 
 exclude_tags = []
 
@@ -64,15 +67,12 @@ def timestamp_to_line_protocol(timestamp: float) -> (int, int):
 
 
 def to_line_protocol(metrics: dict, which: str, additional_tags: dict = {}) -> str:
-    if "datetime" in metrics:
-        seconds, nanoseconds = timestamp_to_line_protocol(metrics["datetime"].timestamp())
-        timestamp = f" {seconds}{nanoseconds:09}"
-    else:
-        timestamp = ""
+    if "timestamp_ns" not in metrics:
+        metrics["timestamp_ns"] = time.time_ns()
     tags = format_tags(metrics, additional_tags)
     if len(tags):
         tags = "," + tags
-    return f"{which}{tags} {format_fields(metrics)}{timestamp}"
+    return f"{which}{tags} {format_fields(metrics)} {metrics['timestamp_ns']}"
 
 
 punctuation = re.compile(r'[-!@#$%^&()<>,./\?+=:;"\'\[\]\{\}\*\s]+')
