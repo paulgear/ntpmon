@@ -39,6 +39,7 @@ class Tailer:
             stat = os.stat(self.file.fileno())
             self.st_ino = stat.st_ino
             self.st_dev = stat.st_dev
+            print(f"{self.filename} opened, reading from pos {self.pos}", file=sys.stderr)
         except OSError:
             self.clear()
         finally:
@@ -54,7 +55,7 @@ class Tailer:
                 return None
             elif pos < self.pos:
                 # file has been truncated; reset to beginning and read all lines
-                print(f"Truncated: {pos=} {self.pos=}", file=sys.stderr)
+                print(f"{self.filename} truncated, resetting to beginning", file=sys.stderr)
                 self.file.seek(0, os.SEEK_SET)
             else:
                 # Even if we were in the right place already, we need to set our
@@ -85,12 +86,12 @@ class Tailer:
         reopen = False
         if stat is None:
             # file deleted - read the rest of it (if any) and reopen when available
-            print("Deleted file", file=sys.stderr)
+            print(f"{self.filename} deleted, reopening", file=sys.stderr)
             reopen = True
         elif stat.st_ino != self.st_ino or stat.st_dev != self.st_dev:
             # It's a different file; read the rest of the open one, then open the
             # new one.
-            print(f"Different file: {stat.st_ino=} {self.st_ino=} {stat.st_dev=} {self.st_dev=}", file=sys.stderr)
+            print(f"{self.filename} replaced ({self.st_dev},{self.st_ino} -> {stat.st_dev},{stat.st_ino}), reopening", file=sys.stderr)
             reopen = True
         else:
             # Same file, just read any lines
