@@ -197,15 +197,8 @@ class PrometheusOutput(Output):
         for i in self.info_rewrites:
             if i in metrics:
                 metrics[self.info_rewrites[i]] = metrics[i]
-                del(metrics[i])
-        self.send_stats(
-            "ntpmon",
-            metrics,
-            self.infotypes,
-            [],
-            [],
-            debug=debug,
-        )
+                del metrics[i]
+        self.send_stats("ntpmon", metrics, self.infotypes, [], [], debug=debug)
         self.send_stats(
             "ntpmon",
             metrics,
