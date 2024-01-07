@@ -26,16 +26,18 @@ deployment very soon.
 
 ### Changed
 
-- Ensure all telegraf metrics are timestamped in microseconds.
-  Because output to telegraf is buffered, we can't rely on telegraf doing the
-  timestamping (multiple samples get timestamped with the same or very similar
-  times), so we add a timestamp to every metric line as soon as we see it.
+- Ensure all telegraf metrics are timestamped in microseconds. Because output to
+  telegraf is buffered, we can't rely on telegraf doing the timestamping
+  (multiple samples get timestamped with the same or very similar times), so we
+  add a timestamp to every metric line as soon as we see it.
 - `ntpmon_info` metric in telegraf mode split into
   `ntpmon_resident_set_size_bytes`, `ntpmon_virtual_memory_size_bytes`, and
   `ntpmon_uptime_seconds` in prometheus mode, with tags only on
   `ntpmon_uptime_seconds`, to tidy metric names and reduce tag cardinality when
   used with prometheus.  These retain their existing names in telegraf mode.
-
+- Make messages from log file tailer tidier and more consistent.
+- Correctly flag /etc/default/ntpmon as a configuration file in the Debian
+  package.
 
 ## [3.0.7] - 2024-01-05
 
