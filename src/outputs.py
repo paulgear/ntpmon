@@ -126,9 +126,18 @@ class PrometheusOutput(Output):
     ]
 
     infotypes: ClassVar[Dict[str, Tuple[str, str, str]]] = {
-        "ntpmon_rss": ("i", "_bytes", "The resident set size of the ntpmon process"),
-        "ntpmon_uptime": (None, "_seconds", "Time for which the ntpmon process has been running"),
-        "ntpmon_vms": ("i", "_bytes", "The virtual memory size of the ntpmon process"),
+        "resident_set_size": ("i", "_bytes", "The resident set size of the ntpmon process"),
+        "virtual_memory_size": ("i", "_bytes", "The virtual memory size of the ntpmon process"),
+    }
+
+    infotypes_labelled: ClassVar[Dict[str, Tuple[str, str, str]]] = {
+        "uptime": (None, "_seconds", "Time for which the ntpmon process has been running"),
+    }
+
+    info_rewrites: ClassVar[Dict[str, str]] = {
+        "ntpmon_rss": "resident_set_size",
+        "ntpmon_uptime": "uptime",
+        "ntpmon_vms": "virtual_memory_size",
     }
 
     peerstatslabels: ClassVar[List[str]] = [
@@ -184,10 +193,16 @@ class PrometheusOutput(Output):
     }
 
     def send_info(self, metrics: dict, debug: bool = False) -> None:
+        # rewrite info metric names for prometheus
+        for i in self.info_rewrites:
+            if i in metrics:
+                metrics[self.info_rewrites[i]] = metrics[i]
+                del metrics[i]
+        self.send_stats("ntpmon", metrics, self.infotypes, [], [], debug=debug)
         self.send_stats(
-            "ntpmon_info",
+            "ntpmon",
             metrics,
-            self.infotypes,
+            self.infotypes_labelled,
             [x for x in self.infolabels if x in metrics],
             [metrics[x] for x in self.infolabels if x in metrics],
             debug=debug,
@@ -301,10 +316,7 @@ class TelegrafOutput(Output):
             print(telegraf_line, file=self.file)
         except BrokenPipeError as bpe:
             # If we have lost our connection to telegraf, wait a little, then
-            # reopen the socket and try again. We add a timestamp to metrics
-            # without it, in case it takes a while to make the connection.
-            if "datetime" not in metrics:
-                metrics["datetime"] = datetime.datetime.now(tz=datetime.timezone.utc)
+            # reopen the socket and try again.
             time.sleep(0.1)
             self.set_file()
             self.send(name, metrics, tries + 1)

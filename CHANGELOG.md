@@ -22,6 +22,21 @@ The current development release is 3.0.6.  This is the recommended version for
 anyone who wants the latest features.  It should be suitable for production
 deployment very soon.
 
+## [3.0.8] - 2024-01-07
+
+### Changed
+
+- Ensure all telegraf metrics are timestamped in microseconds.
+  Because output to telegraf is buffered, we can't rely on telegraf doing the
+  timestamping (multiple samples get timestamped with the same or very similar
+  times), so we add a timestamp to every metric line as soon as we see it.
+- `ntpmon_info` metric in telegraf mode split into
+  `ntpmon_resident_set_size_bytes`, `ntpmon_virtual_memory_size_bytes`, and
+  `ntpmon_uptime_seconds` in prometheus mode, with tags only on
+  `ntpmon_uptime_seconds`, to tidy metric names and reduce tag cardinality when
+  used with prometheus.  These retain their existing names in telegraf mode.
+
+
 ## [3.0.7] - 2024-01-05
 
 ### Changed
