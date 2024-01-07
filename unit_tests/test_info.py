@@ -22,9 +22,9 @@ def test_get_info() -> None:
 
     assert i["implementation_name"] == "myntp"
     assert i["implementation_version"] == "1.2.3-beta1"
-    assert i["ntpmon_rss"] > 1000
-    assert i["ntpmon_uptime"] > 0.000001
-    assert i["ntpmon_vms"] > i["ntpmon_rss"]
+    assert i["resident_set_size"] > 1000
+    assert i["uptime"] > 0.000001
+    assert i["virtual_memory_size"] > i["resident_set_size"]
     assert [int(x) for x in i["python_version"].split(".")] >= [3, 8, 0]
 
 
