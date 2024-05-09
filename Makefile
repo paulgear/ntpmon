@@ -49,8 +49,8 @@ install:
 	install -m 0644 src/*.py $(DESTDIR)/$(PREFIX)/$(SHAREDIR)/
 	chmod 0755 $(DESTDIR)/$(PREFIX)/$(SHAREDIR)/*ntpmon.py
 	cd $(DESTDIR)/$(PREFIX)/$(BINDIR); \
-		ln -s ../$(SHAREDIR)/ntpmon.py $(NAME); \
-		ln -s ../$(SHAREDIR)/check_ntpmon.py check_$(NAME)
+		ln -sf ../$(SHAREDIR)/ntpmon.py $(NAME); \
+		ln -sf ../$(SHAREDIR)/check_ntpmon.py check_$(NAME)
 	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
 		src/jinja2_render.py src/ntpmon.service > $(DESTDIR)/$(SYSTEMD_SERVICE_DIR)/$(NAME).service
 	BINDIR=$(PREFIX)/$(BINDIR) CONFDIR=$(CONFDIR) GROUP=$(GROUP) NAME=$(NAME) USER=$(USER) python3 \
