@@ -31,6 +31,40 @@ PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License along
 with this program.  If not, see <https://www.gnu.org/licenses/agpl.html>.
 
+## Gallery
+
+Here are some graphs produced with data gathered by NTPmon using telegraf,
+InfluxDB, and Grafana.
+
+A system offset graph:
+
+![Graph of system offset](doc/offset.png)
+
+A system offset histogram:
+
+![Histogram of system offset](doc/offset-histogram.png)
+
+A root dispersion graph:
+
+![Graph of root dispersion](doc/root-dispersion.png)
+
+A frequency error graph showing variation based on temperature due to time of day:
+
+![Histogram of frequency error](doc/frequency.png)
+
+Or you could try these interactive Grafana dashboard snapshots:
+- https://snapshots.raintank.io/dashboard/snapshot/QV6YTE7nuInMuThGEBtViPLWNoAZqTYs
+- https://snapshots.raintank.io/dashboard/snapshot/V8lcRJEY1jhHe1h8EqQSEalkzEW9WG0O
+- https://snapshots.raintank.io/dashboard/snapshot/xHdgapqImIxKOH36x9dk2rkA6UjPYrwg
+- https://snapshots.raintank.io/dashboard/snapshot/FrJ0HQJ6lpBtfjezDHwbwKVauChd9TMN
+- https://snapshots.raintank.io/dashboard/snapshot/jQUiLFkHKNKJJSJZLz6ZiYpaKA3X2EH4
+
+You can find more context for these dashboards in the following blog posts:
+
+- https://www.libertysys.com.au/2024/04/aws-microsecond-accurate-time-first-look/
+- https://www.libertysys.com.au/2024/04/tlntc-time-infrastructure/
+- https://www.libertysys.com.au/2024/04/vm-timekeeping-using-the-ptp-hardware-clock-on-kvm/
+
 ## Installation
 
 On Ubuntu (and possibly other Debian derivatives) NTPmon and its prerequisites
