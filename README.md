@@ -15,7 +15,7 @@ Practices](https://datatracker.ietf.org/doc/html/rfc8633).
 
 ## Copyright
 
-Copyright (c) 2015-2023 Paul D. Gear <https://libertysys.com.au/>
+Copyright (c) 2015-2024 Paul D. Gear <https://libertysys.com.au/>
 
 ## License
 
