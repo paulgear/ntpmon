@@ -75,6 +75,26 @@ _metricdefs = {
     "sysoffset": ("mid", -0.05, -0.01, 0.01, 0.05),
 }
 
+"""
+Metric Unit of measure (UOM) for Nagios
+"""
+_nagios_uom = {
+    'frequency': 'ms',
+    'offset': 's',
+    'peers': '',
+    'reach': '%',
+    'sync': '',
+    'rootdelay': 's',
+    'rootdisp': 's',
+    'runtime': 's',
+    'stratum': '',
+    'sysjitter': 's',
+    'sysoffset': 's',
+    'tracehosts': '',
+    'traceloops': '',
+    'tracetime': 's',
+    'result': '',
+}
 
 class NTPAlerter(object):
     def __init__(self, checks):
@@ -174,7 +194,8 @@ class NTPAlerter(object):
                 else:
                     fmt = _formats[m][1] if _formats[m][1] != "%" else "f"
                 val = self.mc.fmtstr(fmt) % self.metrics[m]
-                items.append("%s=%s" % (m, val))
+                uom = _nagios_uom[m]
+                items.append('%s=%s%s' % (m, val, uom))
         return " ".join(items)
 
     def return_code(self):
